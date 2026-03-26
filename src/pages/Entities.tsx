@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { entitiesApi, trackingApi } from "@/lib/api";
+import { usePlanGate } from "@/hooks/usePlanGate";
+import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,11 +36,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { EntityType } from "@/types";
 
 interface Entity {
   id: string;
   title: string;
-  type: "PERSON" | "PROJECT" | "TOPIC" | "ORGANIZATION" | "HABIT";
+  type: EntityType;
   description?: string;
   createdAt: string;
   trackingDates?: string[];
@@ -77,13 +80,14 @@ export default function Entities() {
   const typeFilter = searchParams.get("type");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canCreateEntity, canCreateHabit, getLimitMessage, refresh: refreshUsage } = usePlanGate();
 
-  // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<string>("TOPIC");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -101,6 +105,18 @@ export default function Entities() {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async () => {
+    // Check plan limits
+    if (newType === "HABIT" && !canCreateHabit) {
+      setCreateOpen(false);
+      setUpgradeOpen(true);
+      return;
+    }
+    if (!canCreateEntity) {
+      setCreateOpen(false);
+      setUpgradeOpen(true);
+      return;
+    }
+
     setCreating(true);
     try {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
@@ -108,12 +124,18 @@ export default function Entities() {
       setCreateOpen(false);
       setNewTitle("");
       setNewDesc("");
+      await refreshUsage();
     } catch (err: any) {
-      toast({
-        title: "Erro",
-        description: err.response?.data?.message || "Limite atingido?",
-        variant: "destructive",
-      });
+      if (err.response?.status === 403) {
+        setCreateOpen(false);
+        setUpgradeOpen(true);
+      } else {
+        toast({
+          title: "Erro",
+          description: err.response?.data?.message || "Limite atingido?",
+          variant: "destructive",
+        });
+      }
     } finally {
       setCreating(false);
     }
@@ -135,6 +157,7 @@ export default function Entities() {
     try {
       await entitiesApi.delete(id);
       setEntities((prev) => prev.filter((en) => en.id !== id));
+      await refreshUsage();
     } catch {
       toast({ title: "Erro ao deletar", variant: "destructive" });
     }
@@ -150,12 +173,18 @@ export default function Entities() {
   });
 
   const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "HABIT"];
+  const entitiesLimit = getLimitMessage("entities");
+  const habitsLimit = getLimitMessage("habits");
 
   return (
     <AppLayout>
       <div className="p-6 max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Entidades</h1>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Entidades</h1>
+            {entitiesLimit && <p className="text-xs text-muted-foreground">{entitiesLimit}</p>}
+            {habitsLimit && <p className="text-xs text-muted-foreground">{habitsLimit}</p>}
+          </div>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Nova Entidade</Button>
@@ -193,7 +222,6 @@ export default function Entities() {
           </Dialog>
         </div>
 
-        {/* Type filters */}
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSearchParams({})}
@@ -280,6 +308,11 @@ export default function Entities() {
           </div>
         )}
       </div>
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        reason={typeFilter === "HABIT" ? "Você atingiu o limite de hábitos do seu plano." : "Você atingiu o limite de entidades do seu plano."}
+      />
     </AppLayout>
   );
 }

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Flame, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import type { HeatmapData, EntityStats } from "@/types";
 
-interface EntityDetail {
+interface EntityData {
   id: string;
   title: string;
   type: string;
@@ -16,16 +17,13 @@ interface EntityDetail {
   createdAt: string;
 }
 
-interface HeatmapData {
-  [date: string]: number;
-}
-
 export default function EntityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [entity, setEntity] = useState<EntityDetail | null>(null);
+  const [entity, setEntity] = useState<EntityData | null>(null);
   const [heatmap, setHeatmap] = useState<HeatmapData>({});
+  const [stats, setStats] = useState<EntityStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,9 +31,11 @@ export default function EntityDetail() {
     Promise.all([
       entitiesApi.get(id),
       entitiesApi.heatmap(id),
-    ]).then(([eRes, hRes]) => {
+      entitiesApi.stats(id),
+    ]).then(([eRes, hRes, sRes]) => {
       setEntity(eRes.data);
       setHeatmap(hRes.data || {});
+      setStats(sRes.data);
     }).catch(() => {
       toast({ title: "Entidade não encontrada", variant: "destructive" });
       navigate("/entities");
@@ -47,13 +47,15 @@ export default function EntityDetail() {
     try {
       const { data } = await entitiesApi.track(id);
       setEntity(data);
+      // Refresh stats from backend
+      const [sRes] = await Promise.all([entitiesApi.stats(id)]);
+      setStats(sRes.data);
       toast({ title: "Registrado! 🔥" });
     } catch {
       toast({ title: "Erro", variant: "destructive" });
     }
   };
 
-  // Generate last 90 days for heatmap
   const getLast90Days = () => {
     const days: string[] = [];
     const today = new Date();
@@ -89,21 +91,8 @@ export default function EntityDetail() {
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.includes(today);
 
-  // Calculate streak
-  let streak = 0;
-  if (entity.trackingDates) {
-    const sorted = [...entity.trackingDates].sort().reverse();
-    const d = new Date();
-    for (const date of sorted) {
-      const expected = d.toISOString().split("T")[0];
-      if (date === expected) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-  }
+  // Use backend streak instead of calculating locally
+  const streak = stats?.currentStreak ?? 0;
 
   return (
     <AppLayout>
@@ -121,6 +110,11 @@ export default function EntityDetail() {
                 <Flame className="w-3 h-3" /> Streak: {streak} dias
               </span>
             )}
+            {stats && (
+              <span className="bento-tag">
+                Total: {stats.totalCompletions}
+              </span>
+            )}
           </div>
           {entity.description && (
             <p className="text-sm text-muted-foreground">{entity.description}</p>
@@ -134,7 +128,6 @@ export default function EntityDetail() {
               {trackedToday ? "Feito hoje ✓" : "Registrar hoje"}
             </Button>
 
-            {/* Heatmap */}
             <div className="space-y-2">
               <h2 className="text-sm font-medium text-foreground">Últimos 90 dias</h2>
               <div className="flex flex-wrap gap-1">

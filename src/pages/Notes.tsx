@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { notesApi, foldersApi } from "@/lib/api";
+import { usePlanGate } from "@/hooks/usePlanGate";
+import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,8 +37,10 @@ export default function Notes() {
   const [search, setSearch] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canCreateNote, getLimitMessage, refresh } = usePlanGate();
 
   const fetchData = async () => {
     setLoading(true);
@@ -54,15 +58,24 @@ export default function Notes() {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreateNote = async () => {
+    if (!canCreateNote) {
+      setUpgradeOpen(true);
+      return;
+    }
     try {
       const { data } = await notesApi.create("Nova Nota", "", selectedFolder || undefined);
+      await refresh();
       navigate(`/notes/${data.id}`);
     } catch (err: any) {
-      toast({
-        title: "Erro",
-        description: err.response?.data?.message || "Limite de notas atingido?",
-        variant: "destructive",
-      });
+      if (err.response?.status === 403) {
+        setUpgradeOpen(true);
+      } else {
+        toast({
+          title: "Erro",
+          description: err.response?.data?.message || "Limite de notas atingido?",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -71,6 +84,7 @@ export default function Notes() {
     try {
       await notesApi.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
+      await refresh();
     } catch {
       toast({ title: "Erro ao deletar", variant: "destructive" });
     }
@@ -82,18 +96,22 @@ export default function Notes() {
     return matchSearch && matchFolder;
   });
 
+  const limitMsg = getLimitMessage("notes");
+
   return (
     <AppLayout>
       <div className="p-6 max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notas</h1>
-          <Button onClick={handleCreateNote} size="sm">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Notas</h1>
+            {limitMsg && <p className="text-xs text-muted-foreground">{limitMsg}</p>}
+          </div>
+          <Button onClick={handleCreateNote} size="sm" disabled={!canCreateNote && canCreateNote !== undefined}>
             <Plus className="w-4 h-4 mr-1" /> Nova Nota
           </Button>
         </div>
 
         <div className="flex gap-3">
-          {/* Folders sidebar */}
           <div className="w-48 shrink-0 space-y-1">
             <button
               onClick={() => setSelectedFolder(null)}
@@ -118,16 +136,10 @@ export default function Notes() {
             ))}
           </div>
 
-          {/* Notes list */}
           <div className="flex-1 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar notas..."
-                className="pl-9"
-              />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar notas..." className="pl-9" />
             </div>
 
             {loading ? (
@@ -165,6 +177,11 @@ export default function Notes() {
           </div>
         </div>
       </div>
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        reason="Você atingiu o limite de notas do seu plano."
+      />
     </AppLayout>
   );
 }
