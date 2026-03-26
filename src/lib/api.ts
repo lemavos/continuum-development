@@ -7,11 +7,14 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor: attach JWT
+// Interceptor: attach JWT (skip auth endpoints)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const isAuthRoute = config.url?.startsWith("/api/auth/");
+  if (!isAuthRoute) {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -34,11 +37,12 @@ api.interceptors.response.use(
           original.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(original);
         } catch {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
+          // Refresh failed — clear and redirect
         }
       }
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -124,12 +128,34 @@ export const trackingApi = {
 export const subscriptionApi = {
   me: () => api.get("/api/subscriptions/me"),
   checkout: (planId: string) => api.post("/api/subscriptions/checkout", { planId }),
+  createSession: (planId: string) => api.post("/api/subscriptions/create-session", { planId }),
   cancel: () => api.post("/api/subscriptions/cancel"),
 };
 
 // Plans
 export const plansApi = {
   list: () => api.get("/api/plans"),
+};
+
+// Vault
+export const vaultApi = {
+  list: () => api.get("/api/vault/files"),
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post("/api/vault/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  delete: (fileId: string) => api.delete(`/api/vault/files/${fileId}`),
+  download: (fileId: string) =>
+    api.get(`/api/vault/files/${fileId}/download`, { responseType: "blob" }),
+  usage: () => api.get("/api/vault/usage"),
+};
+
+// Usage (for plan gate checks)
+export const usageApi = {
+  get: () => api.get("/api/usage"),
 };
 
 export default api;
