@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Loader2,
+  GitGraph,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/notes", icon: StickyNote, label: "Notas" },
   { to: "/entities", icon: Network, label: "Entidades" },
+  { to: "/graph", icon: GitGraph, label: "Grafo" },
   { to: "/vault", icon: HardDrive, label: "Vault" },
   { to: "/subscription", icon: CreditCard, label: "Assinatura" },
 ];

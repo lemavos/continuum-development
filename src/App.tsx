@@ -7,11 +7,13 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import GoogleCallback from "./pages/GoogleCallback";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
 import NoteEditor from "./pages/NoteEditor";
 import Entities from "./pages/Entities";
 import EntityDetail from "./pages/EntityDetail";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Vault from "./pages/Vault";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
@@ -50,11 +52,13 @@ const AppRoutes = () => (
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
     <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+    <Route path="/auth/google/callback" element={<GoogleCallback />} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
     <Route path="/notes/:id" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
     <Route path="/entities" element={<ProtectedRoute><Entities /></ProtectedRoute>} />
     <Route path="/entities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
+    <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
     <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
