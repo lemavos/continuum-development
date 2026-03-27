@@ -111,29 +111,32 @@ export default function Notes() {
           </Button>
         </div>
 
-        <div className="flex gap-3">
-          <div className="w-48 shrink-0 space-y-1">
-            <button
-              onClick={() => setSelectedFolder(null)}
-              className={cn(
-                "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                !selectedFolder ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent"
-              )}
-            >
-              <StickyNote className="w-4 h-4" /> Todas
-            </button>
-            {folders.map((f) => (
+        <div className="flex flex-col lg:flex-row gap-3">
+          {/* Folder sidebar - horizontal scroll on mobile, vertical on desktop */}
+          <div className="lg:w-48 lg:shrink-0 space-y-1">
+            <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
               <button
-                key={f.id}
-                onClick={() => setSelectedFolder(f.id)}
+                onClick={() => setSelectedFolder(null)}
                 className={cn(
-                  "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors",
-                  selectedFolder === f.id ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent"
+                  "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-colors shrink-0",
+                  !selectedFolder ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent"
                 )}
               >
-                <Folder className="w-4 h-4" /> {f.name}
+                <StickyNote className="w-4 h-4" /> Todas
               </button>
-            ))}
+              {folders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setSelectedFolder(f.id)}
+                  className={cn(
+                    "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-colors shrink-0",
+                    selectedFolder === f.id ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent"
+                  )}
+                >
+                  <Folder className="w-4 h-4" /> {f.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 space-y-3">
