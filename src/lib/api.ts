@@ -119,6 +119,11 @@ export const searchApi = {
   search: (q: string) => api.get("/api/search", { params: { q } }),
 };
 
+// Graph
+export const graphApi = {
+  data: () => api.get("/api/graph/data"),
+};
+
 // Tracking
 export const trackingApi = {
   today: () => api.get("/api/tracking/today"),
