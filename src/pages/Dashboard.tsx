@@ -37,8 +37,8 @@ export default function Dashboard() {
   const limits = PLAN_LIMITS[plan];
 
   useEffect(() => {
-    metricsApi.dashboard().then((r) => setMetrics(r.data)).catch(() => {});
-    trackingApi.today().then((r) => setTodayEvents(r.data)).catch(() => {});
+    metricsApi.dashboard().then((r) => setMetrics(r.data || {})).catch(() => {});
+    trackingApi.today().then((r) => setTodayEvents(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
 
   const bentoItems: BentoItem[] = [

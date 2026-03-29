@@ -93,8 +93,8 @@ export default function Entities() {
     setLoading(true);
     try {
       const [eRes, tRes] = await Promise.all([entitiesApi.list(), trackingApi.today()]);
-      setEntities(eRes.data);
-      setTodayEvents(tRes.data);
+      setEntities(Array.isArray(eRes.data) ? eRes.data : []);
+      setTodayEvents(Array.isArray(tRes.data) ? tRes.data : []);
     } catch {
       toast({ title: "Erro ao carregar entidades", variant: "destructive" });
     } finally {

@@ -34,7 +34,7 @@ export default function EntityDetail() {
       entitiesApi.stats(id),
     ]).then(([eRes, hRes, sRes]) => {
       setEntity(eRes.data);
-      setHeatmap(hRes.data || {});
+      setHeatmap(hRes.data && typeof hRes.data === 'object' ? hRes.data : {});
       setStats(sRes.data);
     }).catch(() => {
       toast({ title: "Entidade não encontrada", variant: "destructive" });

@@ -61,7 +61,7 @@ export default function Vault() {
     setLoading(true);
     try {
       const { data } = await vaultApi.list();
-      setFiles(data);
+      setFiles(Array.isArray(data) ? data : []);
     } catch {
       toast({ title: "Erro ao carregar arquivos", variant: "destructive" });
     } finally {
