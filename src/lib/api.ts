@@ -60,7 +60,7 @@ export const authApi = {
     const refreshToken = localStorage.getItem("refresh_token");
     return api.post("/api/auth/logout", { refreshToken });
   },
-  me: () => api.get("/api/auth/me"),
+  me: () => api.get("/api/account/me"),
   forgotPassword: (email: string) =>
     api.post("/api/account/password/forgot", { email }),
   resetPassword: (token: string, password: string) =>
