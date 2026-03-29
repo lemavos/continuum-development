@@ -54,7 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const { data } = await authApi.login(email, password);
     setTokens(data.accessToken, data.refreshToken);
-    await fetchUser();
+    // Use user data directly from login response
+    setUser({
+      id: data.userId,
+      username: data.username,
+      email: data.email,
+      plan: data.plan || "FREE",
+      emailVerified: data.emailVerified ?? true,
+    });
   };
 
   const register = async (username: string, email: string, password: string) => {
