@@ -21,57 +21,48 @@ export default function Register() {
     setLoading(true);
     try {
       await register(username, email, password);
-      toast({
-        title: "Conta criada!",
-        description: "Verifique seu email para ativar a conta.",
-      });
+      toast({ title: "Conta criada!", description: "Verifique seu email para ativar a conta." });
       navigate("/login");
     } catch (err: any) {
-      toast({
-        title: "Erro ao criar conta",
-        description: err.response?.data?.message || "Tente novamente",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+      toast({ title: "Erro ao criar conta", description: err.response?.data?.message || "Tente novamente", variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Continuum</h1>
+      <div className="w-full max-w-sm space-y-8 animate-fade-in">
+        <div className="text-center space-y-3">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Continuum</h1>
           <p className="text-muted-foreground text-sm">Crie sua conta e comece a organizar</p>
         </div>
 
         <div className="bento-card p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm text-foreground">Nome de usuário</Label>
+              <Label htmlFor="username" className="text-xs text-muted-foreground uppercase tracking-wider">Usuário</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe" className="pl-10" required />
+                <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe" className="pl-10 bg-accent border-border/50" required />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
+              <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10" required />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10 bg-accent border-border/50" required />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm text-foreground">Senha</Label>
+              <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider">Senha</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-10" required minLength={8} />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-10 bg-accent border-border/50" required minLength={8} />
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-primary" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
               Criar conta
             </Button>
@@ -80,7 +71,7 @@ export default function Register() {
 
         <p className="text-center text-sm text-muted-foreground">
           Já tem uma conta?{" "}
-          <Link to="/login" className="text-foreground font-medium hover:underline">Entrar</Link>
+          <Link to="/login" className="text-primary font-medium hover:underline">Entrar</Link>
         </p>
       </div>
     </div>

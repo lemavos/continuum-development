@@ -20,43 +20,37 @@ export default function ForgotPassword() {
       await authApi.forgotPassword(email);
       setSent(true);
     } catch (err: any) {
-      toast({
-        title: "Erro",
-        description: err.response?.data?.message || "Tente novamente",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+      toast({ title: "Erro", description: err.response?.data?.message || "Tente novamente", variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Continuum</h1>
+      <div className="w-full max-w-sm space-y-8 animate-fade-in">
+        <div className="text-center space-y-3">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">Continuum</h1>
           <p className="text-muted-foreground text-sm">Recuperar senha</p>
         </div>
 
         <div className="bento-card p-6">
           {sent ? (
             <div className="text-center space-y-4 py-4">
-              <CheckCircle className="w-12 h-12 text-success mx-auto" />
+              <CheckCircle className="w-12 h-12 text-primary mx-auto" />
               <div className="space-y-1">
                 <p className="font-medium text-foreground">Email enviado!</p>
                 <p className="text-sm text-muted-foreground">Verifique sua caixa de entrada para redefinir sua senha.</p>
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
+                <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10" required />
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="pl-10 bg-accent border-border/50" required />
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-primary" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Enviar link de recuperação
               </Button>
@@ -64,7 +58,7 @@ export default function ForgotPassword() {
           )}
         </div>
 
-        <Link to="/login" className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Link to="/login" className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="w-4 h-4" /> Voltar ao login
         </Link>
       </div>
