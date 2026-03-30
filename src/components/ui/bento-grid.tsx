@@ -28,7 +28,7 @@ function BentoGrid({ items }: BentoGridProps) {
           className={cn(
             "bento-card group cursor-pointer",
             item.colSpan === 2 ? "md:col-span-2" : "col-span-1",
-            item.hasPersistentHover && "shadow-[var(--bento-hover-shadow)] -translate-y-0.5"
+            item.hasPersistentHover && "border-primary/10"
           )}
         >
           <div
@@ -60,7 +60,7 @@ function BentoGrid({ items }: BentoGridProps) {
                   <span key={i} className="bento-tag">#{tag}</span>
                 ))}
               </div>
-              <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-xs text-primary/50 opacity-0 group-hover:opacity-100 transition-opacity">
                 {item.cta || "Abrir →"}
               </span>
             </div>
