@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PLAN_LIMITS, type Plan, type UserUsage } from "@/types";
-import { usageApi } from "@/lib/api";
+import { useUsage, type UsageDelta } from "@/contexts/UsageContext";
 
 interface PlanGateResult {
   usage: UserUsage | null;
@@ -11,32 +11,15 @@ interface PlanGateResult {
   canCreateHabit: boolean;
   canUploadVault: (fileSizeMB: number) => boolean;
   refresh: () => Promise<void>;
+  applyUsageDelta: (delta: UsageDelta) => void;
   getLimitMessage: (resource: "notes" | "entities" | "habits" | "vault") => string;
 }
 
 export function usePlanGate(): PlanGateResult {
   const { user } = useAuth();
-  const [usage, setUsage] = useState<UserUsage | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { usage, loading, refresh, applyUsageDelta } = useUsage();
   const plan: Plan = (user?.plan as Plan) || "FREE";
   const limits = PLAN_LIMITS[plan];
-
-  const refresh = useCallback(async () => {
-    try {
-      const { data } = await usageApi.get();
-      setUsage(data);
-    } catch {
-      // fallback: allow actions if usage endpoint fails
-      setUsage(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) refresh();
-    else setLoading(false);
-  }, [user, refresh]);
 
   const isUnlimited = (limit: number) => limit === -1;
 
@@ -67,5 +50,5 @@ export function usePlanGate(): PlanGateResult {
     return `${r.current}/${r.max} ${r.label} utilizados`;
   };
 
-  return { usage, loading, canCreateNote, canCreateEntity, canCreateHabit, canUploadVault, refresh, getLimitMessage };
+  return { usage, loading, canCreateNote, canCreateEntity, canCreateHabit, canUploadVault, refresh, applyUsageDelta, getLimitMessage };
 }

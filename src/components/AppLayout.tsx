@@ -16,6 +16,7 @@ import {
   X,
   Loader2,
   GitGraph,
+  Settings,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/graph", icon: GitGraph, label: "Grafo" },
   { to: "/vault", icon: HardDrive, label: "Vault" },
   { to: "/subscription", icon: CreditCard, label: "Assinatura" },
+  { to: "/profile", icon: Settings, label: "Perfil" },
 ];
 
 interface SearchResult {
@@ -56,7 +58,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     setSearching(true);
     try {
       const { data } = await searchApi.search(q);
-      setSearchResults(data.slice(0, 8));
+      setSearchResults(Array.isArray(data) ? data.slice(0, 8) : []);
     } catch { setSearchResults([]); }
     finally { setSearching(false); }
   };

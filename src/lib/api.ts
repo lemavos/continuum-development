@@ -61,6 +61,7 @@ export const authApi = {
     return api.post("/api/auth/logout", { refreshToken });
   },
   me: () => api.get("/api/account/me"),
+  updateMe: (data: Record<string, string>) => api.patch("/api/account/me", data),
   forgotPassword: (email: string) =>
     api.post("/api/account/password/forgot", { email }),
   resetPassword: (token: string, password: string) =>

@@ -6,59 +6,58 @@
 
 @layer base {
   :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 96%;
+    --background: 210 25% 98%;
+    --foreground: 222 27% 11%;
 
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 96%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 27% 11%;
 
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 27% 11%;
 
     --primary: 174 100% 41%;
-    --primary-foreground: 0 0% 0%;
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 85%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 27% 14%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 50%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 220 10% 42%;
 
-    --accent: 0 0% 8%;
-    --accent-foreground: 0 0% 90%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 222 27% 14%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
     --ring: 174 100% 41%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 0 0% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 10% 42%;
     --sidebar-primary: 174 100% 41%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 10%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 222 27% 14%;
+    --sidebar-border: 220 15% 88%;
     --sidebar-ring: 174 100% 41%;
 
     --success: 174 100% 41%;
-    --success-foreground: 0 0% 0%;
+    --success-foreground: 0 0% 4%;
     --warning: 45 100% 60%;
-    --warning-foreground: 0 0% 0%;
+    --warning-foreground: 0 0% 4%;
     --info: 174 100% 41%;
-    --info-foreground: 0 0% 0%;
+    --info-foreground: 0 0% 4%;
 
-    --bento-dot: rgba(255,255,255,0.02);
-    --bento-border: rgba(255,255,255,0.06);
-    --bento-hover-shadow: 0 0 30px rgba(0,209,193,0.05);
-    --bento-gradient-via: rgba(0,209,193,0.03);
+    --bento-dot: 220 18% 18% / 0.04;
+    --bento-border: 220 15% 88% / 1;
+    --bento-hover-shadow: 174 100% 41% / 0.08;
+    --bento-gradient-via: 174 100% 41% / 0.05;
   }
 
-  /* Force dark always — no .dark class needed */
   .dark {
     --background: 0 0% 0%;
     --foreground: 0 0% 96%;
@@ -93,10 +92,10 @@
     --warning-foreground: 0 0% 0%;
     --info: 174 100% 41%;
     --info-foreground: 0 0% 0%;
-    --bento-dot: rgba(255,255,255,0.02);
-    --bento-border: rgba(255,255,255,0.06);
-    --bento-hover-shadow: 0 0 30px rgba(0,209,193,0.05);
-    --bento-gradient-via: rgba(0,209,193,0.03);
+    --bento-dot: 0 0% 100% / 0.02;
+    --bento-border: 0 0% 100% / 0.06;
+    --bento-hover-shadow: 174 100% 41% / 0.08;
+    --bento-gradient-via: 174 100% 41% / 0.03;
   }
 }
 
@@ -110,8 +109,11 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Force dark mode on html */
   html {
+    color-scheme: light;
+  }
+
+  html.dark {
     color-scheme: dark;
   }
 }
@@ -123,52 +125,111 @@
 
   .bento-card {
     @apply relative p-4 rounded-lg overflow-hidden transition-all duration-300;
-    background: hsl(0 0% 5%);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--card)));
+    border: 1px solid hsl(var(--bento-border));
   }
 
   .bento-card:hover {
-    border-color: rgba(255,255,255,0.1);
-    box-shadow: var(--bento-hover-shadow);
+    border-color: hsl(var(--primary) / 0.24);
+    box-shadow: 0 0 30px hsl(var(--bento-hover-shadow));
   }
 
   .bento-card .bento-pattern {
-    background: radial-gradient(circle at center, var(--bento-dot) 1px, transparent 1px);
+    background: radial-gradient(circle at center, hsl(var(--bento-dot)) 1px, transparent 1px);
     background-size: 4px 4px;
   }
 
   .bento-tag {
-    @apply px-2 py-1 rounded text-xs transition-all duration-200;
-    background: rgba(255,255,255,0.04);
-    color: hsl(0 0% 50%);
+    @apply px-2 py-1 rounded text-xs transition-all duration-200 border;
+    background: hsl(var(--accent));
+    color: hsl(var(--muted-foreground));
+    border-color: hsl(var(--border));
   }
 
   .bento-tag:hover {
-    background: rgba(255,255,255,0.08);
+    background: hsl(var(--accent) / 0.85);
   }
 
   .bento-icon-box {
     @apply w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300;
-    background: rgba(0,209,193,0.08);
+    background: hsl(var(--primary) / 0.1);
   }
 
   .bento-status {
     @apply text-xs font-medium px-2 py-1 rounded transition-colors duration-300;
-    background: rgba(255,255,255,0.04);
-    color: hsl(0 0% 50%);
+    background: hsl(var(--accent));
+    color: hsl(var(--muted-foreground));
   }
 
-  /* Glow effects */
   .glow-primary {
-    box-shadow: 0 0 20px rgba(0,209,193,0.15), 0 0 60px rgba(0,209,193,0.05);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.15), 0 0 60px hsl(var(--primary) / 0.05);
   }
 
   .text-glow {
-    text-shadow: 0 0 20px rgba(0,209,193,0.3);
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
 
-  /* Subtle line separators */
   .line-subtle {
-    border-color: rgba(255,255,255,0.06);
+    border-color: hsl(var(--border));
+  }
+
+  .markdown-content {
+    @apply min-h-[60vh] max-w-none space-y-4 text-sm leading-7 text-foreground;
+  }
+
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3 {
+    @apply font-display tracking-tight text-foreground;
+  }
+
+  .markdown-content h1 {
+    @apply text-3xl;
+  }
+
+  .markdown-content h2 {
+    @apply text-2xl;
+  }
+
+  .markdown-content h3 {
+    @apply text-xl;
+  }
+
+  .markdown-content p,
+  .markdown-content li,
+  .markdown-content blockquote {
+    @apply text-foreground/90;
+  }
+
+  .markdown-content ul {
+    @apply list-disc pl-5 space-y-1;
+  }
+
+  .markdown-content ol {
+    @apply list-decimal pl-5 space-y-1;
+  }
+
+  .markdown-content blockquote {
+    @apply border-l-2 border-primary/30 pl-4 italic text-muted-foreground;
+  }
+
+  .markdown-content a {
+    @apply text-primary underline underline-offset-4;
+  }
+
+  .markdown-content hr {
+    @apply border-border;
+  }
+
+  .markdown-content pre {
+    @apply overflow-x-auto rounded-xl border border-border bg-accent p-4;
+  }
+
+  .markdown-content code {
+    @apply rounded bg-accent px-1.5 py-0.5 text-xs text-foreground;
+  }
+
+  .markdown-content pre code {
+    @apply bg-transparent p-0 text-xs;
   }
 }

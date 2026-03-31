@@ -22,14 +22,14 @@ export default function Notes() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { canCreateNote, getLimitMessage, refresh } = usePlanGate();
+  const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [notesRes, foldersRes] = await Promise.all([notesApi.list(), foldersApi.list()]);
-      setNotes(notesRes.data);
-      setFolders(foldersRes.data);
+      setNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
+      setFolders(Array.isArray(foldersRes.data) ? foldersRes.data : []);
     } catch { toast({ title: "Erro ao carregar notas", variant: "destructive" }); }
     finally { setLoading(false); }
   };
@@ -40,7 +40,8 @@ export default function Notes() {
     if (!canCreateNote) { setUpgradeOpen(true); return; }
     try {
       const { data } = await notesApi.create("Nova Nota", "", selectedFolder || undefined);
-      await refresh();
+      applyUsageDelta({ notesCount: 1 });
+      void refresh();
       navigate(`/notes/${data.id}`);
     } catch (err: any) {
       if (err.response?.status === 403) setUpgradeOpen(true);
@@ -50,7 +51,7 @@ export default function Notes() {
 
   const handleDeleteNote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    try { await notesApi.delete(id); setNotes((prev) => prev.filter((n) => n.id !== id)); await refresh(); }
+    try { await notesApi.delete(id); setNotes((prev) => prev.filter((n) => n.id !== id)); applyUsageDelta({ notesCount: -1 }); void refresh(); }
     catch { toast({ title: "Erro ao deletar", variant: "destructive" }); }
   };
 

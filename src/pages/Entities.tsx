@@ -28,7 +28,7 @@ export default function Entities() {
   const typeFilter = searchParams.get("type");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { canCreateEntity, canCreateHabit, getLimitMessage, refresh: refreshUsage } = usePlanGate();
+  const { canCreateEntity, canCreateHabit, getLimitMessage, refresh: refreshUsage, applyUsageDelta } = usePlanGate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -57,7 +57,8 @@ export default function Entities() {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
       setEntities((prev) => [...prev, data]);
       setCreateOpen(false); setNewTitle(""); setNewDesc("");
-      await refreshUsage();
+      applyUsageDelta({ entitiesCount: 1, habitsCount: newType === "HABIT" ? 1 : 0 });
+      void refreshUsage();
     } catch (err: any) {
       if (err.response?.status === 403) { setCreateOpen(false); setUpgradeOpen(true); }
       else toast({ title: "Erro", description: err.response?.data?.message || "Limite atingido?", variant: "destructive" });
@@ -72,7 +73,13 @@ export default function Entities() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    try { await entitiesApi.delete(id); setEntities((prev) => prev.filter((en) => en.id !== id)); await refreshUsage(); }
+    try {
+      const entity = entities.find((item) => item.id === id);
+      await entitiesApi.delete(id);
+      setEntities((prev) => prev.filter((en) => en.id !== id));
+      applyUsageDelta({ entitiesCount: -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
+      void refreshUsage();
+    }
     catch { toast({ title: "Erro ao deletar", variant: "destructive" }); }
   };
 

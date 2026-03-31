@@ -30,7 +30,7 @@ export default function Vault() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { canUploadVault, usage, getLimitMessage, refresh } = usePlanGate();
+  const { canUploadVault, usage, refresh, applyUsageDelta } = usePlanGate();
   const { user } = useAuth();
   const plan: Plan = (user?.plan as Plan) || "FREE";
   const limits = PLAN_LIMITS[plan];
@@ -54,14 +54,22 @@ export default function Vault() {
     setUploading(true); setUploadProgress(0);
     try {
       await vaultApi.upload(file, (pct) => setUploadProgress(pct));
+      applyUsageDelta({ vaultSizeMB: fileSizeMB });
       toast({ title: "Arquivo enviado!" });
-      await Promise.all([fetchFiles(), refresh()]);
+      await fetchFiles();
+      void refresh();
     } catch (err: any) { toast({ title: "Erro no upload", description: err.response?.data?.message || "Tente novamente", variant: "destructive" }); }
     finally { setUploading(false); setUploadProgress(0); if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
 
   const handleDelete = async (fileId: string) => {
-    try { await vaultApi.delete(fileId); setFiles((prev) => prev.filter((f) => f.id !== fileId)); await refresh(); }
+    try {
+      const target = files.find((file) => file.id === fileId);
+      await vaultApi.delete(fileId);
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      applyUsageDelta({ vaultSizeMB: target ? -(target.size / (1024 * 1024)) : 0 });
+      void refresh();
+    }
     catch { toast({ title: "Erro ao deletar", variant: "destructive" }); }
   };
 

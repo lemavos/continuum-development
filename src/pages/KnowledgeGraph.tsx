@@ -30,6 +30,7 @@ export default function KnowledgeGraph() {
   const [loading, setLoading] = useState(true);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [graphStats, setGraphStats] = useState({ nodes: 0, edges: 0 });
 
   const nodesRef = useRef<GraphNode[]>([]);
   const edgesRef = useRef<GraphEdge[]>([]);
@@ -47,8 +48,9 @@ export default function KnowledgeGraph() {
 
   const findNodeAt = useCallback((sx: number, sy: number) => {
     const w = screenToWorld(sx, sy); const z = zoomRef.current;
-    for (let i = nodesRef.current.length - 1; i >= 0; i--) {
-      const n = nodesRef.current[i]; const r = (TYPE_RADIUS[n.type] || 6) / z + 4;
+    const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i]; const r = (TYPE_RADIUS[n.type] || 6) / z + 4;
       const dx = n.x - w.x; const dy = n.y - w.y;
       if (dx * dx + dy * dy < r * r * z * z) return n;
     }
@@ -56,7 +58,8 @@ export default function KnowledgeGraph() {
   }, [screenToWorld]);
 
   const simulate = useCallback(() => {
-    const nodes = nodesRef.current; const edges = edgesRef.current;
+    const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
+    const edges = Array.isArray(edgesRef.current) ? edgesRef.current : [];
     const alpha = 0.3; const repulsion = 800; const attraction = 0.005; const idealLen = 120; const damping = 0.85; const centerForce = 0.01;
     for (const n of nodes) { n.vx -= n.x * centerForce; n.vy -= n.y * centerForce; }
     for (let i = 0; i < nodes.length; i++) {
@@ -93,7 +96,8 @@ export default function KnowledgeGraph() {
     canvas.width = w * dpr; canvas.height = h * dpr; ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
     ctx.save(); ctx.translate(panRef.current.x, panRef.current.y); ctx.scale(zoomRef.current, zoomRef.current);
-    const nodes = nodesRef.current; const edges = edgesRef.current;
+    const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
+    const edges = Array.isArray(edgesRef.current) ? edgesRef.current : [];
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
     ctx.strokeStyle = "rgba(0,209,193,0.08)"; ctx.lineWidth = 1 / zoomRef.current;
@@ -124,9 +128,15 @@ export default function KnowledgeGraph() {
   useEffect(() => {
     graphApi.data().then(({ data }: { data: GraphData }) => {
       const canvas = canvasRef.current; const cw = canvas?.clientWidth || 800; const ch = canvas?.clientHeight || 600;
-      nodesRef.current = data.nodes.map((n) => ({ ...n, type: n.type as GraphNode["type"], x: cw / 2 + (Math.random() - 0.5) * 300, y: ch / 2 + (Math.random() - 0.5) * 300, vx: 0, vy: 0 }));
-      edgesRef.current = data.edges; panRef.current = { x: cw / 2, y: ch / 2 }; zoomRef.current = 1; setLoading(false);
-    }).catch(() => { toast({ title: "Erro ao carregar grafo", variant: "destructive" }); setLoading(false); });
+      const nextNodes = Array.isArray(data?.nodes)
+        ? data.nodes.map((n) => ({ ...n, type: n.type as GraphNode["type"], x: cw / 2 + (Math.random() - 0.5) * 300, y: ch / 2 + (Math.random() - 0.5) * 300, vx: 0, vy: 0 }))
+        : [];
+      const nextEdges = Array.isArray(data?.edges) ? data.edges : [];
+      nodesRef.current = nextNodes;
+      edgesRef.current = nextEdges;
+      setGraphStats({ nodes: nextNodes.length, edges: nextEdges.length });
+      panRef.current = { x: cw / 2, y: ch / 2 }; zoomRef.current = 1; setLoading(false);
+    }).catch(() => { setGraphStats({ nodes: 0, edges: 0 }); toast({ title: "Erro ao carregar grafo", variant: "destructive" }); setLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -178,7 +188,7 @@ export default function KnowledgeGraph() {
         <div className="p-4 lg:p-6 flex items-center justify-between border-b border-border/50 shrink-0">
           <div>
             <h1 className="font-display text-xl lg:text-2xl font-semibold tracking-tight text-foreground">Grafo de Conhecimento</h1>
-            <p className="text-xs text-muted-foreground">{nodesRef.current.length} nós · {edgesRef.current.length} conexões</p>
+            <p className="text-xs text-muted-foreground">{graphStats.nodes} nós · {graphStats.edges} conexões</p>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleZoom(1)}><ZoomIn className="w-4 h-4" /></Button>

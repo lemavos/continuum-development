@@ -8,6 +8,7 @@ interface User {
   email: string;
   plan: Plan;
   emailVerified: boolean;
+  createdAt?: string;
 }
 
 interface AuthContextType {
@@ -29,7 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       const { data } = await authApi.me();
-      setUser(data);
+      setUser({
+        ...data,
+        username: data.username ?? data.name ?? "",
+        createdAt: data.createdAt,
+      });
     } catch {
       setUser(null);
     } finally {
@@ -57,10 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Use user data directly from login response
     setUser({
       id: data.userId,
-      username: data.username,
+      username: data.username ?? data.name ?? "",
       email: data.email,
       plan: data.plan || "FREE",
       emailVerified: data.emailVerified ?? true,
+      createdAt: data.createdAt,
     });
   };
 
