@@ -27,7 +27,7 @@ export function usePlanGate(): PlanGateResult {
     isUnlimited(limits.maxNotes) || usage.notesCount < limits.maxNotes;
 
   const canCreateEntity = !usage ? true :
-    isUnlimited(limits.maxEntities) || usage.entitiesCount < limits.maxEntities;
+    isUnlimited(limits.maxEntities) || (usage.entitiesCount - usage.habitsCount) < limits.maxEntities;
 
   const canCreateHabit = !usage ? true :
     isUnlimited(limits.maxHabits) || usage.habitsCount < limits.maxHabits;
@@ -41,7 +41,7 @@ export function usePlanGate(): PlanGateResult {
   const getLimitMessage = (resource: "notes" | "entities" | "habits" | "vault") => {
     const map = {
       notes: { current: usage?.notesCount ?? 0, max: limits.maxNotes, label: "notas" },
-      entities: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "entidades" },
+      entities: { current: (usage?.entitiesCount ?? 0) - (usage?.habitsCount ?? 0), max: limits.maxEntities, label: "entidades" },
       habits: { current: usage?.habitsCount ?? 0, max: limits.maxHabits, label: "hábitos" },
       vault: { current: usage?.vaultSizeMB ?? 0, max: limits.maxVaultSizeMB, label: "MB de armazenamento" },
     };

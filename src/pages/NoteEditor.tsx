@@ -5,7 +5,8 @@ import { entitiesApi, notesApi } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Loader2, Eye, Edit3, Check, AtSign } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Save, Loader2, Eye, Edit3, Check, AtSign, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -24,6 +25,7 @@ export default function NoteEditor() {
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [entities, setEntities] = useState<MentionEntity[]>([]);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -43,17 +45,34 @@ export default function NoteEditor() {
     .finally(() => setLoading(false));
   }, [id, navigate, toast]);
 
+  const extractEntityIds = useCallback((text: string): string[] => {
+    const matches = text.match(/\[@[^\]]+\]\(\/entities\/([^\)]+)\)/g) || [];
+    return matches.map(match => {
+      const idMatch = match.match(/\/entities\/([^)]+)/);
+      return idMatch ? idMatch[1] : "";
+    }).filter(Boolean);
+  }, []);
+
   const doSave = useCallback(async (t: string, c: string) => {
     if (!id || (t === lastSaved.current.title && c === lastSaved.current.content)) return;
     setSaving(true);
-    try { await notesApi.update(id, { title: t, content: c }); lastSaved.current = { title: t, content: c }; setAutoSaved(true); setTimeout(() => setAutoSaved(false), 2000); }
+    try {
+      const entityIds = extractEntityIds(c);
+      await notesApi.update(id, { title: t, content: c, entityIds });
+      lastSaved.current = { title: t, content: c };
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 2000);
+      // Update local note
+      setNote(prev => prev ? { ...prev, entityIds } : null);
+    }
     catch {} finally { setSaving(false); }
-  }, [id]);
+  }, [id, extractEntityIds]);
 
   const scheduleAutoSave = useCallback((t: string, c: string) => {
+    if (!autoSaveEnabled) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => doSave(t, c), 1500);
-  }, [doSave]);
+  }, [doSave, autoSaveEnabled]);
 
   const handleTitleChange = (val: string) => { setTitle(val); scheduleAutoSave(val, content); };
 
@@ -120,7 +139,13 @@ export default function NoteEditor() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     if (!id) return;
     setSaving(true);
-    try { await notesApi.update(id, { title, content }); lastSaved.current = { title, content }; toast({ title: "Nota salva!" }); }
+    try {
+      const entityIds = extractEntityIds(content);
+      await notesApi.update(id, { title, content, entityIds });
+      lastSaved.current = { title, content };
+      setNote(prev => prev ? { ...prev, entityIds } : null);
+      toast({ title: "Nota salva!" });
+    }
     catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
     finally { setSaving(false); }
   };
@@ -141,6 +166,24 @@ export default function NoteEditor() {
           <div className="flex items-center gap-2">
             {autoSaved && <span className="text-xs text-primary flex items-center gap-1"><Check className="w-3 h-3" /> Salvo</span>}
             {saving && <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Salvando...</span>}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configurações da Nota</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="autosave">Salvamento automático</Label>
+                    <Switch id="autosave" checked={autoSaveEnabled} onCheckedChange={setAutoSaveEnabled} />
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="ghost" size="sm" onClick={() => setPreview(!preview)} className="text-muted-foreground">
               {preview ? <Edit3 className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
               {preview ? "Editar" : "Preview"}
@@ -170,6 +213,10 @@ export default function NoteEditor() {
 
                   return <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{children}</a>;
                 },
+                p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="mb-4 last:mb-0 pl-6 list-disc">{children}</ul>,
+                ol: ({ children }) => <ol className="mb-4 last:mb-0 pl-6 list-decimal">{children}</ol>,
+                li: ({ children }) => <li className="mb-1">{children}</li>,
               }}
             >
               {content || "*Nenhum conteúdo ainda...*"}

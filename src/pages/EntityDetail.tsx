@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Flame, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Flame, CheckCircle, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { HeatmapData, EntityStats } from "@/types";
@@ -18,6 +18,8 @@ export default function EntityDetail() {
   const [heatmap, setHeatmap] = useState<HeatmapData>({});
   const [stats, setStats] = useState<EntityStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -35,10 +37,21 @@ export default function EntityDetail() {
     try {
       const { data } = await entitiesApi.track(id);
       setEntity(data);
-      const [sRes] = await Promise.all([entitiesApi.stats(id)]);
+      const [sRes, hRes] = await Promise.all([entitiesApi.stats(id), entitiesApi.heatmap(id)]);
       setStats(sRes.data);
+      setHeatmap(hRes.data && typeof hRes.data === 'object' ? hRes.data : {});
       toast({ title: "Registrado! 🔥" });
     } catch { toast({ title: "Erro", variant: "destructive" }); }
+  };
+
+  const handleSaveTitle = async () => {
+    if (!id || !newTitle.trim()) return;
+    try {
+      const { data } = await entitiesApi.update(id, { title: newTitle.trim() });
+      setEntity(data);
+      setEditingTitle(false);
+      toast({ title: "Nome atualizado!" });
+    } catch { toast({ title: "Erro ao atualizar", variant: "destructive" }); }
   };
 
   const getLast90Days = () => {
@@ -72,7 +85,20 @@ export default function EntityDetail() {
         </Button>
 
         <div className="space-y-3">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">{entity.title}</h1>
+          {editingTitle ? (
+            <div className="flex gap-2">
+              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Novo nome..." className="flex-1" />
+              <Button size="sm" onClick={handleSaveTitle}>Salvar</Button>
+              <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity?.title || ""); }}>Cancelar</Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">{entity.title}</h1>
+              <Button variant="ghost" size="sm" onClick={() => { setEditingTitle(true); setNewTitle(entity?.title || ""); }}>
+                <Edit className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
           <div className="flex gap-2">
             <span className="bento-tag">{entity.type}</span>
             {isHabit && <span className="bento-tag flex items-center gap-1 text-primary"><Flame className="w-3 h-3" /> Streak: {streak} dias</span>}

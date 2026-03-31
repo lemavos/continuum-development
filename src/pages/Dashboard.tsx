@@ -107,7 +107,7 @@ export default function Dashboard() {
             Olá, {user?.username || "Usuário"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Aqui está o resumo da sua atividadee
+            Aqui está o resumo da sua atividade
           </p>
         </div>
 

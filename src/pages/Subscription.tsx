@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PLAN_LIMITS, type Plan } from "@/types";
 import { Loader2, Crown, Zap, Rocket, Gem, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { loadStripe } from "@stripe/stripe-js";
 
 const planMeta: Record<string, { icon: any; color: string }> = {
   FREE: { icon: Crown, color: "text-muted-foreground" },
@@ -14,6 +15,8 @@ const planMeta: Record<string, { icon: any; color: string }> = {
   PRO: { icon: Rocket, color: "text-warning" },
   GOLD: { icon: Gem, color: "text-warning" },
 };
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface SubInfo { plan: string; status: string; currentPeriodEnd?: string; }
 
@@ -28,9 +31,21 @@ export default function Subscription() {
 
   const handleCheckout = async (planId: string) => {
     setCheckoutLoading(planId);
-    try { const { data } = await subscriptionApi.createSession(planId); if (data.checkoutUrl) window.location.href = data.checkoutUrl; }
-    catch (err: any) { toast({ title: "Erro", description: err.response?.data?.message || "Tente novamente", variant: "destructive" }); }
-    finally { setCheckoutLoading(null); }
+    try {
+      const { data } = await subscriptionApi.createSession(planId);
+      if (data.checkoutUrl) {
+        const stripe = await stripePromise;
+        if (stripe) {
+          window.location.href = data.checkoutUrl; // Fallback
+        } else {
+          window.location.href = data.checkoutUrl;
+        }
+      }
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.response?.data?.message || "Tente novamente", variant: "destructive" });
+    } finally {
+      setCheckoutLoading(null);
+    }
   };
 
   const handleCancel = async () => {

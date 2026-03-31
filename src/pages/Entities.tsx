@@ -57,7 +57,7 @@ export default function Entities() {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
       setEntities((prev) => [...prev, data]);
       setCreateOpen(false); setNewTitle(""); setNewDesc("");
-      applyUsageDelta({ entitiesCount: 1, habitsCount: newType === "HABIT" ? 1 : 0 });
+      applyUsageDelta({ entitiesCount: newType === "HABIT" ? 0 : 1, habitsCount: newType === "HABIT" ? 1 : 0 });
       void refreshUsage();
     } catch (err: any) {
       if (err.response?.status === 403) { setCreateOpen(false); setUpgradeOpen(true); }
@@ -77,7 +77,7 @@ export default function Entities() {
       const entity = entities.find((item) => item.id === id);
       await entitiesApi.delete(id);
       setEntities((prev) => prev.filter((en) => en.id !== id));
-      applyUsageDelta({ entitiesCount: -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
+      applyUsageDelta({ entitiesCount: entity?.type === "HABIT" ? 0 : -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
       void refreshUsage();
     }
     catch { toast({ title: "Erro ao deletar", variant: "destructive" }); }
