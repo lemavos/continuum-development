@@ -18,8 +18,14 @@ export default function UpgradeModal({ open, onOpenChange, reason }: UpgradeModa
 
   const handleCheckout = async (planId: string) => {
     setLoadingPlan(planId);
-    try { const { data } = await subscriptionApi.createSession(planId); if (data.checkoutUrl) window.location.href = data.checkoutUrl; }
-    catch { setLoadingPlan(null); }
+    try {
+      const { data } = await subscriptionApi.checkout(planId);
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setLoadingPlan(null);
+    }
   };
 
   return (

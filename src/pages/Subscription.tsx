@@ -32,14 +32,9 @@ export default function Subscription() {
   const handleCheckout = async (planId: string) => {
     setCheckoutLoading(planId);
     try {
-      const { data } = await subscriptionApi.createSession(planId);
-      if (data.checkoutUrl) {
-        const stripe = await stripePromise;
-        if (stripe) {
-          window.location.href = data.checkoutUrl; // Fallback
-        } else {
-          window.location.href = data.checkoutUrl;
-        }
+      const { data } = await subscriptionApi.checkout(planId);
+      if (data.url) {
+        window.location.href = data.url;
       }
     } catch (err: any) {
       toast({ title: "Erro", description: err.response?.data?.message || "Tente novamente", variant: "destructive" });

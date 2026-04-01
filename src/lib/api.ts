@@ -60,22 +60,32 @@ export const authApi = {
     const refreshToken = localStorage.getItem("refresh_token");
     return api.post("/api/auth/logout", { refreshToken });
   },
-  me: () => api.get("/api/account/me"),
+  me: () => api.get("/api/auth/me"),
   updateMe: (data: Record<string, string>) => api.patch("/api/account/me", data),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post("/api/account/password/change", { currentPassword, newPassword }),
   forgotPassword: (email: string) =>
     api.post("/api/account/password/forgot", { email }),
   resetPassword: (token: string, password: string) =>
     api.post("/api/account/password/reset", { token, password }),
+  verifyEmail: (token: string) =>
+    api.get("/api/auth/verify-email", { params: { token } }),
+  resendVerification: (email: string) =>
+    api.post("/api/auth/resend-verification", { email }),
+  exportData: () => api.get("/api/account/export"),
 };
 
 // Notes
 export const notesApi = {
   list: () => api.get("/api/notes"),
   get: (id: string) => api.get(`/api/notes/${id}`),
-  create: (title: string, content: string, folderId?: string) =>
-    api.post("/api/notes", { title, content, folderId }),
-  update: (id: string, data: { title?: string; content?: string; folderId?: string }) =>
-    api.put(`/api/notes/${id}`, data),
+  create: (title: string, content: string, folderId?: string, relatedEntityIds?: string[]) =>
+    api.post("/api/notes", { title, content, folderId, relatedEntityIds: relatedEntityIds || [] }),
+  update: (id: string, data: { title?: string; content?: string; folderId?: string; entityIds?: string[] }) =>
+    api.put(`/api/notes/${id}`, { 
+      ...data,
+      relatedEntityIds: data.entityIds || [],
+    }),
   delete: (id: string) => api.delete(`/api/notes/${id}`),
 };
 
@@ -100,7 +110,8 @@ export const entitiesApi = {
   delete: (id: string) => api.delete(`/api/entities/${id}`),
   getNotes: (id: string) => api.get(`/api/entities/${id}/notes`),
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
-  track: (entityId: string, data?: { date?: string }) =>
+  getContext: (id: string) => api.get(`/api/entities/${id}/context`),
+  track: (entityId: string, data?: { date?: string; value?: number; decimalValue?: number; note?: string }) =>
     api.post(`/api/entities/${entityId}/track`, data || {}),
   untrack: (entityId: string, date: string) =>
     api.delete(`/api/entities/${entityId}/track`, { params: { date } }),
@@ -134,7 +145,6 @@ export const trackingApi = {
 export const subscriptionApi = {
   me: () => api.get("/api/subscriptions/me"),
   checkout: (planId: string) => api.post("/api/subscriptions/checkout", { planId }),
-  createSession: (planId: string) => api.post("/api/subscriptions/create-session", { planId }),
   cancel: () => api.post("/api/subscriptions/cancel"),
 };
 
@@ -146,27 +156,7 @@ export const plansApi = {
 // Vault
 export const vaultApi = {
   list: () => api.get("/api/vault/files"),
-  upload: (file: File, onProgress?: (pct: number) => void) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return api.post("/api/vault/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) {
-          onProgress(Math.round((e.loaded * 100) / e.total));
-        }
-      },
-    });
-  },
-  delete: (fileId: string) => api.delete(`/api/vault/files/${fileId}`),
-  download: (fileId: string) =>
-    api.get(`/api/vault/files/${fileId}/download`, { responseType: "blob" }),
-  usage: () => api.get("/api/vault/usage"),
-};
-
-// Usage (for plan gate checks)
-export const usageApi = {
-  get: () => api.get("/api/usage"),
+  entityIndex: () => api.get("/api/vault/entity-index"),
 };
 
 export default api;

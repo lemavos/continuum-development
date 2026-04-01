@@ -12,14 +12,31 @@ import { ArrowLeft, Save, Loader2, Eye, Edit3, Check, AtSign, Settings } from "l
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { EntityMentionSelector } from "@/components/EntityMentionSelector";
+import { SideInspector } from "@/components/SideInspector";
+import { MentionBadge } from "@/components/MentionBadge";
+import { useEntityStore } from "@/contexts/EntityContext";
+import type { Entity } from "@/types";
 
 interface NoteData { id: string; title: string; content: string; folderId?: string; entityIds: string[]; createdAt: string; updatedAt: string; }
-interface MentionEntity { id: string; title: string; type: string; }
 
 export default function NoteEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Zustand store
+  const { 
+    activeMention, 
+    setActiveMention, 
+    inspectorOpen, 
+    inspectorEntity, 
+    openInspector, 
+    closeInspector,
+    entitiesInNote,
+    setEntitiesInNote,
+  } = useEntityStore();
+  
   const [note, setNote] = useState<NoteData | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -28,7 +45,7 @@ export default function NoteEditor() {
   const [preview, setPreview] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [entities, setEntities] = useState<MentionEntity[]>([]);
+  const [entities, setEntities] = useState<Entity[]>([]);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionRange, setMentionRange] = useState<{ start: number; end: number } | null>(null);
@@ -40,12 +57,24 @@ export default function NoteEditor() {
     if (!id) return;
     Promise.all([notesApi.get(id), entitiesApi.list()]).then(([noteRes, entitiesRes]) => {
       const data = noteRes.data;
-      setNote(data); setTitle(data.title); setContent(data.content || "");
-      setEntities(Array.isArray(entitiesRes.data) ? entitiesRes.data : []);
+      const allEntities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
+      setNote(data); 
+      setTitle(data.title); 
+      setContent(data.content || "");
+      setEntities(allEntities);
+      
+      // Sync Zustand store with linked entities
+      if (data.entityIds?.length) {
+        const linkedEntities = data.entityIds
+          .map((entityId: string) => allEntities.find(e => e.id === entityId))
+          .filter((e): e is Entity => e !== undefined);
+        setEntitiesInNote(linkedEntities);
+      }
+      
       lastSaved.current = { title: data.title, content: data.content || "" };
     }).catch(() => { toast({ title: "Nota não encontrada", variant: "destructive" }); navigate("/notes"); })
     .finally(() => setLoading(false));
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, setEntitiesInNote]);
 
   const extractEntityIds = useCallback((text: string): string[] => {
     const matches = text.match(/\[@[^\]]+\]\(\/entities\/([^\)]+)\)/g) || [];
@@ -112,13 +141,10 @@ export default function NoteEditor() {
   }, [entities, mentionOpen, mentionQuery]);
 
   const linkedEntities = useMemo(() => {
-    if (!note?.entityIds?.length) return [];
+    return entitiesInNote;
+  }, [entitiesInNote]);
 
-    const labels = new Map(entities.map((entity) => [entity.id, entity]));
-    return note.entityIds.map((entityId) => labels.get(entityId) ?? { id: entityId, title: entityId, type: "ENTITY" });
-  }, [note?.entityIds, entities]);
-
-  const insertMention = (entity: MentionEntity) => {
+  const insertMention = (entity: Entity) => {
     if (!mentionRange) return;
 
     const nextMention = `[@${entity.title}](/entities/${entity.id}) `;
@@ -130,6 +156,14 @@ export default function NoteEditor() {
     setMentionOpen(false);
     setMentionQuery("");
     setMentionRange(null);
+    
+    // Update Zustand store and open inspector
+    setActiveMention({
+      id: entity.id,
+      title: entity.title,
+      type: entity.type,
+    });
+    openInspector(entity);
 
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
@@ -240,39 +274,41 @@ export default function NoteEditor() {
               className="min-h-[60vh] border-0 px-0 focus-visible:ring-0 bg-transparent resize-none text-sm leading-relaxed font-mono text-foreground/80"
             />
 
-            {mentionOpen && filteredMentions.length > 0 && (
-              <div className="absolute left-0 top-10 z-20 w-full max-w-sm overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
-                {filteredMentions.map((entity) => (
-                  <button
-                    key={entity.id}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      insertMention(entity);
-                    }}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-accent"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">@{entity.title}</p>
-                      <p className="text-xs text-muted-foreground">{entity.type}</p>
-                    </div>
-                    <span className="text-[11px] uppercase tracking-[0.16em] text-primary">Inserir</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* New EntityMentionSelector Component */}
+            <EntityMentionSelector
+              isOpen={mentionOpen}
+              query={mentionQuery}
+              entities={entities}
+              onEntitySelect={insertMention}
+              onQueryChange={setMentionQuery}
+            />
           </div>
         )}
 
         {linkedEntities.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs text-muted-foreground font-medium">Entidades mencionadas:</span>
             {linkedEntities.map((entity) => (
-              <Link key={entity.id} to={`/entities/${entity.id}`} className="bento-tag text-xs">
-                @{entity.title}
-              </Link>
+              <button
+                key={entity.id}
+                onClick={() => openInspector(entity)}
+                className="hover:z-40 transition-all"
+              >
+                <MentionBadge
+                  title={entity.title}
+                  type={entity.type}
+                />
+              </button>
             ))}
           </div>
         )}
+
+        {/* SideInspector Component */}
+        <SideInspector
+          isOpen={inspectorOpen}
+          entity={inspectorEntity}
+          onClose={closeInspector}
+        />
       </div>
     </AppLayout>
   );

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
+import { EntityProvider } from "@/contexts/EntityContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -76,7 +77,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <UsageProvider>
-            <AppRoutes />
+            <EntityProvider>
+              <AppRoutes />
+            </EntityProvider>
           </UsageProvider>
         </AuthProvider>
       </BrowserRouter>

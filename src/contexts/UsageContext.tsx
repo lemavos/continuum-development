@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { entitiesApi, notesApi, usageApi, vaultApi } from "@/lib/api";
+import { entitiesApi, notesApi, vaultApi } from "@/lib/api";
 import type { EntityType, UserUsage } from "@/types";
 
 export type UsageDelta = Partial<Record<keyof UserUsage, number>>;
@@ -82,11 +82,10 @@ export function UsageProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      const { data } = await usageApi.get();
-      setUsage(normalizeUsage(data));
-    } catch {
-      const fallbackUsage = await buildFallbackUsage().catch(() => EMPTY_USAGE);
+      const fallbackUsage = await buildFallbackUsage();
       setUsage(fallbackUsage);
+    } catch {
+      setUsage(EMPTY_USAGE);
     } finally {
       setLoading(false);
     }
