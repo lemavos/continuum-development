@@ -348,6 +348,15 @@ export default function KnowledgeGraph() {
     const entity = allEntities.find(e => e.id === node.id);
     if (entity) {
       openInspector(entity);
+    } else {
+      // For NOTE nodes or unmatched nodes, create a synthetic entity for the inspector
+      openInspector({
+        id: node.id,
+        title: node.label,
+        type: node.type as any,
+        createdAt: new Date().toISOString(),
+        ownerId: "",
+      });
     }
   }, [allEntities, openInspector]);
 

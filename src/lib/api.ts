@@ -7,10 +7,11 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor: attach JWT (skip auth endpoints)
+// Interceptor: attach JWT (skip only login/register/refresh)
 api.interceptors.request.use((config) => {
-  const isAuthRoute = config.url?.startsWith("/api/auth/");
-  if (!isAuthRoute) {
+  const noAuthRoutes = ["/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/google/callback"];
+  const skipAuth = noAuthRoutes.some((r) => config.url?.startsWith(r));
+  if (!skipAuth) {
     const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
