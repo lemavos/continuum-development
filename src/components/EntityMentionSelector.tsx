@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useEffect } from 'react';
+import { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +40,6 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
   isLoading = false,
 }: EntityMentionSelectorProps) {
   const { setActiveMention, addEntityToNote } = useEntityStore();
-  const listRef = useRef<HTMLDivElement>(null);
 
   const filteredEntities = useMemo(() => {
     if (!query) return entities.slice(0, 8);
@@ -63,12 +62,11 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -4 }}
+        initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
+        exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.12 }}
-        className="absolute left-0 z-50 w-72 rounded-lg border border-border/80 bg-popover shadow-lg backdrop-blur-md"
-        style={{ bottom: '100%', marginBottom: 8 }}
+        className="w-full rounded-lg border border-border/80 bg-popover shadow-lg backdrop-blur-md"
       >
         {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
@@ -84,13 +82,13 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
 
         {/* List */}
         <ScrollArea className="max-h-[260px]">
-          <div ref={listRef} className="p-1">
+          <div className="p-1">
             {isLoading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
             ) : filteredEntities.length > 0 ? (
-              filteredEntities.map((entity, idx) => {
+              filteredEntities.map((entity) => {
                 const config = ENTITY_TYPE_CONFIG[entity.type];
                 const badgeColor = BADGE_COLORS[entity.type] || '#888';
                 return (
@@ -98,14 +96,11 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
                     key={entity.id}
                     onClick={() => handleSelect(entity)}
                     className="w-full flex items-start gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors cursor-pointer"
-                    style={{ ['--hover-bg' as string]: config.hoverBg }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = config.hoverBg;
-                      e.currentTarget.style.borderColor = config.hoverBorder;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.borderColor = 'transparent';
                     }}
                   >
                     <span className="text-base leading-none mt-0.5 shrink-0">{config.icon}</span>
@@ -133,7 +128,7 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
         {/* Footer */}
         <div className="px-3 py-1.5 border-t border-border/50 text-xs text-muted-foreground">
           {filteredEntities.length === 0
-            ? 'Digite para buscar entidades'
+            ? 'Digite para buscar'
             : `${filteredEntities.length} encontrada${filteredEntities.length !== 1 ? 's' : ''}`}
         </div>
       </motion.div>

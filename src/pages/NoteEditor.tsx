@@ -264,24 +264,30 @@ export default function NoteEditor() {
               <AtSign className="w-3.5 h-3.5" /> Digite @ para mencionar entidades no texto.
             </div>
 
-            <Textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
-              onClick={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
-              onKeyUp={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
-              placeholder="Comece a escrever em Markdown..."
-              className="min-h-[60vh] border-0 px-0 focus-visible:ring-0 bg-transparent resize-none text-sm leading-relaxed font-mono text-foreground/80"
-            />
+            <div className="relative">
+              {/* Mention dropdown anchored above textarea */}
+              {mentionOpen && (
+                <div className="absolute left-0 bottom-full z-50 mb-1 w-72">
+                  <EntityMentionSelector
+                    isOpen={mentionOpen}
+                    query={mentionQuery}
+                    entities={entities}
+                    onEntitySelect={insertMention}
+                    onQueryChange={setMentionQuery}
+                  />
+                </div>
+              )}
 
-            {/* New EntityMentionSelector Component */}
-            <EntityMentionSelector
-              isOpen={mentionOpen}
-              query={mentionQuery}
-              entities={entities}
-              onEntitySelect={insertMention}
-              onQueryChange={setMentionQuery}
-            />
+              <Textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
+                onClick={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
+                onKeyUp={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
+                placeholder="Comece a escrever em Markdown..."
+                className="min-h-[60vh] border-0 px-0 focus-visible:ring-0 bg-transparent resize-none text-sm leading-relaxed font-mono text-foreground/80"
+              />
+            </div>
           </div>
         )}
 
