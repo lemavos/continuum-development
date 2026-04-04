@@ -25,12 +25,11 @@ export default function NoteEditor() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const { 
-    activeMention, 
-    setActiveMention, 
-    inspectorOpen, 
-    inspectorEntity, 
-    openInspector, 
+  const {
+    setActiveMention,
+    inspectorOpen,
+    inspectorEntity,
+    openInspector,
     closeInspector,
     entitiesInNote,
     setEntitiesInNote,
@@ -93,9 +92,14 @@ export default function NoteEditor() {
       setAutoSaved(true);
       setTimeout(() => setAutoSaved(false), 2000);
       setNote(prev => prev ? { ...prev, entityIds } : null);
-    }
-    catch {} finally { setSaving(false); }
-  }, [id, extractEntityIds]);
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente para salvar a nota.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao salvar nota", description: error?.message || "Verifique sua conexão e tente novamente.", variant: "destructive" });
+      }
+    } finally { setSaving(false); }
+  }, [id, extractEntityIds, toast]);
 
   const scheduleAutoSave = useCallback((t: string, c: string) => {
     if (!autoSaveEnabled) return;
@@ -149,9 +153,9 @@ export default function NoteEditor() {
   const insertMention = useCallback((entity: Entity) => {
     if (!mentionRange) return;
 
-    const nextMention = `[@${entity.title}](/entities/${entity.id}) `;
-    const nextContent = `${content.slice(0, mentionRange.start)}${nextMention}${content.slice(mentionRange.end)}`;
-    const nextCaret = mentionRange.start + nextMention.length;
+    const mentionText = `[@${entity.title}](/entities/${entity.id})`;
+    const nextContent = `${content.slice(0, mentionRange.start)}${mentionText}${content.slice(mentionRange.end)}`;
+    const nextCaret = mentionRange.start + mentionText.length;
 
     setContent(nextContent);
     scheduleAutoSave(title, nextContent);
@@ -167,8 +171,11 @@ export default function NoteEditor() {
     openInspector(entity);
 
     requestAnimationFrame(() => {
-      textareaRef.current?.focus();
-      textareaRef.current?.setSelectionRange(nextCaret, nextCaret);
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(nextCaret, nextCaret);
+      textarea.scrollTop = textarea.scrollHeight;
     });
   }, [mentionRange, content, title, scheduleAutoSave, setActiveMention, openInspector]);
 
@@ -203,9 +210,15 @@ export default function NoteEditor() {
       lastSaved.current = { title, content };
       setNote(prev => prev ? { ...prev, entityIds } : null);
       toast({ title: "Nota salva!" });
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente para continuar.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao salvar", description: error?.message || "Verifique sua conexão e tente novamente.", variant: "destructive" });
+      }
+    } finally {
+      setSaving(false);
     }
-    catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
-    finally { setSaving(false); }
   };
 
   useEffect(() => { return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); }; }, []);

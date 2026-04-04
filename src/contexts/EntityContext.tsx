@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useContext, useState, useCallback } from 'react';
-import type { Entity } from '@/types';
+import type { Entity, Note } from '@/types';
 
 export interface MentionedEntity {
   id: string;
@@ -7,6 +7,9 @@ export interface MentionedEntity {
   type: string;
   cursorPosition?: number;
 }
+
+export type InspectableNote = Note & { type: 'NOTE'; description?: string };
+export type InspectableEntity = Entity | InspectableNote;
 
 export interface EntityContextState {
   // Global mention state
@@ -18,7 +21,7 @@ export interface EntityContextState {
   
   // Inspector state
   inspectorOpen: boolean;
-  inspectorEntity: Entity | null;
+  inspectorEntity: InspectableEntity | null;
   
   // Loading states
   loadingEntityId: string | null;
@@ -28,10 +31,13 @@ export interface EntityContextState {
   setHoveredMentionId: (id: string | null) => void;
   setEntitiesInNote: (entities: Entity[]) => void;
   addEntityToNote: (entity: Entity) => void;
+  addEntity: (entity: Entity) => void;
   removeEntityFromNote: (entityId: string) => void;
+  fetchEntities: () => Promise<void>;
+  updateGraph: () => void;
   
   // Inspector actions
-  openInspector: (entity: Entity) => void;
+  openInspector: (entity: InspectableEntity) => void;
   closeInspector: () => void;
   setLoadingEntityId: (id: string | null) => void;
 }
@@ -43,7 +49,7 @@ export function EntityProvider({ children }: { children: ReactNode }) {
   const [hoveredMentionId, setHoveredMentionId] = useState<string | null>(null);
   const [entitiesInNote, setEntitiesInNote] = useState<Entity[]>([]);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [inspectorEntity, setInspectorEntity] = useState<Entity | null>(null);
+  const [inspectorEntity, setInspectorEntity] = useState<InspectableEntity | null>(null);
   const [loadingEntityId, setLoadingEntityId] = useState<string | null>(null);
 
   const addEntityToNote = useCallback((entity: Entity) => {
@@ -57,7 +63,7 @@ export function EntityProvider({ children }: { children: ReactNode }) {
     setEntitiesInNote((prev) => prev.filter((e) => e.id !== entityId));
   }, []);
 
-  const openInspector = useCallback((entity: Entity) => {
+  const openInspector = useCallback((entity: InspectableEntity) => {
     setInspectorEntity(entity);
     setInspectorOpen(true);
     setActiveMention({
@@ -71,6 +77,19 @@ export function EntityProvider({ children }: { children: ReactNode }) {
     setInspectorOpen(false);
     setInspectorEntity(null);
     setActiveMention(null);
+  }, []);
+
+  const addEntity = useCallback((entity: Entity) => {
+    addEntityToNote(entity);
+  }, [addEntityToNote]);
+
+  const fetchEntities = useCallback(async () => {
+    // Placeholder for future entity collection refresh.
+    return;
+  }, []);
+
+  const updateGraph = useCallback(() => {
+    // Placeholder for future graph update logic.
   }, []);
 
   const value: EntityContextState = {
@@ -87,7 +106,10 @@ export function EntityProvider({ children }: { children: ReactNode }) {
     loadingEntityId,
     setLoadingEntityId,
     addEntityToNote,
+    addEntity,
     removeEntityFromNote,
+    fetchEntities,
+    updateGraph,
   };
 
   return (

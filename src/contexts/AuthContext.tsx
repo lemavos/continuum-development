@@ -30,13 +30,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       const { data } = await authApi.me();
-      setUser({
-        ...data,
-        username: data.username ?? data.name ?? "",
-        createdAt: data.createdAt,
-      });
-    } catch {
-      setUser(null);
+      if (data) {
+        setUser({
+          ...data,
+          id: data.id ?? data.userId,
+          username: data.username ?? data.name ?? "",
+          createdAt: data.createdAt,
+        });
+      }
+    } catch (error: unknown) {
+      if ((error as any)?.response?.status === 401) {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,9 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const { data } = await authApi.login(email, password);
     setTokens(data.accessToken, data.refreshToken);
-    // Use user data directly from login response
+    // Use user data directly from login response, prefer backend id field
     setUser({
-      id: data.userId,
+      id: data.id ?? data.userId,
       username: data.username ?? data.name ?? "",
       email: data.email,
       plan: data.plan || "FREE",

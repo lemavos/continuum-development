@@ -7,10 +7,10 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor: attach JWT (skip only login/register/refresh)
+// Interceptor: attach JWT (skip only login and registration endpoints)
 api.interceptors.request.use((config) => {
-  const noAuthRoutes = ["/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/api/auth/google/callback"];
-  const skipAuth = noAuthRoutes.some((r) => config.url?.startsWith(r));
+  const url = config.url ?? "";
+  const skipAuth = url === "/api/auth/login" || url === "/api/auth/register";
   if (!skipAuth) {
     const token = localStorage.getItem("access_token");
     if (token) {
@@ -80,12 +80,19 @@ export const authApi = {
 export const notesApi = {
   list: () => api.get("/api/notes"),
   get: (id: string) => api.get(`/api/notes/${id}`),
-  create: (title: string, content: string, folderId?: string, relatedEntityIds?: string[]) =>
-    api.post("/api/notes", { title, content, folderId, relatedEntityIds: relatedEntityIds || [] }),
+  create: (title: string, content: string, folderId?: string, entityIds?: string[]) =>
+    api.post("/api/notes", {
+      title,
+      content,
+      folderId,
+      // TODO: Verificar se o DTO no Java possui o campo @JsonProperty("entityIds").
+      entityIds: entityIds || [],
+    }),
   update: (id: string, data: { title?: string; content?: string; folderId?: string; entityIds?: string[] }) =>
-    api.put(`/api/notes/${id}`, { 
+    api.put(`/api/notes/${id}`, {
       ...data,
-      relatedEntityIds: data.entityIds || [],
+      // TODO: Verificar se o DTO no Java possui o campo @JsonProperty("entityIds").
+      entityIds: data.entityIds || [],
     }),
   delete: (id: string) => api.delete(`/api/notes/${id}`),
 };

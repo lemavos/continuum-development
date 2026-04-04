@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { entitiesApi } from '@/lib/api';
-import type { Entity, EntityStats, HeatmapData } from '@/types';
+import type { Entity, EntityStats, HeatmapData, Note } from '@/types';
 import { useEntityStore } from '@/contexts/EntityContext';
 
 const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
+  NOTE: { label: 'Nota', icon: '📝', color: 'from-slate-600 to-slate-800', bgColor: 'bg-slate-100' },
   HABIT: { label: 'Hábito', icon: '🟢', color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' },
   PROJECT: { label: 'Projeto', icon: '🔵', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50' },
   PERSON: { label: 'Pessoa', icon: '🟡', color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50' },
@@ -189,6 +190,40 @@ const PersonWidget = memo(function PersonWidget({ entity }: PersonWidgetProps) {
   );
 });
 
+const NoteWidget = memo(function NoteWidget({ note }: { note: InspectableNote }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-4"
+    >
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold">Resumo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-foreground">{note.description || note.content?.slice(0, 220) || 'Sem conteúdo disponível.'}</p>
+          <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Tags</span>
+              <span>{note.tags?.length ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Última atualização</span>
+              <span>{new Date(note.updatedAt).toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Button className="w-full bg-slate-700 hover:bg-slate-800 gap-2 text-white">
+        <Link2 className="w-4 h-4" />
+        Abrir nota
+      </Button>
+    </motion.div>
+  );
+});
+
 const DefaultWidget = memo(function DefaultWidget({ entity }: { entity: Entity }) {
   return (
     <motion.div
@@ -224,9 +259,16 @@ const DefaultWidget = memo(function DefaultWidget({ entity }: { entity: Entity }
   );
 });
 
+interface InspectableNote extends Note {
+  type: 'NOTE';
+  description?: string;
+}
+
+type InspectableEntity = Entity | InspectableNote;
+
 interface SideInspectorProps {
   isOpen: boolean;
-  entity: Entity | null;
+  entity: InspectableEntity | null;
   onClose: () => void;
 }
 
@@ -235,8 +277,10 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const [loading, setLoading] = useState(false);
   const { loadingEntityId, setLoadingEntityId } = useEntityStore();
 
+  const isNote = entity?.type === 'NOTE';
+
   useEffect(() => {
-    if (!entity) return;
+    if (!entity || isNote) return;
 
     setLoading(true);
     setLoadingEntityId(entity.id);
@@ -256,7 +300,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
         setLoading(false);
         setLoadingEntityId(null);
       });
-  }, [entity, setLoadingEntityId]);
+  }, [entity, isNote, setLoadingEntityId]);
 
   if (!entity) return null;
 
@@ -312,16 +356,15 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                 </div>
               ) : (
                 <>
-                  {entity.type === 'HABIT' && stats && (
+                  {isNote ? (
+                    <NoteWidget note={entity} />
+                  ) : entity.type === 'HABIT' && stats ? (
                     <HabitWidget entity={entity} stats={stats} />
-                  )}
-                  {entity.type === 'PROJECT' && (
+                  ) : entity.type === 'PROJECT' ? (
                     <ProjectWidget entity={entity} />
-                  )}
-                  {entity.type === 'PERSON' && (
+                  ) : entity.type === 'PERSON' ? (
                     <PersonWidget entity={entity} />
-                  )}
-                  {!['HABIT', 'PROJECT', 'PERSON'].includes(entity.type) && (
+                  ) : (
                     <DefaultWidget entity={entity} />
                   )}
                 </>

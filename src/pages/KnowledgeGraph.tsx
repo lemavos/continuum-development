@@ -1,18 +1,18 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { graphApi, entitiesApi } from "@/lib/api";
+import { graphApi, entitiesApi, notesApi } from "@/lib/api";
 import { Loader2, ZoomIn, ZoomOut, Maximize2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { SideInspector } from "@/components/SideInspector";
 import { useEntityStore } from "@/contexts/EntityContext";
-import type { Entity } from "@/types";
+import type { Entity, Note, EntityType } from '@/types';
 
 interface GraphNode {
   id: string;
   label: string;
-  type: string;
+  type: EntityType | 'NOTE';
   x: number;
   y: number;
   vx: number;
@@ -31,11 +31,11 @@ interface GraphData {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  NOTE: "hsl(174, 100%, 41%)",
-  ENTITY: "hsl(174, 100%, 41%)",
-  HABIT: "hsl(130, 60%, 50%)",
-  PERSON: "hsl(45, 100%, 60%)",
-  PROJECT: "hsl(210, 80%, 55%)",
+  NOTE: "rgba(255,255,255,0.95)",
+  ENTITY: "rgba(203,213,225,0.95)",
+  HABIT: "#22c55e",
+  PERSON: "#eab308",
+  PROJECT: "#3b82f6",
   TOPIC: "hsl(270, 60%, 60%)",
   ORGANIZATION: "hsl(25, 90%, 55%)",
 };
@@ -234,11 +234,13 @@ export default function KnowledgeGraph() {
       const dimmed = (hasSelection && !isNeighbor) || isFilteredOut;
 
       const drawRadius = isHovered || isSelected ? r + 3 : r;
-      const nodeAlpha = dimmed ? 0.1 : 1;
+      const isNeighbor = hasSelection && neighbors.has(n.id);
+      const nodeAlpha = dimmed ? 0.08 : 1;
+      const glow = isNeighbor && !isSelected && !isHovered;
 
-      if ((isSelected || isHovered) && !dimmed) {
+      if ((isSelected || isHovered || glow) && !dimmed) {
         ctx.save();
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = glow ? 0.18 : 0.3;
         ctx.beginPath();
         ctx.arc(n.x, n.y, drawRadius + 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -252,6 +254,12 @@ export default function KnowledgeGraph() {
       ctx.arc(n.x, n.y, drawRadius, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
+
+      if (isNeighbor && !isSelected && !isHovered) {
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 1.5 / zoomRef.current;
+        ctx.stroke();
+      }
 
       if (isSelected) {
         ctx.strokeStyle = "#ffffff";
@@ -280,47 +288,66 @@ export default function KnowledgeGraph() {
   }, [simulate, draw]);
 
   // Load data
-  useEffect(() => {
-    Promise.all([graphApi.data(), entitiesApi.list()])
-      .then(([graphRes, entitiesRes]) => {
-        const data: GraphData = graphRes.data;
-        const entities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
-        setAllEntities(entities);
+  const loadGraph = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [graphRes, entitiesRes] = await Promise.all([graphApi.data(), entitiesApi.list()]);
+      const data: GraphData = graphRes.data;
+      const entities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
+      setAllEntities(entities);
 
-        const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
-        const rawEdges = Array.isArray(data?.links) ? data.links : (Array.isArray(data?.edges) ? data.edges : []);
+      const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
+      const rawEdges = Array.isArray(data?.links) ? data.links : (Array.isArray(data?.edges) ? data.edges : []);
 
-        if (rawNodes.length === 0) {
-          setEmpty(true);
-          setLoading(false);
-          return;
-        }
-
-        const nextNodes: GraphNode[] = rawNodes.map((n) => ({
-          ...n,
-          x: (Math.random() - 0.5) * 400,
-          y: (Math.random() - 0.5) * 400,
-          vx: 0,
-          vy: 0,
-        }));
-
-        nodesRef.current = nextNodes;
-        edgesRef.current = rawEdges;
-        setGraphStats({ nodes: nextNodes.length, edges: rawEdges.length });
-
-        const canvas = canvasRef.current;
-        const cw = canvas?.clientWidth || 800;
-        const ch = canvas?.clientHeight || 600;
-        panRef.current = { x: cw / 2, y: ch / 2 };
-        zoomRef.current = 1;
-        setLoading(false);
-      })
-      .catch(() => {
+      if (rawNodes.length === 0) {
         setEmpty(true);
         setGraphStats({ nodes: 0, edges: 0 });
-        setLoading(false);
-      });
+        return;
+      }
+
+      const nextNodes: GraphNode[] = rawNodes.map((n) => ({
+        ...n,
+        x: (Math.random() - 0.5) * 400,
+        y: (Math.random() - 0.5) * 400,
+        vx: 0,
+        vy: 0,
+      }));
+
+      nodesRef.current = nextNodes;
+      edgesRef.current = rawEdges;
+      setGraphStats({ nodes: nextNodes.length, edges: rawEdges.length });
+
+      const canvas = canvasRef.current;
+      const cw = canvas?.clientWidth || 800;
+      const ch = canvas?.clientHeight || 600;
+      panRef.current = { x: cw / 2, y: ch / 2 };
+      zoomRef.current = 1;
+      setEmpty(false);
+    } catch {
+      setEmpty(true);
+      setGraphStats({ nodes: 0, edges: 0 });
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadGraph();
+  }, [loadGraph]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadGraph();
+      }
+    };
+    window.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [loadGraph]);
 
   useEffect(() => {
     if (loading || empty) return;
@@ -336,8 +363,23 @@ export default function KnowledgeGraph() {
     return () => observer.disconnect();
   }, [draw]);
 
-  const handleNodeClick = useCallback((node: GraphNode) => {
+  const handleNodeClick = useCallback(async (node: GraphNode) => {
     setSelectedNode(node);
+
+    if (node.type === "NOTE") {
+      try {
+        const { data } = await notesApi.get(node.id);
+        openInspector({
+          ...data,
+          type: "NOTE",
+          description: data.content?.slice(0, 120),
+        });
+      } catch (error: any) {
+        toast({ title: "Erro ao abrir nota", description: error?.response?.data?.message || "Não foi possível carregar a nota.", variant: "destructive" });
+      }
+      return;
+    }
+
     const entity = allEntities.find(e => e.id === node.id);
     if (entity) {
       openInspector(entity);
@@ -345,12 +387,12 @@ export default function KnowledgeGraph() {
       openInspector({
         id: node.id,
         title: node.label,
-        type: node.type as any,
+        type: node.type,
         createdAt: new Date().toISOString(),
         ownerId: "",
       });
     }
-  }, [allEntities, openInspector]);
+  }, [allEntities, openInspector, toast]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
