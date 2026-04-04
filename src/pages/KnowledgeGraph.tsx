@@ -287,7 +287,7 @@ export default function KnowledgeGraph() {
         setAllEntities(entities);
 
         const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
-        const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+        const rawEdges = Array.isArray(data?.links) ? data.links : (Array.isArray(data?.edges) ? data.edges : []);
 
         if (rawNodes.length === 0) {
           setEmpty(true);
