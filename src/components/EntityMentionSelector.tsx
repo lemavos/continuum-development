@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
   isLoading = false,
 }: EntityMentionSelectorProps) {
   const { setActiveMention, addEntityToNote } = useEntityStore();
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const filteredEntities = useMemo(() => {
     if (!query) return entities.slice(0, 8);
@@ -51,11 +52,35 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
       .slice(0, 8);
   }, [entities, query]);
 
-  const handleSelect = (entity: Entity) => {
+  // Reset index when results change
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [filteredEntities.length, query]);
+
+  const handleSelect = useCallback((entity: Entity) => {
     setActiveMention({ id: entity.id, title: entity.title, type: entity.type });
     addEntityToNote(entity);
     onEntitySelect(entity);
-  };
+  }, [setActiveMention, addEntityToNote, onEntitySelect]);
+
+  // Keyboard navigation handler — called from parent via onKeyDown
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isOpen || filteredEntities.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % filteredEntities.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + filteredEntities.length) % filteredEntities.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSelect(filteredEntities[activeIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onQueryChange('');
+    }
+  }, [isOpen, filteredEntities, activeIndex, handleSelect, onQueryChange]);
 
   if (!isOpen) return null;
 
@@ -67,6 +92,7 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.12 }}
         className="w-full rounded-lg border border-border/80 bg-popover shadow-lg backdrop-blur-md"
+        onKeyDown={handleKeyDown}
       >
         {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
@@ -88,20 +114,19 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
             ) : filteredEntities.length > 0 ? (
-              filteredEntities.map((entity) => {
+              filteredEntities.map((entity, index) => {
                 const config = ENTITY_TYPE_CONFIG[entity.type];
                 const badgeColor = BADGE_COLORS[entity.type] || '#888';
+                const isActive = index === activeIndex;
                 return (
                   <button
                     key={entity.id}
                     onClick={() => handleSelect(entity)}
                     className="w-full flex items-start gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors cursor-pointer"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = config.hoverBg;
+                    style={{
+                      backgroundColor: isActive ? config.hoverBg : 'transparent',
                     }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
+                    onMouseEnter={() => setActiveIndex(index)}
                   >
                     <span className="text-base leading-none mt-0.5 shrink-0">{config.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -126,12 +151,20 @@ export const EntityMentionSelector = memo(function EntityMentionSelector({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-3 py-1.5 border-t border-border/50 text-xs text-muted-foreground">
-          {filteredEntities.length === 0
-            ? 'Digite para buscar'
-            : `${filteredEntities.length} encontrada${filteredEntities.length !== 1 ? 's' : ''}`}
+        <div className="px-3 py-1.5 border-t border-border/50 text-xs text-muted-foreground flex items-center justify-between">
+          <span>
+            {filteredEntities.length === 0
+              ? 'Digite para buscar'
+              : `${filteredEntities.length} encontrada${filteredEntities.length !== 1 ? 's' : ''}`}
+          </span>
+          <span className="hidden sm:inline">↑↓ navegar · Enter selecionar · Esc fechar</span>
         </div>
       </motion.div>
     </AnimatePresence>
   );
 });
+
+// Export the keyboard handler type for parent usage
+export type EntityMentionSelectorHandle = {
+  handleKeyDown: (e: React.KeyboardEvent) => void;
+};

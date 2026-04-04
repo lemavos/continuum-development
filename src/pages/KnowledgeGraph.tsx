@@ -35,7 +35,7 @@ const TYPE_COLORS: Record<string, string> = {
   ENTITY: "hsl(174, 100%, 41%)",
   HABIT: "hsl(130, 60%, 50%)",
   PERSON: "hsl(45, 100%, 60%)",
-  PROJECT: "hsl(174, 100%, 41%)",
+  PROJECT: "hsl(210, 80%, 55%)",
   TOPIC: "hsl(270, 60%, 60%)",
   ORGANIZATION: "hsl(25, 90%, 55%)",
 };
@@ -65,8 +65,8 @@ export default function KnowledgeGraph() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [graphStats, setGraphStats] = useState({ nodes: 0, edges: 0 });
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
-  // SideInspector integration
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
 
@@ -80,12 +80,12 @@ export default function KnowledgeGraph() {
   const animFrameRef = useRef<number>(0);
   const selectedRef = useRef<GraphNode | null>(null);
   const hoveredRef = useRef<GraphNode | null>(null);
+  const typeFilterRef = useRef<string | null>(null);
 
-  // Keep refs in sync for draw callback
   useEffect(() => { selectedRef.current = selectedNode; }, [selectedNode]);
   useEffect(() => { hoveredRef.current = hoveredNode; }, [hoveredNode]);
+  useEffect(() => { typeFilterRef.current = typeFilter; }, [typeFilter]);
 
-  // Compute neighbor set for highlighting
   const neighborIds = useMemo(() => {
     if (!selectedNode) return new Set<string>();
     const edges = Array.isArray(edgesRef.current) ? edgesRef.current : [];
@@ -111,8 +111,10 @@ export default function KnowledgeGraph() {
     const w = screenToWorld(sx, sy);
     const z = zoomRef.current;
     const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
+    const filter = typeFilterRef.current;
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
+      if (filter && n.type !== filter) continue;
       const r = (TYPE_RADIUS[n.type] || 6) + 4 / z;
       const dx = n.x - w.x;
       const dy = n.y - w.y;
@@ -133,13 +135,11 @@ export default function KnowledgeGraph() {
     const centerForce = 0.008;
     const alpha = 0.25;
 
-    // Center gravity
     for (const n of nodes) {
       n.vx -= n.x * centerForce;
       n.vy -= n.y * centerForce;
     }
 
-    // Repulsion (all pairs)
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i], b = nodes[j];
@@ -153,7 +153,6 @@ export default function KnowledgeGraph() {
       }
     }
 
-    // Attraction (edges)
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
     for (const e of edges) {
       const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
@@ -167,7 +166,6 @@ export default function KnowledgeGraph() {
       b.vx -= fx; b.vy -= fy;
     }
 
-    // Velocity + position update
     for (const n of nodes) {
       if (n === draggingRef.current) continue;
       n.vx *= damping;
@@ -204,17 +202,21 @@ export default function KnowledgeGraph() {
     const hovered = hoveredRef.current;
     const neighbors = neighborIdsRef.current;
     const hasSelection = selected !== null;
+    const filter = typeFilterRef.current;
 
-    // Draw edges
+    // Draw edges — THICKER lines
     for (const e of edges) {
       const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
       if (!a || !b) continue;
 
+      // If filter active, only draw edges where at least one node matches
+      if (filter && a.type !== filter && b.type !== filter) continue;
+
       const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
       ctx.strokeStyle = hasSelection
-        ? (isHighlighted ? "rgba(0,209,193,0.25)" : "rgba(255,255,255,0.02)")
-        : "rgba(0,209,193,0.1)";
-      ctx.lineWidth = (isHighlighted ? 1.5 : 0.5) / zoomRef.current;
+        ? (isHighlighted ? "rgba(0,209,193,0.5)" : "rgba(255,255,255,0.03)")
+        : "rgba(0,209,193,0.2)";
+      ctx.lineWidth = (isHighlighted ? 3 : 1.5) / zoomRef.current;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
@@ -223,17 +225,17 @@ export default function KnowledgeGraph() {
 
     // Draw nodes
     for (const n of nodes) {
+      const isFilteredOut = filter && n.type !== filter;
       const r = TYPE_RADIUS[n.type] || 6;
       const color = TYPE_COLORS[n.type] || "hsl(0,0%,40%)";
       const isHovered = hovered?.id === n.id;
       const isSelected = selected?.id === n.id;
       const isNeighbor = hasSelection && neighbors.has(n.id);
-      const dimmed = hasSelection && !isNeighbor;
+      const dimmed = (hasSelection && !isNeighbor) || isFilteredOut;
 
       const drawRadius = isHovered || isSelected ? r + 3 : r;
-      const alpha = dimmed ? 0.15 : 1;
+      const nodeAlpha = dimmed ? 0.1 : 1;
 
-      // Glow for selected/hovered
       if ((isSelected || isHovered) && !dimmed) {
         ctx.save();
         ctx.globalAlpha = 0.3;
@@ -245,7 +247,7 @@ export default function KnowledgeGraph() {
       }
 
       ctx.save();
-      ctx.globalAlpha = alpha;
+      ctx.globalAlpha = nodeAlpha;
       ctx.beginPath();
       ctx.arc(n.x, n.y, drawRadius, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -257,8 +259,7 @@ export default function KnowledgeGraph() {
         ctx.stroke();
       }
 
-      // Labels
-      const showLabel = zoomRef.current > 0.4 || isHovered || isSelected || isNeighbor;
+      const showLabel = !dimmed && (zoomRef.current > 0.4 || isHovered || isSelected || isNeighbor);
       if (showLabel) {
         const fontSize = Math.max(10, 11 / zoomRef.current);
         ctx.font = `${isSelected || isHovered ? "600" : "400"} ${fontSize}px Inter, sans-serif`;
@@ -295,7 +296,6 @@ export default function KnowledgeGraph() {
           return;
         }
 
-        // Spread nodes around origin
         const nextNodes: GraphNode[] = rawNodes.map((n) => ({
           ...n,
           x: (Math.random() - 0.5) * 400,
@@ -308,7 +308,6 @@ export default function KnowledgeGraph() {
         edgesRef.current = rawEdges;
         setGraphStats({ nodes: nextNodes.length, edges: rawEdges.length });
 
-        // Center pan on the canvas
         const canvas = canvasRef.current;
         const cw = canvas?.clientWidth || 800;
         const ch = canvas?.clientHeight || 600;
@@ -323,34 +322,26 @@ export default function KnowledgeGraph() {
       });
   }, []);
 
-  // Animation loop
   useEffect(() => {
     if (loading || empty) return;
     animFrameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [loading, empty, tick]);
 
-  // Resize observer
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => {
-      // Redraw on resize
-      draw();
-    });
+    const observer = new ResizeObserver(() => draw());
     observer.observe(container);
     return () => observer.disconnect();
   }, [draw]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
-
-    // Try to find entity in allEntities to open inspector
     const entity = allEntities.find(e => e.id === node.id);
     if (entity) {
       openInspector(entity);
     } else {
-      // For NOTE nodes or unmatched nodes, create a synthetic entity for the inspector
       openInspector({
         id: node.id,
         title: node.label,
@@ -445,9 +436,9 @@ export default function KnowledgeGraph() {
     if (!canvas) return;
     panRef.current = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
     zoomRef.current = 1;
+    setTypeFilter(null);
   };
 
-  // Touch support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     const touch = e.touches[0];
@@ -491,8 +482,8 @@ export default function KnowledgeGraph() {
     panningRef.current = false;
   };
 
-  // Legend items from actual data
-  const legendTypes = useMemo(() => {
+  // All unique types from data
+  const availableTypes = useMemo(() => {
     const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
     const types = new Set(nodes.map(n => n.type));
     return Array.from(types).map(t => ({
@@ -500,13 +491,13 @@ export default function KnowledgeGraph() {
       label: TYPE_LABELS[t] || t,
       color: TYPE_COLORS[t] || "hsl(0,0%,40%)",
     }));
-  }, [graphStats]); // recalc when stats change
+  }, [graphStats]);
 
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
         {/* Header */}
-        <div className="p-3 lg:p-4 flex items-center justify-between border-b border-border/50 shrink-0">
+        <div className="p-3 lg:p-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 shrink-0 gap-2">
           <div>
             <h1 className="font-display text-lg lg:text-xl font-semibold tracking-tight text-foreground">
               Grafo de Conhecimento
@@ -527,6 +518,36 @@ export default function KnowledgeGraph() {
             </Button>
           </div>
         </div>
+
+        {/* Type filter bar */}
+        {!empty && availableTypes.length > 0 && (
+          <div className="px-3 lg:px-4 py-2 flex gap-1.5 flex-wrap border-b border-border/30 shrink-0">
+            <button
+              onClick={() => setTypeFilter(null)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                !typeFilter
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              }`}
+            >
+              Todos
+            </button>
+            {availableTypes.map(({ type, label, color }) => (
+              <button
+                key={type}
+                onClick={() => setTypeFilter(typeFilter === type ? null : type)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  typeFilter === type
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+              >
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Graph area */}
         <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0">
@@ -601,10 +622,10 @@ export default function KnowledgeGraph() {
           )}
 
           {/* Legend */}
-          {!empty && legendTypes.length > 0 && (
+          {!empty && availableTypes.length > 0 && (
             <div className="absolute bottom-3 left-3 bento-card p-2.5 space-y-1 max-w-[140px]">
               <p className="text-[10px] font-medium text-foreground mb-1 uppercase tracking-wider">Legenda</p>
-              {legendTypes.map(({ type, label, color }) => (
+              {availableTypes.map(({ type, label, color }) => (
                 <div key={type} className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                   <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -616,7 +637,7 @@ export default function KnowledgeGraph() {
             </div>
           )}
 
-          {/* Selected node info card (mobile-friendly) */}
+          {/* Selected node info card */}
           {selectedNode && !inspectorOpen && (
             <div className="absolute top-3 right-3 bento-card p-3 w-48 space-y-2">
               <div className="flex items-center gap-2">
@@ -640,7 +661,6 @@ export default function KnowledgeGraph() {
         </div>
       </div>
 
-      {/* SideInspector */}
       <SideInspector
         isOpen={inspectorOpen}
         entity={inspectorEntity}

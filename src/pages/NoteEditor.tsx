@@ -25,7 +25,6 @@ export default function NoteEditor() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Zustand store
   const { 
     activeMention, 
     setActiveMention, 
@@ -49,6 +48,7 @@ export default function NoteEditor() {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionRange, setMentionRange] = useState<{ start: number; end: number } | null>(null);
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef({ title: "", content: "" });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -63,7 +63,6 @@ export default function NoteEditor() {
       setContent(data.content || "");
       setEntities(allEntities);
       
-      // Sync Zustand store with linked entities
       if (data.entityIds?.length) {
         const linkedEntities = data.entityIds
           .map((entityId: string) => allEntities.find(e => e.id === entityId))
@@ -93,7 +92,6 @@ export default function NoteEditor() {
       lastSaved.current = { title: t, content: c };
       setAutoSaved(true);
       setTimeout(() => setAutoSaved(false), 2000);
-      // Update local note
       setNote(prev => prev ? { ...prev, entityIds } : null);
     }
     catch {} finally { setSaving(false); }
@@ -134,17 +132,21 @@ export default function NoteEditor() {
 
   const filteredMentions = useMemo(() => {
     if (!mentionOpen) return [];
-
     return entities
       .filter((entity) => entity.title.toLowerCase().includes(mentionQuery))
-      .slice(0, 6);
+      .slice(0, 8);
   }, [entities, mentionOpen, mentionQuery]);
+
+  // Reset active index when filtered results change
+  useEffect(() => {
+    setMentionActiveIndex(0);
+  }, [filteredMentions.length, mentionQuery]);
 
   const linkedEntities = useMemo(() => {
     return entitiesInNote;
   }, [entitiesInNote]);
 
-  const insertMention = (entity: Entity) => {
+  const insertMention = useCallback((entity: Entity) => {
     if (!mentionRange) return;
 
     const nextMention = `[@${entity.title}](/entities/${entity.id}) `;
@@ -157,7 +159,6 @@ export default function NoteEditor() {
     setMentionQuery("");
     setMentionRange(null);
     
-    // Update Zustand store and open inspector
     setActiveMention({
       id: entity.id,
       title: entity.title,
@@ -169,7 +170,28 @@ export default function NoteEditor() {
       textareaRef.current?.focus();
       textareaRef.current?.setSelectionRange(nextCaret, nextCaret);
     });
-  };
+  }, [mentionRange, content, title, scheduleAutoSave, setActiveMention, openInspector]);
+
+  // Keyboard handler for textarea — intercepts arrow/enter when mention is open
+  const handleTextareaKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!mentionOpen || filteredMentions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionActiveIndex((prev) => (prev + 1) % filteredMentions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionActiveIndex((prev) => (prev - 1 + filteredMentions.length) % filteredMentions.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      insertMention(filteredMentions[mentionActiveIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setMentionOpen(false);
+      setMentionQuery("");
+      setMentionRange(null);
+    }
+  }, [mentionOpen, filteredMentions, mentionActiveIndex, insertMention]);
 
   const handleManualSave = async () => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -246,7 +268,6 @@ export default function NoteEditor() {
                   if (href?.startsWith("/")) {
                     return <Link to={href} className="text-primary underline underline-offset-4">{children}</Link>;
                   }
-
                   return <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{children}</a>;
                 },
                 p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
@@ -265,9 +286,8 @@ export default function NoteEditor() {
             </div>
 
             <div className="relative">
-              {/* Mention dropdown anchored above textarea */}
-              {mentionOpen && (
-                <div className="absolute left-0 bottom-full z-50 mb-1 w-72">
+              {mentionOpen && filteredMentions.length > 0 && (
+                <div className="absolute left-0 bottom-full z-50 mb-1 w-80">
                   <EntityMentionSelector
                     isOpen={mentionOpen}
                     query={mentionQuery}
@@ -283,7 +303,12 @@ export default function NoteEditor() {
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value, e.target.selectionStart)}
                 onClick={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
-                onKeyUp={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart)}
+                onKeyUp={(e) => {
+                  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+                    syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart);
+                  }
+                }}
+                onKeyDown={handleTextareaKeyDown}
                 placeholder="Comece a escrever em Markdown..."
                 className="min-h-[60vh] border-0 px-0 focus-visible:ring-0 bg-transparent resize-none text-sm leading-relaxed font-mono text-foreground/80"
               />
@@ -309,7 +334,6 @@ export default function NoteEditor() {
           </div>
         )}
 
-        {/* SideInspector Component */}
         <SideInspector
           isOpen={inspectorOpen}
           entity={inspectorEntity}
