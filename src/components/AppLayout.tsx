@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { CommandPalette } from "@/components/CommandPalette";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
