@@ -232,4 +232,49 @@
   .markdown-content pre code {
     @apply bg-transparent p-0 text-xs;
   }
+
+  /* Tiptap editor styles */
+  .ProseMirror {
+    outline: none;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+    height: 0;
+  }
+
+  .ProseMirror .mention {
+    @apply bg-primary/10 text-primary rounded px-1 py-0.5 font-medium text-sm;
+  }
+
+  .ProseMirror ul[data-type="taskList"] {
+    list-style: none;
+    padding: 0;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li label input[type="checkbox"] {
+    margin-top: 0.25rem;
+    accent-color: hsl(var(--primary));
+  }
+
+  .ProseMirror h1 { @apply text-3xl font-display font-bold tracking-tight mb-4; }
+  .ProseMirror h2 { @apply text-2xl font-display font-semibold tracking-tight mb-3; }
+  .ProseMirror h3 { @apply text-xl font-display font-semibold tracking-tight mb-2; }
+  .ProseMirror p { @apply mb-3 leading-relaxed; }
+  .ProseMirror ul { @apply list-disc pl-5 mb-3 space-y-1; }
+  .ProseMirror ol { @apply list-decimal pl-5 mb-3 space-y-1; }
+  .ProseMirror blockquote { @apply border-l-2 border-primary/30 pl-4 italic text-muted-foreground my-4; }
+  .ProseMirror pre { @apply overflow-x-auto rounded-xl border border-border bg-accent p-4 mb-4; }
+  .ProseMirror code { @apply rounded bg-accent px-1.5 py-0.5 text-xs; }
+  .ProseMirror hr { @apply border-border my-6; }
+  .ProseMirror a { @apply text-primary underline underline-offset-4 cursor-pointer; }
 }

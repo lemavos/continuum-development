@@ -1,18 +1,18 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { graphApi, entitiesApi, notesApi } from "@/lib/api";
+import { graphApi, entitiesApi } from "@/lib/api";
 import { Loader2, ZoomIn, ZoomOut, Maximize2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { SideInspector } from "@/components/SideInspector";
 import { useEntityStore } from "@/contexts/EntityContext";
-import type { Entity, Note, EntityType } from '@/types';
+import type { Entity, EntityType } from "@/types";
 
 interface GraphNode {
   id: string;
   label: string;
-  type: EntityType | 'NOTE';
+  type: string;
   x: number;
   y: number;
   vx: number;
@@ -24,15 +24,8 @@ interface GraphEdge {
   target: string;
 }
 
-interface GraphData {
-  nodes: { id: string; label: string; type: string }[];
-  edges?: { source: string; target: string }[];
-  links?: { source: string; target: string }[];
-}
-
 const TYPE_COLORS: Record<string, string> = {
   NOTE: "rgba(255,255,255,0.95)",
-  ENTITY: "rgba(203,213,225,0.95)",
   HABIT: "#22c55e",
   PERSON: "#eab308",
   PROJECT: "#3b82f6",
@@ -42,7 +35,6 @@ const TYPE_COLORS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   NOTE: "Nota",
-  ENTITY: "Entidade",
   HABIT: "Hábito",
   PERSON: "Pessoa",
   PROJECT: "Projeto",
@@ -51,7 +43,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_RADIUS: Record<string, number> = {
-  NOTE: 6, ENTITY: 8, HABIT: 7, PERSON: 8, PROJECT: 9, TOPIC: 7, ORGANIZATION: 8,
+  NOTE: 6, HABIT: 7, PERSON: 8, PROJECT: 9, TOPIC: 7, ORGANIZATION: 8,
 };
 
 export default function KnowledgeGraph() {
@@ -204,12 +196,10 @@ export default function KnowledgeGraph() {
     const hasSelection = selected !== null;
     const filter = typeFilterRef.current;
 
-    // Draw edges — THICKER lines
+    // Draw edges
     for (const e of edges) {
       const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
       if (!a || !b) continue;
-
-      // If filter active, only draw edges where at least one node matches
       if (filter && a.type !== filter && b.type !== filter) continue;
 
       const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
@@ -234,7 +224,6 @@ export default function KnowledgeGraph() {
       const dimmed = (hasSelection && !isNeighbor) || isFilteredOut;
 
       const drawRadius = isHovered || isSelected ? r + 3 : r;
-      const isNeighbor = hasSelection && neighbors.has(n.id);
       const nodeAlpha = dimmed ? 0.08 : 1;
       const glow = isNeighbor && !isSelected && !isHovered;
 
@@ -287,12 +276,11 @@ export default function KnowledgeGraph() {
     animFrameRef.current = requestAnimationFrame(tick);
   }, [simulate, draw]);
 
-  // Load data
   const loadGraph = useCallback(async () => {
     setLoading(true);
     try {
       const [graphRes, entitiesRes] = await Promise.all([graphApi.data(), entitiesApi.list()]);
-      const data: GraphData = graphRes.data;
+      const data = graphRes.data;
       const entities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
       setAllEntities(entities);
 
@@ -305,8 +293,10 @@ export default function KnowledgeGraph() {
         return;
       }
 
-      const nextNodes: GraphNode[] = rawNodes.map((n) => ({
-        ...n,
+      const nextNodes: GraphNode[] = rawNodes.map((n: any) => ({
+        id: n.id,
+        label: n.label,
+        type: String(n.type),
         x: (Math.random() - 0.5) * 400,
         y: (Math.random() - 0.5) * 400,
         vx: 0,
@@ -331,23 +321,7 @@ export default function KnowledgeGraph() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadGraph();
-  }, [loadGraph]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void loadGraph();
-      }
-    };
-    window.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("focus", handleVisibility);
-    return () => {
-      window.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("focus", handleVisibility);
-    };
-  }, [loadGraph]);
+  useEffect(() => { void loadGraph(); }, [loadGraph]);
 
   useEffect(() => {
     if (loading || empty) return;
@@ -365,21 +339,6 @@ export default function KnowledgeGraph() {
 
   const handleNodeClick = useCallback(async (node: GraphNode) => {
     setSelectedNode(node);
-
-    if (node.type === "NOTE") {
-      try {
-        const { data } = await notesApi.get(node.id);
-        openInspector({
-          ...data,
-          type: "NOTE",
-          description: data.content?.slice(0, 120),
-        });
-      } catch (error: any) {
-        toast({ title: "Erro ao abrir nota", description: error?.response?.data?.message || "Não foi possível carregar a nota.", variant: "destructive" });
-      }
-      return;
-    }
-
     const entity = allEntities.find(e => e.id === node.id);
     if (entity) {
       openInspector(entity);
@@ -387,12 +346,12 @@ export default function KnowledgeGraph() {
       openInspector({
         id: node.id,
         title: node.label,
-        type: node.type,
+        type: (node.type as EntityType) || "TOPIC",
         createdAt: new Date().toISOString(),
         ownerId: "",
       });
     }
-  }, [allEntities, openInspector, toast]);
+  }, [allEntities, openInspector]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -428,17 +387,12 @@ export default function KnowledgeGraph() {
       const node = findNodeAt(sx, sy);
       setHoveredNode(node);
       setTooltipPos(node ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
-      if (canvasRef.current) {
-        canvasRef.current.style.cursor = node ? "pointer" : "grab";
-      }
+      if (canvasRef.current) canvasRef.current.style.cursor = node ? "pointer" : "grab";
     }
     lastMouseRef.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = () => {
-    draggingRef.current = null;
-    panningRef.current = false;
-  };
+  const handleMouseUp = () => { draggingRef.current = null; panningRef.current = false; };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -488,14 +442,8 @@ export default function KnowledgeGraph() {
     if (!rect) return;
     const sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
     const node = findNodeAt(sx, sy);
-    if (node) {
-      draggingRef.current = node;
-      handleNodeClick(node);
-    } else {
-      panningRef.current = true;
-      setSelectedNode(null);
-      closeInspector();
-    }
+    if (node) { draggingRef.current = node; handleNodeClick(node); }
+    else { panningRef.current = true; setSelectedNode(null); closeInspector(); }
     lastMouseRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
@@ -508,10 +456,8 @@ export default function KnowledgeGraph() {
     const sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
     if (draggingRef.current) {
       const w = screenToWorld(sx, sy);
-      draggingRef.current.x = w.x;
-      draggingRef.current.y = w.y;
-      draggingRef.current.vx = 0;
-      draggingRef.current.vy = 0;
+      draggingRef.current.x = w.x; draggingRef.current.y = w.y;
+      draggingRef.current.vx = 0; draggingRef.current.vy = 0;
     } else if (panningRef.current) {
       panRef.current.x += touch.clientX - lastMouseRef.current.x;
       panRef.current.y += touch.clientY - lastMouseRef.current.y;
@@ -519,12 +465,8 @@ export default function KnowledgeGraph() {
     lastMouseRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
-  const handleTouchEnd = () => {
-    draggingRef.current = null;
-    panningRef.current = false;
-  };
+  const handleTouchEnd = () => { draggingRef.current = null; panningRef.current = false; };
 
-  // All unique types from data
   const availableTypes = useMemo(() => {
     const nodes = Array.isArray(nodesRef.current) ? nodesRef.current : [];
     const types = new Set(nodes.map(n => n.type));
@@ -538,7 +480,6 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        {/* Header */}
         <div className="p-3 lg:p-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 shrink-0 gap-2">
           <div>
             <h1 className="font-display text-lg lg:text-xl font-semibold tracking-tight text-foreground">
@@ -561,15 +502,12 @@ export default function KnowledgeGraph() {
           </div>
         </div>
 
-        {/* Type filter bar */}
         {!empty && availableTypes.length > 0 && (
           <div className="px-3 lg:px-4 py-2 flex gap-1.5 flex-wrap border-b border-border/30 shrink-0">
             <button
               onClick={() => setTypeFilter(null)}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                !typeFilter
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                !typeFilter ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
               }`}
             >
               Todos
@@ -579,9 +517,7 @@ export default function KnowledgeGraph() {
                 key={type}
                 onClick={() => setTypeFilter(typeFilter === type ? null : type)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                  typeFilter === type
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  typeFilter === type ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
               >
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
@@ -591,7 +527,6 @@ export default function KnowledgeGraph() {
           </div>
         )}
 
-        {/* Graph area */}
         <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
@@ -616,12 +551,7 @@ export default function KnowledgeGraph() {
                     Comece a criar notas e mencionar entidades com <span className="text-primary font-medium">@</span> para ver seu cérebro crescer.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-border/50"
-                  onClick={() => navigate("/notes")}
-                >
+                <Button variant="outline" size="sm" className="border-border/50" onClick={() => navigate("/notes")}>
                   Criar primeira nota →
                 </Button>
               </div>
@@ -645,7 +575,6 @@ export default function KnowledgeGraph() {
             />
           )}
 
-          {/* Tooltip on hover */}
           {hoveredNode && tooltipPos && !selectedNode && (
             <div
               className="absolute z-20 pointer-events-none px-3 py-1.5 rounded-lg bg-popover/95 backdrop-blur-sm border border-border/50 shadow-lg"
@@ -654,16 +583,11 @@ export default function KnowledgeGraph() {
                 top: tooltipPos.y - 36,
               }}
             >
-              <p className="text-xs font-medium text-foreground truncate max-w-[140px]">
-                {hoveredNode.label}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {TYPE_LABELS[hoveredNode.type] || hoveredNode.type}
-              </p>
+              <p className="text-xs font-medium text-foreground truncate max-w-[140px]">{hoveredNode.label}</p>
+              <p className="text-[10px] text-muted-foreground">{TYPE_LABELS[hoveredNode.type] || hoveredNode.type}</p>
             </div>
           )}
 
-          {/* Legend */}
           {!empty && availableTypes.length > 0 && (
             <div className="absolute bottom-3 left-3 bento-card p-2.5 space-y-1 max-w-[140px]">
               <p className="text-[10px] font-medium text-foreground mb-1 uppercase tracking-wider">Legenda</p>
@@ -679,7 +603,6 @@ export default function KnowledgeGraph() {
             </div>
           )}
 
-          {/* Selected node info card */}
           {selectedNode && !inspectorOpen && (
             <div className="absolute top-3 right-3 bento-card p-3 w-48 space-y-2">
               <div className="flex items-center gap-2">
@@ -706,10 +629,7 @@ export default function KnowledgeGraph() {
       <SideInspector
         isOpen={inspectorOpen}
         entity={inspectorEntity}
-        onClose={() => {
-          closeInspector();
-          setSelectedNode(null);
-        }}
+        onClose={() => { closeInspector(); setSelectedNode(null); }}
       />
     </AppLayout>
   );

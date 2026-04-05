@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
     "isolatedModules": true,
     "jsx": "react-jsx",
     "lib": [
@@ -16,14 +17,12 @@
     "noImplicitAny": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "baseUrl": "./",
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
     "skipLibCheck": true,
-    "ignoreDeprecations": "6.0",
     "strict": false,
     "target": "ES2020",
     "types": [
