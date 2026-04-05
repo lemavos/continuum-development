@@ -167,6 +167,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background">
+      <CommandPalette />
       <button
         className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-card border border-border"
         onClick={() => setSidebarOpen(true)}
@@ -178,7 +179,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <aside className="hidden lg:flex w-56 border-r border-border/50 bg-sidebar flex-col">
+      <aside className="hidden lg:flex w-56 border-r border-border/50 bg-sidebar flex-col shrink-0">
         {sidebar}
       </aside>
 
@@ -189,7 +190,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {sidebar}
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto min-w-0">
         <div className="lg:hidden h-14" />
         {children}
       </main>
