@@ -47,9 +47,13 @@ export default function NoteEditor() {
         lastSavedTitle.current = data.title;
         // Try to parse content as JSON (Tiptap), fall back to wrapping text
         try {
-          const parsed = JSON.parse(data.content);
+          let parsed = JSON.parse(data.content);
+          // Fix double-stringified content (backend may return "\"...\"")
+          while (typeof parsed === "string") {
+            parsed = JSON.parse(parsed);
+          }
           currentJSON.current = parsed;
-          lastSavedJSON.current = data.content;
+          lastSavedJSON.current = JSON.stringify(parsed);
         } catch {
           // Legacy markdown content → convert to paragraph
           const doc = {
