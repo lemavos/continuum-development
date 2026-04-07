@@ -91,20 +91,72 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
 MentionList.displayName = "MentionList";
 
 /* ── Suggestion plugin config ── */
-let cachedEntities: Entity[] = [];
+interface EntityCacheState {
+  token: string | null;
+  fetchedAt: number;
+  entities: Entity[];
+  pending: Promise<Entity[]> | null;
+}
+
+const ENTITY_CACHE_TTL = 5000;
+
+const entityCache: EntityCacheState = {
+  token: null,
+  fetchedAt: 0,
+  entities: [],
+  pending: null,
+};
+
+const resetEntityCache = () => {
+  entityCache.token = null;
+  entityCache.fetchedAt = 0;
+  entityCache.entities = [];
+  entityCache.pending = null;
+};
+
+const loadEntities = async () => {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null;
+  const now = Date.now();
+
+  if (entityCache.token !== token) {
+    resetEntityCache();
+    entityCache.token = token;
+  }
+
+  if (entityCache.pending) {
+    return entityCache.pending;
+  }
+
+  if (entityCache.entities.length > 0 && now - entityCache.fetchedAt < ENTITY_CACHE_TTL) {
+    return entityCache.entities;
+  }
+
+  entityCache.pending = entitiesApi
+    .list()
+    .then(({ data }) => {
+      const nextEntities = Array.isArray(data) ? data : [];
+      entityCache.entities = nextEntities;
+      entityCache.fetchedAt = Date.now();
+      return nextEntities;
+    })
+    .catch(() => {
+      entityCache.entities = [];
+      entityCache.fetchedAt = 0;
+      return [];
+    })
+    .finally(() => {
+      entityCache.pending = null;
+    });
+
+  return entityCache.pending;
+};
 
 const mentionSuggestion = {
   char: "@",
   items: async ({ query }: { query: string }) => {
-    if (!cachedEntities.length) {
-      try {
-        const { data } = await entitiesApi.list();
-        cachedEntities = Array.isArray(data) ? data : [];
-      } catch {
-        cachedEntities = [];
-      }
-    }
-    return cachedEntities
+    const entities = await loadEntities();
+
+    return entities
       .filter((e) => e.title.toLowerCase().includes(query.toLowerCase()))
       .slice(0, 8);
   },
@@ -236,7 +288,14 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     // Invalidate entity cache periodically
     useEffect(() => {
-      cachedEntities = [];
+      resetEntityCache();
+
+      const handleFocus = () => resetEntityCache();
+      window.addEventListener("focus", handleFocus);
+
+      return () => {
+        window.removeEventListener("focus", handleFocus);
+      };
     }, []);
 
     return <EditorContent editor={editor} />;

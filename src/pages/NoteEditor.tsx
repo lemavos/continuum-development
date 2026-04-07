@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { notesApi } from "@/lib/api";
+import { entitiesApi, notesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save, Loader2, Check, PanelRight, PanelRightClose } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor, type TiptapEditorHandle } from "@/components/TiptapEditor";
 import { BacklinksPanel } from "@/components/BacklinksPanel";
+import { extractMentionIds, parseTiptapContent, sanitizeTiptapMentions } from "@/lib/tiptap-content";
 
 interface NoteData {
   id: string;
@@ -39,58 +40,72 @@ export default function NoteEditor() {
   // Load note
   useEffect(() => {
     if (!id) return;
-    notesApi
-      .get(id)
-      .then(({ data }) => {
-        setNote(data);
+    let cancelled = false;
+
+    setLoading(true);
+
+    Promise.allSettled([notesApi.get(id), entitiesApi.list()])
+      .then(([noteResult, entitiesResult]) => {
+        if (noteResult.status !== "fulfilled") {
+          throw noteResult.reason;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const data = noteResult.value.data as NoteData;
+        const parsedContent = parseTiptapContent(data.content);
+        const userEntities =
+          entitiesResult.status === "fulfilled" && Array.isArray(entitiesResult.value.data)
+            ? entitiesResult.value.data
+            : null;
+        const sanitized = userEntities
+          ? sanitizeTiptapMentions(parsedContent, userEntities)
+          : {
+              doc: parsedContent,
+              entityIds: extractMentionIds(parsedContent),
+              changed: false,
+              removedIds: [],
+            };
+        const normalizedContent = JSON.stringify(sanitized.doc);
+
+        setNote({
+          ...data,
+          content: normalizedContent,
+          entityIds: sanitized.entityIds,
+        });
         setTitle(data.title);
         lastSavedTitle.current = data.title;
-        // Try to parse content as JSON (Tiptap), fall back to wrapping text
-        try {
-          let parsed = JSON.parse(data.content);
-          // Fix double-stringified content (backend may return "\"...\"")
-          while (typeof parsed === "string") {
-            parsed = JSON.parse(parsed);
-          }
-          currentJSON.current = parsed;
-          lastSavedJSON.current = JSON.stringify(parsed);
-        } catch {
-          // Legacy markdown content → convert to paragraph
-          const doc = {
-            type: "doc",
-            content: data.content
-              ? data.content.split("\n").map((line: string) => ({
-                  type: "paragraph",
-                  content: line ? [{ type: "text", text: line }] : [],
-                }))
-              : [{ type: "paragraph" }],
-          };
-          currentJSON.current = doc;
-          lastSavedJSON.current = JSON.stringify(doc);
+        currentJSON.current = sanitized.doc;
+        lastSavedJSON.current = normalizedContent;
+
+        if (sanitized.changed) {
+          void notesApi.update(id, {
+            title: data.title,
+            content: normalizedContent,
+            entityIds: sanitized.entityIds,
+          });
         }
       })
       .catch(() => {
+        if (cancelled) {
+          return;
+        }
         toast({ title: "Nota não encontrada", variant: "destructive" });
         navigate("/notes");
       })
-      .finally(() => setLoading(false));
-  }, [id, navigate, toast]);
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
 
-  // Extract entity IDs from Tiptap JSON
-  const extractEntityIds = useCallback((json: any): string[] => {
-    const ids: string[] = [];
-    const walk = (node: any) => {
-      if (!node) return;
-      if (node.type === "mention" && node.attrs?.id) {
-        ids.push(node.attrs.id);
-      }
-      if (Array.isArray(node.content)) {
-        node.content.forEach(walk);
-      }
+    return () => {
+      cancelled = true;
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-    walk(json);
-    return [...new Set(ids)];
-  }, []);
+  }, [id, navigate, toast]);
 
   const doSave = useCallback(
     async (t: string, json: any) => {
@@ -100,7 +115,7 @@ export default function NoteEditor() {
 
       setSaveStatus("saving");
       try {
-        const entityIds = extractEntityIds(json);
+        const entityIds = extractMentionIds(json);
         await notesApi.update(id, {
           title: t,
           content: jsonStr,
@@ -119,7 +134,7 @@ export default function NoteEditor() {
         }
       }
     },
-    [id, extractEntityIds, toast]
+    [id, toast]
   );
 
   const scheduleAutoSave = useCallback(

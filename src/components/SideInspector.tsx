@@ -1,270 +1,31 @@
-import { memo, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, TrendingUp, CheckCircle2, AlertCircle, Link2, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { entitiesApi } from '@/lib/api';
-import type { Entity, EntityStats, HeatmapData, Note } from '@/types';
-import { useEntityStore } from '@/contexts/EntityContext';
+import { memo, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, Calendar, Link2, Network, StickyNote, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEntityStore, type InspectableEntity, type InspectableNote } from "@/contexts/EntityContext";
+import { entitiesApi, notesApi } from "@/lib/api";
+import { tiptapContentToPlainText } from "@/lib/tiptap-content";
+import type { Entity, EntityStats, Note } from "@/types";
 
-const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
-  NOTE: { label: 'Nota', icon: '📝', color: 'from-slate-600 to-slate-800', bgColor: 'bg-slate-100' },
-  HABIT: { label: 'Hábito', icon: '🟢', color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' },
-  PROJECT: { label: 'Projeto', icon: '🔵', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50' },
-  PERSON: { label: 'Pessoa', icon: '🟡', color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50' },
-  TOPIC: { label: 'Conceito', icon: '🟣', color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50' },
-  ORGANIZATION: { label: 'Organização', icon: '🟠', color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50' },
+const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  NOTE: { label: "Nota", icon: "📝" },
+  HABIT: { label: "Hábito", icon: "🟢" },
+  PROJECT: { label: "Projeto", icon: "🔵" },
+  PERSON: { label: "Pessoa", icon: "🟡" },
+  TOPIC: { label: "Conceito", icon: "🟣" },
+  ORGANIZATION: { label: "Organização", icon: "🟠" },
 };
 
-interface HabitWidgetProps {
-  entity: Entity;
-  stats: EntityStats;
+interface RelatedNote {
+  id: string;
+  title: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
-
-const HabitWidget = memo(function HabitWidget({ entity, stats }: HabitWidgetProps) {
-  const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    // Fetch heatmap data for last 90 days
-    const to = new Date();
-    const from = new Date(to.getTime() - 90 * 24 * 60 * 60 * 1000);
-    
-    entitiesApi
-      .heatmap(entity.id, from.toISOString().split('T')[0], to.toISOString().split('T')[0])
-      .then((res) => setHeatmapData(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [entity.id]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
-    >
-      {/* Streak Card */}
-      <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-50/50">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Sequência Atual</CardTitle>
-            <TrendingUp className="w-4 h-4 text-green-600" />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-3xl font-bold text-green-600">{stats.currentStreak}</div>
-          <p className="text-xs text-muted-foreground">dias consecutivos</p>
-          <div className="mt-3 space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span>Total de completagens:</span>
-              <span className="font-semibold">{stats.totalCompletions}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Sequência máxima:</span>
-              <span className="font-semibold">{stats.longestStreak}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Heatmap Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Últimos 90 Dias
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="h-16 bg-muted rounded animate-pulse" />
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              Visualização de atividade disponível no Dashboard
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Log Entry Button */}
-      <Button className="w-full bg-green-600 hover:bg-green-700 gap-2">
-        <CheckCircle2 className="w-4 h-4" />
-        Marcar como Feito Hoje
-      </Button>
-    </motion.div>
-  );
-});
-
-interface ProjectWidgetProps {
-  entity: Entity;
-}
-
-const ProjectWidget = memo(function ProjectWidget({ entity }: ProjectWidgetProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
-    >
-      <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/50">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Progresso</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="flex justify-between mb-2">
-              <span className="text-xs font-medium">Conclusão Geral</span>
-              <span className="text-xs font-bold text-blue-600">45%</span>
-            </div>
-            <Progress value={45} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <ArrowRight className="w-4 h-4" />
-            Próxima Task
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              Implementar integração com API
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Prazo: 15 dias
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button className="w-full bg-blue-600 hover:bg-blue-700 gap-2">
-        <ArrowRight className="w-4 h-4" />
-        Abrir Projeto
-      </Button>
-    </motion.div>
-  );
-});
-
-interface PersonWidgetProps {
-  entity: Entity;
-}
-
-const PersonWidget = memo(function PersonWidget({ entity }: PersonWidgetProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
-    >
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Informações</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {entity.description && (
-            <p className="text-sm text-foreground">{entity.description}</p>
-          )}
-          <div className="pt-2 border-t space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Última menção: 2 dias atrás
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button className="w-full bg-yellow-600 hover:bg-yellow-700 gap-2 variant:outline">
-        <Link2 className="w-4 h-4" />
-        Ver Menções
-      </Button>
-    </motion.div>
-  );
-});
-
-const NoteWidget = memo(function NoteWidget({ note }: { note: InspectableNote }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
-    >
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Resumo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-foreground">{note.description || note.content?.slice(0, 220) || 'Sem conteúdo disponível.'}</p>
-          <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Tags</span>
-              <span>{note.tags?.length ?? 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Última atualização</span>
-              <span>{new Date(note.updatedAt).toLocaleDateString('pt-BR')}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Button className="w-full bg-slate-700 hover:bg-slate-800 gap-2 text-white">
-        <Link2 className="w-4 h-4" />
-        Abrir nota
-      </Button>
-    </motion.div>
-  );
-});
-
-const DefaultWidget = memo(function DefaultWidget({ entity }: { entity: Entity }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
-    >
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Descrição</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {entity.description ? (
-            <p className="text-sm text-foreground">{entity.description}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">Sem descrição</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Conexões</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground">
-            Conectada em múltiplas notas e projetos
-          </p>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-});
-
-interface InspectableNote extends Note {
-  type: 'NOTE';
-  description?: string;
-}
-
-type InspectableEntity = Entity | InspectableNote;
 
 interface SideInspectorProps {
   isOpen: boolean;
@@ -272,39 +33,131 @@ interface SideInspectorProps {
   onClose: () => void;
 }
 
-export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose }: SideInspectorProps) {
-  const [stats, setStats] = useState<EntityStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { loadingEntityId, setLoadingEntityId } = useEntityStore();
+const truncateText = (value: string, maxLength = 220) =>
+  value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 
-  const isNote = entity?.type === 'NOTE';
+const formatDate = (value?: string) => (value ? new Date(value).toLocaleDateString("pt-BR") : "—");
+
+export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose }: SideInspectorProps) {
+  const navigate = useNavigate();
+  const { openInspector, setLoadingEntityId } = useEntityStore();
+  const [loading, setLoading] = useState(false);
+  const [resolvedFromApi, setResolvedFromApi] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resolvedEntity, setResolvedEntity] = useState<InspectableEntity | null>(null);
+  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
+  const [relatedEntities, setRelatedEntities] = useState<Entity[]>([]);
+  const [stats, setStats] = useState<EntityStats | null>(null);
 
   useEffect(() => {
-    if (!entity || isNote) return;
+    if (!entity || !isOpen) {
+      return;
+    }
 
+    let cancelled = false;
+
+    setResolvedEntity(entity);
+    setResolvedFromApi(false);
     setLoading(true);
+    setError(null);
+    setStats(null);
+    setRelatedNotes([]);
+    setRelatedEntities([]);
     setLoadingEntityId(entity.id);
 
-    Promise.all([
-      entity.type === 'HABIT' ? entitiesApi.stats(entity.id) : Promise.resolve(null),
-    ])
-      .then(([statsRes]) => {
-        if (statsRes) {
-          setStats(statsRes.data);
+    const loadInspectorData = async () => {
+      try {
+        if (entity.type === "NOTE") {
+          const { data } = await notesApi.get(entity.id);
+
+          if (cancelled) {
+            return;
+          }
+
+          const noteData = data as Partial<Note> & {
+            userId?: string;
+            entityIds?: string[];
+            content?: string;
+          };
+          const plainText = tiptapContentToPlainText(noteData.content);
+
+          setResolvedEntity({
+            id: noteData.id || entity.id,
+            title: noteData.title || entity.title,
+            type: "NOTE",
+            content: noteData.content || "",
+            description: plainText ? truncateText(plainText) : undefined,
+            tags: Array.isArray(noteData.tags) ? noteData.tags : [],
+            entityIds: Array.isArray(noteData.entityIds) ? noteData.entityIds : [],
+            ownerId:
+              typeof noteData.ownerId === "string"
+                ? noteData.ownerId
+                : typeof noteData.userId === "string"
+                  ? noteData.userId
+                  : "",
+            createdAt: noteData.createdAt || "",
+            updatedAt: noteData.updatedAt || noteData.createdAt || "",
+          } satisfies InspectableNote);
+          setResolvedFromApi(true);
+          return;
         }
-      })
-      .catch(() => {
-        setStats(null);
-      })
-      .finally(() => {
-        setLoading(false);
-        setLoadingEntityId(null);
-      });
-  }, [entity, isNote, setLoadingEntityId]);
 
-  if (!entity) return null;
+        const [entityRes, notesRes, connectionsRes, statsRes] = await Promise.all([
+          entitiesApi.get(entity.id),
+          entitiesApi.getNotes(entity.id),
+          entitiesApi.getConnections(entity.id),
+          entity.type === "HABIT" ? entitiesApi.stats(entity.id) : Promise.resolve(null),
+        ]);
 
-  const config = ENTITY_TYPE_CONFIG[entity.type] || ENTITY_TYPE_CONFIG.TOPIC;
+        if (cancelled) {
+          return;
+        }
+
+        setResolvedEntity(entityRes.data);
+        setRelatedNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
+        setRelatedEntities(
+          (Array.isArray(connectionsRes.data) ? connectionsRes.data : []).filter(
+            (item: Entity) => item.id !== entity.id
+          )
+        );
+        setStats(statsRes ? statsRes.data : null);
+        setResolvedFromApi(true);
+      } catch {
+        if (!cancelled) {
+          setError("Não foi possível carregar dados reais desta entidade agora.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingEntityId(null);
+        }
+      }
+    };
+
+    void loadInspectorData();
+
+    return () => {
+      cancelled = true;
+      setLoadingEntityId(null);
+    };
+  }, [entity, isOpen, setLoadingEntityId]);
+
+  if (!entity) {
+    return null;
+  }
+
+  const displayEntity = resolvedEntity || entity;
+  const config = ENTITY_TYPE_CONFIG[displayEntity.type] || ENTITY_TYPE_CONFIG.TOPIC;
+  const isNote = displayEntity.type === "NOTE";
+  const notePreview = useMemo(() => {
+    if (!isNote) {
+      return "";
+    }
+
+    const note = displayEntity as InspectableNote;
+    const previewSource = note.description || tiptapContentToPlainText(note.content);
+    return previewSource ? truncateText(previewSource) : "Sem conteúdo disponível.";
+  }, [displayEntity, isNote]);
 
   return (
     <AnimatePresence mode="wait">
@@ -314,60 +167,221 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 320 }}
           transition={{ duration: 0.25 }}
-          className="fixed right-0 top-0 bottom-0 w-80 border-l border-border bg-background/95 backdrop-blur-sm shadow-lg z-40"
+          className="fixed right-0 top-0 bottom-0 z-40 w-80 border-l border-border bg-background/95 shadow-lg backdrop-blur-sm"
         >
           <ScrollArea className="h-full">
-            <div className="p-4 space-y-4">
-              {/* Header */}
+            <div className="space-y-4 p-4">
               <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="text-2xl">{config.icon}</span>
                     <Badge variant="outline" className="text-xs">
                       {config.label}
                     </Badge>
                   </div>
-                  <h2 className="font-bold text-lg truncate text-foreground">
-                    {entity.title}
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Criado em {new Date(entity.createdAt).toLocaleDateString('pt-BR')}
-                  </p>
+                  <h2 className="truncate text-lg font-bold text-foreground">{displayEntity.title}</h2>
+                  {!loading && resolvedFromApi && displayEntity.createdAt && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Criado em {formatDate(displayEntity.createdAt)}
+                    </p>
+                  )}
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={onClose}
-                  className="mt-1 p-1.5 hover:bg-muted rounded-md transition-colors"
+                  className="mt-1 rounded-md p-1.5 transition-colors hover:bg-muted"
                 >
-                  <X className="w-4 h-4 text-muted-foreground" />
+                  <X className="h-4 w-4 text-muted-foreground" />
                 </motion.button>
               </div>
 
-              {/* Divider */}
               <div className="h-px bg-border/50" />
 
-              {/* Content - Type-specific widgets */}
               {loading ? (
                 <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-24 bg-muted rounded animate-pulse" />
+                  {[...Array(3)].map((_, index) => (
+                    <div key={index} className="h-24 animate-pulse rounded bg-muted" />
                   ))}
                 </div>
               ) : (
-                <>
-                  {isNote ? (
-                    <NoteWidget note={entity} />
-                  ) : entity.type === 'HABIT' && stats ? (
-                    <HabitWidget entity={entity} stats={stats} />
-                  ) : entity.type === 'PROJECT' ? (
-                    <ProjectWidget entity={entity} />
-                  ) : entity.type === 'PERSON' ? (
-                    <PersonWidget entity={entity} />
-                  ) : (
-                    <DefaultWidget entity={entity} />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-4"
+                >
+                  {error && (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-muted-foreground">{error}</p>
+                      </CardContent>
+                    </Card>
                   )}
-                </>
+
+                  {isNote ? (
+                    <>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">Resumo</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm leading-relaxed text-foreground">{notePreview}</p>
+                          <div className="space-y-2 text-xs text-muted-foreground">
+                            <div className="flex items-center justify-between">
+                              <span className="inline-flex items-center gap-1.5">
+                                <Link2 className="h-3.5 w-3.5" />
+                                Entidades mencionadas
+                              </span>
+                              <span>{(displayEntity as InspectableNote).entityIds?.length ?? 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="inline-flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" />
+                                Última atualização
+                              </span>
+                              <span>{formatDate((displayEntity as InspectableNote).updatedAt)}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2"
+                        onClick={() => {
+                          navigate(`/notes/${displayEntity.id}`);
+                          onClose();
+                        }}
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
+                        Abrir nota
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">Detalhes reais</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {displayEntity.description ? (
+                            <p className="text-sm leading-relaxed text-foreground">{displayEntity.description}</p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Sem descrição cadastrada.</p>
+                          )}
+                          <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                            <div className="rounded-md border border-border/50 bg-card/60 p-3">
+                              <div className="mb-1 inline-flex items-center gap-1.5">
+                                <StickyNote className="h-3.5 w-3.5" />
+                                Notas
+                              </div>
+                              <div className="text-base font-semibold text-foreground">{relatedNotes.length}</div>
+                            </div>
+                            <div className="rounded-md border border-border/50 bg-card/60 p-3">
+                              <div className="mb-1 inline-flex items-center gap-1.5">
+                                <Network className="h-3.5 w-3.5" />
+                                Conexões
+                              </div>
+                              <div className="text-base font-semibold text-foreground">{relatedEntities.length}</div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {displayEntity.type === "HABIT" && stats && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold">Métricas do hábito</CardTitle>
+                          </CardHeader>
+                          <CardContent className="grid grid-cols-3 gap-3 text-center text-xs text-muted-foreground">
+                            <div>
+                              <div className="text-lg font-semibold text-foreground">{stats.currentStreak}</div>
+                              <p>Sequência</p>
+                            </div>
+                            <div>
+                              <div className="text-lg font-semibold text-foreground">{stats.totalCompletions}</div>
+                              <p>Total</p>
+                            </div>
+                            <div>
+                              <div className="text-lg font-semibold text-foreground">{stats.longestStreak}</div>
+                              <p>Máxima</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">Notas conectadas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {relatedNotes.length > 0 ? (
+                            relatedNotes.slice(0, 5).map((note) => (
+                              <button
+                                key={note.id}
+                                onClick={() => {
+                                  navigate(`/notes/${note.id}`);
+                                  onClose();
+                                }}
+                                className="flex w-full items-start gap-2 rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent"
+                              >
+                                <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm text-foreground">{note.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Atualizada em {formatDate(note.updatedAt || note.createdAt)}
+                                  </p>
+                                </div>
+                              </button>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Nenhuma nota conectada ainda.</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">Entidades relacionadas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {relatedEntities.length > 0 ? (
+                            relatedEntities.slice(0, 5).map((relatedEntity) => (
+                              <button
+                                key={relatedEntity.id}
+                                onClick={() => openInspector(relatedEntity)}
+                                className="flex w-full items-center justify-between rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm text-foreground">{relatedEntity.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {(ENTITY_TYPE_CONFIG[relatedEntity.type] || ENTITY_TYPE_CONFIG.TOPIC).label}
+                                  </p>
+                                </div>
+                                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              </button>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Nenhuma conexão real encontrada.</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2"
+                        onClick={() => {
+                          navigate(`/entities/${displayEntity.id}`);
+                          onClose();
+                        }}
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
+                        Abrir entidade
+                      </Button>
+                    </>
+                  )}
+                </motion.div>
               )}
             </div>
           </ScrollArea>
@@ -377,4 +391,4 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   );
 });
 
-SideInspector.displayName = 'SideInspector';
+SideInspector.displayName = "SideInspector";
