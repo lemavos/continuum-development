@@ -1,6 +1,6 @@
 // Types matching Java backend POJOs exactly
 
-export type Plan = "FREE" | "PLUS" | "PRO" | "GOLD";
+export type Plan = "FREE" | "PLUS" | "PRO" | "VISION" | "GOLD";
 
 export interface User {
   id: string;
@@ -23,17 +23,19 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   FREE: { maxEntities: 20, maxNotes: 50, maxHabits: 3, historyDays: 30, maxVaultSizeMB: 100 },
   PLUS: { maxEntities: 100, maxNotes: 500, maxHabits: 10, historyDays: 180, maxVaultSizeMB: 1024 },
   PRO: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: 730, maxVaultSizeMB: 2048 },
+  VISION: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: -1, maxVaultSizeMB: 4096 },
   GOLD: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: -1, maxVaultSizeMB: 4096 },
 };
 
 export interface Note {
   id: string;
   title: string;
-  content: string;
+  content: unknown;
   tags: string[];
   folderId?: string;
   entityIds: string[];
-  ownerId: string;
+  ownerId?: string;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,7 +55,9 @@ export interface Entity {
   description?: string;
   trackingDates?: string[];
   createdAt: string;
-  ownerId: string;
+  ownerId?: string;
+  userId?: string;
+  vaultId?: string;
 }
 
 export interface HeatmapData {
@@ -62,8 +66,10 @@ export interface HeatmapData {
 
 export interface EntityStats {
   currentStreak: number;
-  totalCompletions: number;
   longestStreak: number;
+  totalCompletions?: number;
+  averageValue?: number;
+  weeklyCompletionRate?: number;
 }
 
 export interface DashboardMetrics {
@@ -77,10 +83,16 @@ export interface DashboardMetrics {
 
 export interface Subscription {
   id: string;
-  plan: Plan;
-  status: "ACTIVE" | "CANCELLED" | "PAST_DUE" | "TRIALING";
+  plan?: Plan;
+  effectivePlan?: Plan;
+  status: "ACTIVE" | "CANCELLED" | "CANCELED" | "PAST_DUE" | "TRIALING" | "INCOMPLETE" | "UNPAID";
   currentPeriodEnd?: string;
   stripeCustomerId?: string;
+  maxEntities?: number;
+  maxNotes?: number;
+  maxHabits?: number;
+  cancelAtPeriodEnd?: boolean;
+  inGracePeriod?: boolean;
 }
 
 export interface SubscriptionPlan {

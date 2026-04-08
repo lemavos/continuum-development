@@ -1,4 +1,5 @@
 import axios from "axios";
+import { parseTiptapContent } from "@/lib/tiptap-content";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -7,10 +8,58 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+type JsonRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is JsonRecord =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const normalizeNoteContent = (content: unknown) => parseTiptapContent(content);
+
+const normalizeSearchResults = (payload: unknown) => {
+  if (!isRecord(payload)) {
+    return [];
+  }
+
+  const notes = Array.isArray(payload.notes) ? payload.notes : [];
+  const entities = Array.isArray(payload.entities) ? payload.entities : [];
+
+  return [
+    ...notes.flatMap((note) =>
+      isRecord(note) && typeof note.id === "string" && typeof note.title === "string"
+        ? [{ id: note.id, type: "NOTE" as const, title: note.title }]
+        : []
+    ),
+    ...entities.flatMap((entity) =>
+      isRecord(entity) && typeof entity.id === "string" && typeof entity.title === "string"
+        ? [{
+            id: entity.id,
+            type: "ENTITY" as const,
+            title: entity.title,
+            snippet: typeof entity.description === "string" ? entity.description : undefined,
+          }]
+        : []
+    ),
+  ];
+};
+
+const buildTrackPayload = (data?: { date?: string; value?: number; decimalValue?: number; note?: string }) => {
+  if (data && Object.values(data).some((value) => value !== undefined && value !== "")) {
+    return data;
+  }
+
+  return {
+    date: new Date().toISOString().slice(0, 10),
+  };
+};
+
 // Interceptor: attach JWT (skip only login and registration endpoints)
 api.interceptors.request.use((config) => {
   const url = config.url ?? "";
-  const skipAuth = url === "/api/auth/login" || url === "/api/auth/register";
+  const skipAuth =
+    url === "/api/auth/login" ||
+    url === "/api/auth/register" ||
+    url === "/api/auth/refresh" ||
+    url === "/api/auth/google/callback";
   if (!skipAuth) {
     const token = localStorage.getItem("access_token");
     if (token) {
@@ -80,20 +129,29 @@ export const authApi = {
 export const notesApi = {
   list: () => api.get("/api/notes"),
   get: (id: string) => api.get(`/api/notes/${id}`),
-  create: (title: string, content: string, folderId?: string, entityIds?: string[]) =>
+  create: (title: string, content: unknown, folderId?: string, _entityIds?: string[]) =>
     api.post("/api/notes", {
       title,
-      content,
+      content: normalizeNoteContent(content),
       folderId,
-      // TODO: Verificar se o DTO no Java possui o campo @JsonProperty("entityIds").
-      entityIds: entityIds || [],
     }),
-  update: (id: string, data: { title?: string; content?: string; folderId?: string; entityIds?: string[] }) =>
-    api.put(`/api/notes/${id}`, {
-      ...data,
-      // TODO: Verificar se o DTO no Java possui o campo @JsonProperty("entityIds").
-      entityIds: data.entityIds || [],
-    }),
+  update: (id: string, data: { title?: string; content?: unknown; folderId?: string; entityIds?: string[] }) => {
+    const payload: Record<string, unknown> = {};
+
+    if (typeof data.title === "string") {
+      payload.title = data.title;
+    }
+
+    if (typeof data.folderId === "string") {
+      payload.folderId = data.folderId;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, "content")) {
+      payload.content = normalizeNoteContent(data.content);
+    }
+
+    return api.put(`/api/notes/${id}`, payload);
+  },
   delete: (id: string) => api.delete(`/api/notes/${id}`),
 };
 
@@ -120,7 +178,7 @@ export const entitiesApi = {
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
   getContext: (id: string) => api.get(`/api/entities/${id}/context`),
   track: (entityId: string, data?: { date?: string; value?: number; decimalValue?: number; note?: string }) =>
-    api.post(`/api/entities/${entityId}/track`, data || {}),
+    api.post(`/api/entities/${entityId}/track`, buildTrackPayload(data)),
   untrack: (entityId: string, date: string) =>
     api.delete(`/api/entities/${entityId}/track`, { params: { date } }),
   stats: (entityId: string) => api.get(`/api/entities/${entityId}/stats`),
@@ -136,7 +194,11 @@ export const metricsApi = {
 
 // Search
 export const searchApi = {
-  search: (q: string) => api.get("/api/search", { params: { q } }),
+  search: (q: string) =>
+    api.get("/api/search", { params: { q } }).then((response) => {
+      response.data = normalizeSearchResults(response.data);
+      return response;
+    }),
 };
 
 // Graph

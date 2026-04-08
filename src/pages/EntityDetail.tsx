@@ -24,23 +24,63 @@ export default function EntityDetail() {
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([entitiesApi.get(id), entitiesApi.heatmap(id), entitiesApi.stats(id)])
-      .then(([eRes, hRes, sRes]) => {
-        setEntity(eRes.data);
-        setHeatmap(hRes.data && typeof hRes.data === 'object' ? hRes.data : {});
-        setStats(sRes.data);
-      }).catch(() => { toast({ title: "Entidade não encontrada", variant: "destructive" }); navigate("/entities"); })
-      .finally(() => setLoading(false));
-  }, [id]);
+    let cancelled = false;
+
+    const loadEntity = async () => {
+      setLoading(true);
+
+      try {
+        const { data } = await entitiesApi.get(id);
+
+        if (cancelled) {
+          return;
+        }
+
+        setEntity(data);
+
+        if (data?.type === "HABIT") {
+          const [hRes, sRes] = await Promise.all([entitiesApi.heatmap(id), entitiesApi.stats(id)]);
+
+          if (cancelled) {
+            return;
+          }
+
+          setHeatmap(hRes.data && typeof hRes.data === "object" ? hRes.data : {});
+          setStats({
+            ...sRes.data,
+            totalCompletions: Array.isArray(data.trackingDates) ? data.trackingDates.length : sRes.data?.totalCompletions,
+          });
+        } else {
+          setHeatmap({});
+          setStats(null);
+        }
+      } catch {
+        if (!cancelled) {
+          toast({ title: "Entidade não encontrada", variant: "destructive" });
+          navigate("/entities");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadEntity();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate, toast]);
 
   const handleTrack = async () => {
     if (!id) return;
     try {
-      const { data } = await entitiesApi.track(id);
-      setEntity(data);
-      const [sRes, hRes] = await Promise.all([entitiesApi.stats(id), entitiesApi.heatmap(id)]);
+      await entitiesApi.track(id, { date: new Date().toISOString().slice(0, 10) });
+      const [eRes, sRes, hRes] = await Promise.all([entitiesApi.get(id), entitiesApi.stats(id), entitiesApi.heatmap(id)]);
+      setEntity(eRes.data);
       setStats(sRes.data);
-      setHeatmap(hRes.data && typeof hRes.data === 'object' ? hRes.data : {});
+      setHeatmap(hRes.data && typeof hRes.data === "object" ? hRes.data : {});
       toast({ title: "Registrado! 🔥" });
     } catch { toast({ title: "Erro", variant: "destructive" }); }
   };
@@ -77,6 +117,8 @@ export default function EntityDetail() {
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.includes(today);
   const streak = stats?.currentStreak ?? 0;
+  const longestStreak = stats?.longestStreak ?? 0;
+  const totalCompletions = entity.trackingDates?.length ?? stats?.totalCompletions ?? 0;
 
   return (
     <AppLayout>
@@ -103,7 +145,8 @@ export default function EntityDetail() {
           <div className="flex gap-2">
             <span className="bento-tag">{entity.type}</span>
             {isHabit && <span className="bento-tag flex items-center gap-1 text-primary"><Flame className="w-3 h-3" /> Streak: {streak} dias</span>}
-            {stats && <span className="bento-tag">Total: {stats.totalCompletions}</span>}
+            {isHabit && <span className="bento-tag">Máx: {longestStreak}</span>}
+            {isHabit && <span className="bento-tag">Total: {totalCompletions}</span>}
           </div>
           {entity.description && <p className="text-sm text-muted-foreground">{entity.description}</p>}
         </div>

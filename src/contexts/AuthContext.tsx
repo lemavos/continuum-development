@@ -32,14 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await authApi.me();
       if (data) {
         setUser({
-          ...data,
           id: data.id ?? data.userId,
           username: data.username ?? data.name ?? "",
+          email: data.email ?? "",
+          plan: data.plan ?? data.effectivePlan ?? "FREE",
+          emailVerified: data.emailVerified ?? true,
           createdAt: data.createdAt,
         });
       }
     } catch (error: unknown) {
-      if ((error as any)?.response?.status === 401) {
+      if ([401, 403].includes((error as any)?.response?.status)) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         setUser(null);
       }
     } finally {

@@ -13,12 +13,13 @@ const planMeta: Record<string, { icon: any; color: string }> = {
   FREE: { icon: Crown, color: "text-muted-foreground" },
   PLUS: { icon: Zap, color: "text-primary" },
   PRO: { icon: Rocket, color: "text-warning" },
+  VISION: { icon: Gem, color: "text-warning" },
   GOLD: { icon: Gem, color: "text-warning" },
 };
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-interface SubInfo { plan: string; status: string; currentPeriodEnd?: string; }
+interface SubInfo { plan?: string; effectivePlan?: string; status: string; currentPeriodEnd?: string; }
 
 export default function Subscription() {
   const { user } = useAuth();
@@ -48,8 +49,8 @@ export default function Subscription() {
     catch { toast({ title: "Erro ao cancelar", variant: "destructive" }); }
   };
 
-  const currentPlan = (user?.plan as Plan) || "FREE";
-  const allPlans: Plan[] = ["FREE", "PLUS", "PRO", "GOLD"];
+  const currentPlan = ((sub?.effectivePlan || user?.plan) as Plan) || "FREE";
+  const allPlans: Plan[] = ["FREE", "PLUS", "PRO", "VISION"];
   const formatLimit = (val: number, suffix = "") => val === -1 ? "Ilimitado" : `${val}${suffix}`;
 
   return (
@@ -88,7 +89,7 @@ export default function Subscription() {
               const meta = planMeta[plan];
               const Icon = meta.icon;
               const isCurrent = plan === currentPlan;
-              const prices: Record<Plan, string> = { FREE: "Grátis", PLUS: "R$ 19,90/mês", PRO: "R$ 39,90/mês", GOLD: "R$ 79,90/mês" };
+              const prices: Record<Plan, string> = { FREE: "Grátis", PLUS: "R$ 19,90/mês", PRO: "R$ 39,90/mês", VISION: "R$ 79,90/mês", GOLD: "R$ 79,90/mês" };
               return (
                 <div key={plan} className={cn("bento-card p-5 space-y-4", isCurrent && "border-primary/30")}>
                   <div className="flex items-center gap-2">

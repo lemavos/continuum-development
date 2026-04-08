@@ -149,6 +149,13 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const displayEntity = resolvedEntity || entity;
   const config = ENTITY_TYPE_CONFIG[displayEntity.type] || ENTITY_TYPE_CONFIG.TOPIC;
   const isNote = displayEntity.type === "NOTE";
+  const habitTotalCompletions = Array.isArray((displayEntity as Entity).trackingDates)
+    ? (displayEntity as Entity).trackingDates?.length ?? 0
+    : stats?.totalCompletions ?? 0;
+  const weeklyCompletionRate = (() => {
+    const value = stats?.weeklyCompletionRate ?? 0;
+    return value <= 1 ? value * 100 : value;
+  })();
   const notePreview = isNote
     ? (() => {
         const note = displayEntity as InspectableNote;
@@ -298,13 +305,17 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                               <p>Sequência</p>
                             </div>
                             <div>
-                              <div className="text-lg font-semibold text-foreground">{stats.totalCompletions}</div>
-                              <p>Total</p>
-                            </div>
-                            <div>
                               <div className="text-lg font-semibold text-foreground">{stats.longestStreak}</div>
                               <p>Máxima</p>
                             </div>
+                            <div>
+                              <div className="text-lg font-semibold text-foreground">{Math.round(weeklyCompletionRate)}%</div>
+                              <p>Taxa semanal</p>
+                            </div>
+                          </CardContent>
+                          <CardContent className="pt-0 text-center text-xs text-muted-foreground">
+                            <span>Total registrado: </span>
+                            <span className="font-medium text-foreground">{habitTotalCompletions}</span>
                           </CardContent>
                         </Card>
                       )}
