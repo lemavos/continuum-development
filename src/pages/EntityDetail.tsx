@@ -4,12 +4,14 @@ import AppLayout from "@/components/AppLayout";
 import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2, Flame, CheckCircle, Edit } from "lucide-react";
+import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Calendar, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { HeatmapData, EntityStats } from "@/types";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
+
+interface RelatedNote { id: string; title: string; createdAt: string; updatedAt: string; }
 
 export default function EntityDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +23,8 @@ export default function EntityDetail() {
   const [loading, setLoading] = useState(true);
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
+  const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -54,9 +58,26 @@ export default function EntityDetail() {
           setHeatmap({});
           setStats(null);
         }
+
+        // Load related notes and connections
+        const [notesRes, connectionsRes] = await Promise.all([
+          entitiesApi.getNotes(id),
+          entitiesApi.getConnections(id),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setRelatedNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
+        setRelatedEntities(
+          (Array.isArray(connectionsRes.data) ? connectionsRes.data : []).filter(
+            (item: EntityData) => item.id !== id
+          )
+        );
       } catch {
         if (!cancelled) {
-          toast({ title: "Entidade não encontrada", variant: "destructive" });
+          toast({ title: "Entity not found", variant: "destructive" });
           navigate("/entities");
         }
       } finally {
@@ -81,8 +102,8 @@ export default function EntityDetail() {
       setEntity(eRes.data);
       setStats(sRes.data);
       setHeatmap(hRes.data && typeof hRes.data === "object" ? hRes.data : {});
-      toast({ title: "Registrado! 🔥" });
-    } catch { toast({ title: "Erro", variant: "destructive" }); }
+      toast({ title: "Registered! 🔥" });
+    } catch { toast({ title: "Error", variant: "destructive" }); }
   };
 
   const handleSaveTitle = async () => {
@@ -91,8 +112,8 @@ export default function EntityDetail() {
       const { data } = await entitiesApi.update(id, { title: newTitle.trim() });
       setEntity(data);
       setEditingTitle(false);
-      toast({ title: "Nome atualizado!" });
-    } catch { toast({ title: "Erro ao atualizar", variant: "destructive" }); }
+      toast({ title: "Name updated!" });
+    } catch { toast({ title: "Error updating", variant: "destructive" }); }
   };
 
   const getLast90Days = () => {
@@ -124,15 +145,15 @@ export default function EntityDetail() {
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
         <Button variant="ghost" size="sm" onClick={() => navigate("/entities")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back
         </Button>
 
         <div className="space-y-3">
           {editingTitle ? (
             <div className="flex gap-2">
-              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Novo nome..." className="flex-1" />
-              <Button size="sm" onClick={handleSaveTitle}>Salvar</Button>
-              <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity?.title || ""); }}>Cancelar</Button>
+              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New name..." className="flex-1" />
+              <Button size="sm" onClick={handleSaveTitle}>Save</Button>
+              <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity?.title || ""); }}>Cancel</Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -144,8 +165,8 @@ export default function EntityDetail() {
           )}
           <div className="flex gap-2">
             <span className="bento-tag">{entity.type}</span>
-            {isHabit && <span className="bento-tag flex items-center gap-1 text-primary"><Flame className="w-3 h-3" /> Streak: {streak} dias</span>}
-            {isHabit && <span className="bento-tag">Máx: {longestStreak}</span>}
+            {isHabit && <span className="bento-tag flex items-center gap-1 text-primary"><Flame className="w-3 h-3" /> Streak: {streak} days</span>}
+            {isHabit && <span className="bento-tag">Max: {longestStreak}</span>}
             {isHabit && <span className="bento-tag">Total: {totalCompletions}</span>}
           </div>
           {entity.description && <p className="text-sm text-muted-foreground">{entity.description}</p>}
@@ -154,11 +175,11 @@ export default function EntityDetail() {
         {isHabit && (
           <>
             <Button onClick={handleTrack} disabled={!!trackedToday} className={trackedToday ? "bg-accent text-muted-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90 glow-primary"}>
-              <CheckCircle className="w-4 h-4 mr-1" /> {trackedToday ? "Feito hoje ✓" : "Registrar hoje"}
+              <CheckCircle className="w-4 h-4 mr-1" /> {trackedToday ? "Done today ✓" : "Track today"}
             </Button>
 
             <div className="space-y-3">
-              <h2 className="text-sm font-medium text-foreground">Últimos 90 dias</h2>
+              <h2 className="text-sm font-medium text-foreground">Last 90 days</h2>
               <div className="flex flex-wrap gap-1">
                 {days.map((day) => (
                   <div key={day} title={`${day}: ${heatmap[day] || 0}`} className={cn("w-3 h-3 rounded-sm transition-colors", getHeatmapColor(heatmap[day] || 0))} />
@@ -176,8 +197,87 @@ export default function EntityDetail() {
           </>
         )}
 
+        {!isHabit && (
+          <>
+            <div className="bento-card p-4">
+              <h3 className="text-sm font-medium text-foreground mb-3">Entity Metadata</h3>
+              <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground">
+                <div className="rounded-md border border-border/50 bg-card/60 p-3">
+                  <div className="mb-1 inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Created At
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">{new Date(entity.createdAt).toLocaleDateString("en-US")}</div>
+                </div>
+                <div className="rounded-md border border-border/50 bg-card/60 p-3">
+                  <div className="mb-1 inline-flex items-center gap-1.5">
+                    <Network className="h-3.5 w-3.5" />
+                    Number of Connections
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">{relatedEntities.length}</div>
+                </div>
+                <div className="rounded-md border border-border/50 bg-card/60 p-3">
+                  <div className="mb-1 inline-flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5" />
+                    Entity Type
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">{entity.type}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bento-card p-4">
+              <h3 className="text-sm font-medium text-foreground mb-3">Connected Notes</h3>
+              <div className="space-y-2">
+                {relatedNotes.length > 0 ? (
+                  relatedNotes.slice(0, 5).map((note) => (
+                    <button
+                      key={note.id}
+                      onClick={() => navigate(`/notes/${note.id}`)}
+                      className="flex w-full items-start gap-2 rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent"
+                    >
+                      <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-foreground">{note.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Updated {new Date(note.updatedAt).toLocaleDateString("en-US")}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No connected notes yet.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bento-card p-4">
+              <h3 className="text-sm font-medium text-foreground mb-3">Connected Entities</h3>
+              <div className="space-y-2">
+                {relatedEntities.length > 0 ? (
+                  relatedEntities.slice(0, 5).map((ent) => (
+                    <button
+                      key={ent.id}
+                      onClick={() => navigate(`/entities/${ent.id}`)}
+                      className="flex w-full items-start gap-2 rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent"
+                    >
+                      <Network className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-foreground">{ent.title}</p>
+                        <p className="text-xs text-muted-foreground">{ent.type}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No connected entities yet.</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
         <div className="bento-card p-4">
-          <p className="text-xs text-muted-foreground">Criado em {new Date(entity.createdAt).toLocaleDateString("pt-BR")}</p>
+          <p className="text-xs text-muted-foreground">Created on {new Date(entity.createdAt).toLocaleDateString("en-US")}</p>
         </div>
       </div>
     </AppLayout>

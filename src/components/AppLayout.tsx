@@ -23,12 +23,12 @@ import { Input } from "@/components/ui/input";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/notes", icon: StickyNote, label: "Notas" },
-  { to: "/entities", icon: Network, label: "Entidades" },
-  { to: "/graph", icon: GitGraph, label: "Grafo" },
-  { to: "/vault", icon: HardDrive, label: "Vault" },
-  { to: "/subscription", icon: CreditCard, label: "Assinatura" },
-  { to: "/profile", icon: Settings, label: "Perfil" },
+  { to: "/notes", icon: StickyNote, label: "Notes" },
+  { to: "/entities", icon: Network, label: "Entities" },
+  { to: "/graph", icon: GitGraph, label: "Graph" },
+  // { to: "/vault", icon: HardDrive, label: "Vault" },
+  { to: "/subscription", icon: CreditCard, label: "Subscription" },
+  { to: "/profile", icon: Settings, label: "Profile" },
 ];
 
 interface SearchResult {
@@ -88,7 +88,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Buscar... ⌘K"
+            placeholder="Search... ⌘K"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => setSearchFocused(true)}
@@ -159,7 +159,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all w-full"
         >
           <LogOut className="w-4 h-4" />
-          Sair
+          Logout
         </button>
       </div>
     </>
