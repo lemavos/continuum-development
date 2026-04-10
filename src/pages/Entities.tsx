@@ -68,15 +68,21 @@ export default function Entities() {
   const handleTrack = async (entityId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Optimistically update the entity in local state
+      // Get today's date
       const today = new Date().toISOString().split("T")[0];
+      
+      // Optimistically update locally
       setEntities(prev => prev.map(ent => 
         ent.id === entityId 
           ? { ...ent, trackingDates: [...(ent.trackingDates || []), today] }
           : ent
       ));
       
+      // Call API
       await entitiesApi.track(entityId);
+      
+      // Wait a bit and refresh to confirm
+      await new Promise(resolve => setTimeout(resolve, 200));
       await fetchData();
       toast({ title: "Habit tracked! 🔥" });
     }
