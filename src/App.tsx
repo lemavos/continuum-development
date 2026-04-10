@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
 import { EntityProvider } from "@/contexts/EntityContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -75,13 +76,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <UsageProvider>
-            <EntityProvider>
-              <AppRoutes />
-            </EntityProvider>
-          </UsageProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <UsageProvider>
+              <EntityProvider>
+                <AppRoutes />
+              </EntityProvider>
+            </UsageProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

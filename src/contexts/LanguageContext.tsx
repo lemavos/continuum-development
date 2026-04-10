@@ -118,14 +118,11 @@ const translations = {
 };
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState<Language>("en");
-
-  useEffect(() => {
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
     const saved = localStorage.getItem("language") as Language;
-    if (saved && ["en", "es", "pt", "fr"].includes(saved)) {
-      setLanguageState(saved);
-    }
-  }, []);
+    return saved && ["en", "es", "pt", "fr"].includes(saved) ? saved : "en";
+  });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

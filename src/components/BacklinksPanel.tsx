@@ -62,7 +62,7 @@ export function BacklinksPanel({ noteId }: BacklinksPanelProps) {
         <div className="text-center py-8 space-y-2">
           <Unlink className="w-5 h-5 text-muted-foreground/30 mx-auto" />
           <p className="text-xs text-muted-foreground">
-            Nenhum backlink encontrado
+            No connections found
           </p>
         </div>
       )}

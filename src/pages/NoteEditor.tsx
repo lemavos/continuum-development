@@ -128,7 +128,7 @@ export default function NoteEditor() {
       } catch (error: any) {
         setSaveStatus("idle");
         if (error?.response?.status === 401) {
-          toast({ title: "Sessão expirada", variant: "destructive" });
+          toast({ title: "Session expired", variant: "destructive" });
         } else {
           toast({ title: "Error saving note", variant: "destructive" });
         }
@@ -201,12 +201,12 @@ export default function NoteEditor() {
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 {saveStatus === "saving" && (
                   <>
-                    <Loader2 className="w-3 h-3 animate-spin" /> Salvando...
+                    <Loader2 className="w-3 h-3 animate-spin" /> Saving...
                   </>
                 )}
                 {saveStatus === "saved" && (
                   <>
-                    <Check className="w-3 h-3 text-primary" /> Salvo
+                    <Check className="w-3 h-3 text-primary" /> Saved
                   </>
                 )}
               </div>

@@ -49,7 +49,7 @@ export default function EntityDetail() {
             return;
           }
 
-          setHeatmap(hRes.data && typeof hRes.data === "object" ? hRes.data : {});
+          setHeatmap(normalizeHeatmapData(hRes.data));
           setStats({
             ...sRes.data,
             totalCompletions: Array.isArray(data.trackingDates) ? data.trackingDates.length : sRes.data?.totalCompletions,
@@ -94,47 +94,59 @@ export default function EntityDetail() {
     };
   }, [id, navigate, toast]);
 
+  const normalizeHeatmapData = (payload: unknown): HeatmapData => {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
+    return Object.entries(payload).reduce<HeatmapData>((normalized, [key, value]) => {
+      const dateKey = key.split("T")[0];
+      const count = typeof value === "number" ? value : parseInt(String(value), 10);
+      if (!Number.isNaN(count) && count >= 0) {
+        normalized[dateKey] = (normalized[dateKey] || 0) + count;
+      }
+      return normalized;
+    }, {});
+  };
+
   const handleTrack = async () => {
     if (!id) return;
+    const today = new Date().toISOString().split("T")[0];
+
     try {
       // Optimistically update tracking dates and heatmap
-      const today = new Date().toISOString().split("T")[0];
-      setEntity(prev => prev ? {
+      setEntity((prev) => {
+        if (!prev) return prev;
+        const normalizedDates = Array.from(
+          new Set([...(prev.trackingDates || []).map((date) => date.split("T")[0]), today])
+        );
+        return {
+          ...prev,
+          trackingDates: normalizedDates,
+        };
+      });
+
+      setHeatmap((prev) => ({
         ...prev,
-        trackingDates: [...(prev.trackingDates || []), today]
-      } : null);
-      
-      setHeatmap(prev => ({
-        ...prev,
-        [today]: (prev[today] || 0) + 1
+        [today]: (prev[today] || 0) + 1,
       }));
 
-      // Call API
-      const trackRes = await entitiesApi.track(id);
-      
-      // Wait a bit and fetch fresh data to ensure server is updated
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      await entitiesApi.track(id);
+
       const [eRes, sRes, hRes] = await Promise.all([
         entitiesApi.get(id),
         entitiesApi.stats(id),
-        entitiesApi.heatmap(id)
+        entitiesApi.heatmap(id),
       ]);
-      
-      // Merge optimistic updates with fresh data - prefer fresh data
+
       const freshData = eRes.data;
-      const freshHeatmap = hRes.data && typeof hRes.data === "object" ? hRes.data : {};
-      
-      // If fresh heatmap doesn't have today, add our optimistic update
+      const freshHeatmap = normalizeHeatmapData(hRes.data);
       if (!freshHeatmap[today]) {
         freshHeatmap[today] = 1;
       }
-      
+
       setEntity(freshData);
       setStats(sRes.data);
       setHeatmap(freshHeatmap);
       toast({ title: "Registered! 🔥" });
-    } catch { 
+    } catch {
       toast({ title: "Error", variant: "destructive" });
     }
   };
@@ -169,7 +181,7 @@ export default function EntityDetail() {
   const days = getLast90Days();
   const isHabit = entity.type === "HABIT";
   const today = new Date().toISOString().split("T")[0];
-  const trackedToday = entity.trackingDates?.includes(today);
+  const trackedToday = entity.trackingDates?.some((date) => date.startsWith(today));
   const streak = stats?.currentStreak ?? 0;
   const longestStreak = stats?.longestStreak ?? 0;
   const totalCompletions = entity.trackingDates?.length ?? stats?.totalCompletions ?? 0;

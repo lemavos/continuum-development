@@ -68,25 +68,27 @@ export default function Entities() {
   const handleTrack = async (entityId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Get today's date
       const today = new Date().toISOString().split("T")[0];
-      
-      // Optimistically update locally
-      setEntities(prev => prev.map(ent => 
-        ent.id === entityId 
-          ? { ...ent, trackingDates: [...(ent.trackingDates || []), today] }
-          : ent
-      ));
-      
-      // Call API
+
       await entitiesApi.track(entityId);
-      
-      // Wait a bit and refresh to confirm
-      await new Promise(resolve => setTimeout(resolve, 200));
-      await fetchData();
+
+      setEntities((prev) =>
+        prev.map((ent) =>
+          ent.id === entityId
+            ? {
+                ...ent,
+                trackingDates: Array.from(
+                  new Set([...(ent.trackingDates || []).map((date) => date.split("T")[0]), today])
+                ),
+              }
+            : ent
+        )
+      );
+
       toast({ title: "Habit tracked! 🔥" });
+    } catch {
+      toast({ title: "Error registering", variant: "destructive" });
     }
-    catch { toast({ title: "Error registering", variant: "destructive" }); }
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -101,7 +103,8 @@ export default function Entities() {
     catch { toast({ title: "Error deleting", variant: "destructive" }); }
   };
 
-  const isTrackedToday = (entityId: string) => todayEvents.some((e: any) => e.entityId === entityId);
+  const today = new Date().toISOString().split("T")[0];
+  const isTrackedToday = (entity: Entity) => entity.trackingDates?.some((date) => date.startsWith(today)) ?? false;
 
   const filtered = entities.filter((e) => {
     const matchSearch = e.title.toLowerCase().includes(search.toLowerCase());
@@ -182,7 +185,7 @@ export default function Entities() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map((entity) => {
               const Icon = typeIcons[entity.type] || Network;
-              const tracked = isTrackedToday(entity.id);
+              const tracked = isTrackedToday(entity);
               return (
                 <div key={entity.id} className="bento-card group cursor-pointer" onClick={() => navigate(`/entities/${entity.id}`)}>
                   <div className="flex items-center justify-between mb-3">

@@ -61,7 +61,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
     if (!items.length) {
       return (
         <div className="rounded-lg border border-border bg-popover p-2 shadow-xl">
-          <p className="px-2 py-1 text-xs text-muted-foreground">Nenhuma entidade encontrada</p>
+          <p className="px-2 py-1 text-xs text-muted-foreground">No entities found</p>
         </div>
       );
     }
@@ -238,7 +238,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           heading: { levels: [1, 2, 3] },
         }),
         Placeholder.configure({
-          placeholder: "Comece a escrever... Use @ para mencionar entidades",
+          placeholder: "Start writing or use @ to mention entities",
         }),
         LinkExtension.configure({
           openOnClick: false,

@@ -293,7 +293,10 @@ export default function KnowledgeGraph() {
         return;
       }
 
-      const nextNodes: GraphNode[] = rawNodes.map((n: any) => ({
+      const vaultFilteredNodes = rawNodes.filter((n: any) => n.vaultId !== undefined && n.vaultId !== null);
+      const sourceNodes = vaultFilteredNodes.length > 0 ? vaultFilteredNodes : rawNodes;
+
+      const nextNodes: GraphNode[] = sourceNodes.map((n: any) => ({
         id: n.id,
         label: n.label,
         type: String(n.type),
@@ -483,7 +486,7 @@ export default function KnowledgeGraph() {
         <div className="p-3 lg:p-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 shrink-0 gap-2">
           <div>
             <h1 className="font-display text-lg lg:text-xl font-semibold tracking-tight text-foreground">
-              Grafo de Conhecimento
+              Knowledge Graph
             </h1>
             <p className="text-xs text-muted-foreground">
               {graphStats.nodes} nodes · {graphStats.edges} connections
@@ -510,7 +513,7 @@ export default function KnowledgeGraph() {
                 !typeFilter ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
               }`}
             >
-              Todos
+              All
             </button>
             {availableTypes.map(({ type, label, color }) => (
               <button
@@ -532,7 +535,7 @@ export default function KnowledgeGraph() {
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">Carregando grafo...</p>
+                <p className="text-xs text-muted-foreground">Loading graph...</p>
               </div>
             </div>
           )}
@@ -545,7 +548,7 @@ export default function KnowledgeGraph() {
                 </div>
                 <div className="space-y-2">
                   <h2 className="font-display text-lg font-semibold text-foreground">
-                    Nenhuma conexão detectada ainda
+                    No connections detected yet
                   </h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Start creating notes and mention entities with <span className="text-primary font-medium">@</span> to see your brain grow.
@@ -590,7 +593,7 @@ export default function KnowledgeGraph() {
 
           {!empty && availableTypes.length > 0 && (
             <div className="absolute bottom-3 left-3 bento-card p-2.5 space-y-1 max-w-[140px]">
-              <p className="text-[10px] font-medium text-foreground mb-1 uppercase tracking-wider">Legenda</p>
+              <p className="text-[10px] font-medium text-foreground mb-1 uppercase tracking-wider">Legend</p>
               {availableTypes.map(({ type, label, color }) => (
                 <div key={type} className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
