@@ -37,7 +37,7 @@ export default function Footer() {
             <div className="flex gap-6 text-xs text-[oklch(0.35_0.008_260)]">
               <a href="#features" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">Features</a>
               <a href="#how-it-works" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">How it works</a>
-              <a href="mailto:hello@continuum.app" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">Contact</a>
+              {/* <a href="mailto:hello@continuum.app" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">Contact</a> */}  
             </div>
             <p className="font-body text-xs text-[oklch(0.3_0.008_260)]">
               © {new Date().getFullYear()} Continuum. All rights reserved.

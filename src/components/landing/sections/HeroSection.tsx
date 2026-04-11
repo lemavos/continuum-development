@@ -58,7 +58,7 @@ export default function HeroSection() {
               {...fadeUp(0.2)}
               className="font-display text-[clamp(2.75rem,6vw,5rem)] font-bold leading-[1.05] tracking-[-0.025em] text-[oklch(0.93_0.005_60)] mb-6"
             >
-              Your second brain,
+              Your thoughts,
               <br />
               <em className="not-italic text-[oklch(0.72_0.14_195)] italic">finally connected.</em>
             </motion.h1>

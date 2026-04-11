@@ -120,15 +120,14 @@ export default function Dashboard() {
               <h2 className="text-sm font-medium text-foreground">
                 Plan <span className="text-primary">{plan}</span>
               </h2>
-              <button onClick={() => navigate("/subscription")} className="text-xs text-primary/70 hover:text-primary transition-colors">
+              {/* <button onClick={() => navigate("/subscription")} className="text-xs text-primary/70 hover:text-primary transition-colors">
                 Manage →
-              </button>
+              </button> */}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {usageBar(usage.notesCount, limits.maxNotes, "Notes")}
               {usageBar(usage.entitiesCount, limits.maxEntities, "Entities")}
               {usageBar(usage.habitsCount, limits.maxHabits, "Habits")}
-              {usageBar(usage.vaultSizeMB, limits.maxVaultSizeMB, "Vault (MB)")}
             </div>
           </div>
         )}

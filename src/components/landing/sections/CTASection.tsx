@@ -63,7 +63,7 @@ export default function CTASection() {
               >
                 Transform how you think.
                 <br />
-                <span className="italic text-[oklch(0.72_0.14_195)]">Build your knowledge graph today.</span>
+                <span className="italic text-[oklch(0.72_0.14_195)]">Build your knowledge graph today for free.</span>
               </motion.h2>
 
               <motion.p

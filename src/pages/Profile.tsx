@@ -75,12 +75,12 @@ export default function Profile() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">Profile</h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage your account, theme, and plan limits.</p>
+            <p className="text-sm text-muted-foreground mt-1">Manage your account information.</p>
           </div>
 
-          <Button variant="outline" className="border-border" onClick={() => navigate("/subscription")}>
+          {/* <Button variant="outline" className="border-border" onClick={() => navigate("/subscription")}>
             <CreditCard className="w-4 h-4 mr-2" /> Manage Subscription
-          </Button>
+          </Button> */}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
