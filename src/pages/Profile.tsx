@@ -132,7 +132,7 @@ export default function Profile() {
                   <p className="text-xs text-muted-foreground">Toggle between light and dark visual.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Moon className="w-4 h-4 text-cyan-400" />
+                  <Sun className="w-4 h-4 text-cyan-400" />
                   <Switch
                     checked={mounted ? theme !== "light" : true}
                     onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
