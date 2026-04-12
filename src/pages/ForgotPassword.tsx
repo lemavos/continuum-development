@@ -165,10 +165,8 @@ export default function ForgotPassword() {
                   </motion.div>
 
                   {/* Submit Button */}
-                  <motion.button
+                  <motion.div
                     {...fadeUp(0.35)}
-                    type="submit"
-                    disabled={loading}
                     className="w-full mt-8 relative group"
                   >
                     <div
@@ -189,7 +187,7 @@ export default function ForgotPassword() {
                       )}
                       {loading ? "Sending..." : "Send Recovery Link"}
                     </Button>
-                  </motion.button>
+                  </motion.div>
                 </form>
               )}
             </motion.div>
