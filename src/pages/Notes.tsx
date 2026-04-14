@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { notesApi, foldersApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ export default function Notes() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: authLoading } = useRequireAuth();
   const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
 
   const fetchData = async () => {
@@ -35,6 +37,16 @@ export default function Notes() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center items-center h-full">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   const handleCreateNote = async () => {
     if (!canCreateNote) { setUpgradeOpen(true); return; }

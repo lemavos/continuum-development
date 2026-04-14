@@ -13,7 +13,7 @@ import { extractMentionIds, parseTiptapContent, sanitizeTiptapMentions } from "@
 interface NoteData {
   id: string;
   title: string;
-  content: string;
+  content: any;
   folderId?: string;
   entityIds: string[];
   createdAt: string;
@@ -68,7 +68,7 @@ export default function NoteEditor() {
               changed: false,
               removedIds: [],
             };
-        const normalizedContent = JSON.stringify(sanitized.doc);
+        const normalizedContent = sanitized.doc;
 
         setNote({
           ...data,
@@ -78,7 +78,7 @@ export default function NoteEditor() {
         setTitle(data.title);
         lastSavedTitle.current = data.title;
         currentJSON.current = sanitized.doc;
-        lastSavedJSON.current = normalizedContent;
+        lastSavedJSON.current = JSON.stringify(normalizedContent);
 
         if (sanitized.changed) {
           void notesApi.update(id, {
@@ -118,7 +118,7 @@ export default function NoteEditor() {
         const entityIds = extractMentionIds(json);
         await notesApi.update(id, {
           title: t,
-          content: jsonStr,
+          content: json,
           entityIds,
         });
         lastSavedTitle.current = t;

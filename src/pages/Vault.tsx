@@ -8,6 +8,7 @@ import { FileText, Image as ImageIcon, FileArchive, FileCode, File as FileGeneri
 import type { VaultFile } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { PLAN_LIMITS, type Plan } from "@/types";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 function getFileIcon(contentType: string) {
   if (contentType.startsWith("image/")) return ImageIcon;
@@ -22,6 +23,7 @@ export default function Vault() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { loading: authLoading } = useRequireAuth();
   const plan: Plan = (user?.plan as Plan) || "FREE";
   const limits = PLAN_LIMITS[plan];
 
@@ -40,6 +42,16 @@ export default function Vault() {
   useEffect(() => {
     fetchFiles();
   }, []);
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center items-center h-full">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;

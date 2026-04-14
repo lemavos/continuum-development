@@ -12,10 +12,32 @@ export default function GoogleCallback() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const code = searchParams.get("code");
+    const parseRedirectTokens = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
+
+      return {
+        accessToken: getValue("access_token") ?? getValue("token") ?? getValue("jwt"),
+        refreshToken: getValue("refresh_token"),
+        code: getValue("code"),
+      };
+    };
+
+    const { accessToken, refreshToken, code } = parseRedirectTokens();
+
+    if (accessToken) {
+      setTokens(accessToken, refreshToken || "");
+      window.history.replaceState({}, "", "/");
+      refreshUser()
+        .then(() => navigate("/"))
+        .catch(() => navigate("/"));
+      return;
+    }
+
     if (!code) {
       toast({ title: "OAuth code not found", variant: "destructive" });
-      navigate("/login");
+      navigate("/");
       return;
     }
 
@@ -32,9 +54,9 @@ export default function GoogleCallback() {
           description: err.response?.data?.message || "Try again",
           variant: "destructive",
         });
-        navigate("/login");
+        navigate("/");
       });
-  }, []);
+  }, [navigate, refreshUser, setTokens, toast]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

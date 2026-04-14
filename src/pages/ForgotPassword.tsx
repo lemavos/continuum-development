@@ -66,7 +66,7 @@ export default function ForgotPassword() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        onClick={() => navigate("/login")}
+        onClick={() => navigate("/")}
         className="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2 rounded-lg border border-[oklch(0.72_0.14_195/0.3)] bg-[oklch(0.72_0.14_195/0.06)] hover:bg-[oklch(0.72_0.14_195/0.12)] transition-colors"
       >
         <ArrowLeft className="w-4 h-4 text-[oklch(0.72_0.14_195)]" />
@@ -196,8 +196,8 @@ export default function ForgotPassword() {
             {!sent && (
               <motion.p {...fadeUp(0.4)} className="text-center mt-8 text-[oklch(0.5_0.008_260)]">
                 Remember your password?{" "}
-                <Link to="/login" className="text-[oklch(0.72_0.14_195)] font-medium hover:text-[oklch(0.72_0.14_195/0.8)] transition-colors">
-                  Sign in
+                <Link to="/" className="text-[oklch(0.72_0.14_195)] font-medium hover:text-[oklch(0.72_0.14_195/0.8)] transition-colors">
+                  Go back
                 </Link>
               </motion.p>
             )}

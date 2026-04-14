@@ -3,6 +3,39 @@ import { parseTiptapContent } from "@/lib/tiptap-content";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
+export const ACCESS_TOKEN_KEY = "access_token";
+export const REFRESH_TOKEN_KEY = "refresh_token";
+
+export const setAuthTokens = (accessToken: string, refreshToken?: string) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  }
+};
+
+export const clearAuthTokens = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+};
+
+export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
+
+export const parseTokensFromUrl = () => {
+  if (typeof window === "undefined") return null;
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+  const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
+  const accessToken = getValue("access_token") ?? getValue("token") ?? getValue("jwt");
+  const refreshToken = getValue("refresh_token");
+
+  if (!accessToken) return null;
+
+  return { accessToken, refreshToken };
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
@@ -61,7 +94,7 @@ api.interceptors.request.use((config) => {
     url === "/api/auth/refresh" ||
     url === "/api/auth/google/callback";
   if (!skipAuth) {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -76,23 +109,21 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
-      const refreshToken = localStorage.getItem("refresh_token");
+      const refreshToken = getRefreshToken();
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refreshToken,
           });
-          localStorage.setItem("access_token", data.accessToken);
-          localStorage.setItem("refresh_token", data.refreshToken);
+          setAuthTokens(data.accessToken, data.refreshToken);
           original.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(original);
         } catch {
           // Refresh failed — clear and redirect
         }
       }
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      window.location.href = "/login";
+      clearAuthTokens();
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { authApi } from "@/lib/api";
 import type { Plan } from "@/types";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 interface User {
   id: string;
   username: string;
@@ -66,17 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const { data } = await authApi.login(email, password);
-    setTokens(data.accessToken, data.refreshToken);
-    // Use user data directly from login response, prefer backend id field
-    setUser({
-      id: data.id ?? data.userId,
-      username: data.username ?? data.name ?? "",
-      email: data.email,
-      plan: data.plan || "FREE",
-      emailVerified: data.emailVerified ?? true,
-      createdAt: data.createdAt,
-    });
+    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    return Promise.resolve();
   };
 
   const register = async (username: string, email: string, password: string) => {
