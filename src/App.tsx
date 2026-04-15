@@ -9,6 +9,7 @@ import { EntityProvider } from "@/contexts/EntityContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ForgotPassword from "./pages/ForgotPassword";
 import GoogleCallback from "./pages/GoogleCallback";
+import LoginSuccess from "./pages/LoginSuccess";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import Notes from "./pages/Notes";
@@ -66,6 +67,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<HomeRoute />} />
+    <Route path="/login-success" element={<LoginSuccess />} />
     <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
     <Route path="/auth/google/callback" element={<GoogleCallback />} />
     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
