@@ -7,12 +7,7 @@ import { dashboardApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { Progress } from "@/components/ui/progress";
 import {
-  StickyNote,
-  Network,
   Flame,
-  CheckCircle,
-  TrendingUp,
-  Calendar,
   HardDrive,
   FileText,
   BarChart3,
@@ -33,20 +28,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     dashboardApi.summary()
-      .then((r) => {
-        setSummary(r.data);
-        // Update global storage usage from dashboard data
-        if (r.data?.storageUsage) {
-          const storageMB = r.data.storageUsage.usedBytes / (1024 * 1024);
-          applyUsageDelta({ vaultSizeMB: storageMB - (usage?.vaultSizeMB || 0) });
-        }
-      })
+      .then((r) => setSummary(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [applyUsageDelta, usage?.vaultSizeMB]);
+  }, []);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
+  useEffect(() => {
+    if (!summary?.storageUsage || usage == null) return;
+
+    const storageMB = Number((summary.storageUsage.usedBytes / (1024 * 1024)).toFixed(2));
+    applyUsageDelta({ vaultSizeMB: storageMB - usage.vaultSizeMB });
+  }, [summary?.storageUsage, usage, applyUsageDelta]);
+
+  const formatDate = (value: string | number) => {
+    return new Date(value).toLocaleDateString();
   };
 
   const getHeatmapColor = (count: number) => {
@@ -90,12 +85,16 @@ export default function Dashboard() {
       meta: summary?.storageUsage ? `${summary.storageUsage.formattedUsed} of ${summary.storageUsage.formattedLimit}` : "Loading...",
       description: "Your storage usage and quick overview",
       icon: <HardDrive className="w-4 h-4 text-cyan-400" />,
-      status: summary?.storageUsage ? `${summary.storageUsage.percentage.toFixed(1)}% used` : "",
+      status: summary?.storageUsage
+        ? summary.storageUsage.isUnlimited
+          ? "Unlimited storage"
+          : `${summary.storageUsage.percentageUsed.toFixed(1)}% used`
+        : "",
       colSpan: 2,
       hasPersistentHover: true,
       customContent: summary?.storageUsage ? (
         <div className="mt-4">
-          <Progress value={summary.storageUsage.percentage} className="h-2" />
+          <Progress value={summary.storageUsage.percentageUsed} className="h-2" />
         </div>
       ) : null,
     },
@@ -106,7 +105,7 @@ export default function Dashboard() {
       meta: summary?.habitActivity ? `${summary.habitActivity.currentStreak} day streak` : "—",
       description: "Your daily habit completion heatmap",
       icon: <Flame className="w-4 h-4 text-orange-400" />,
-      status: summary?.habitActivity ? `Longest: ${summary.habitActivity.longestStreak} days` : "",
+      status: summary?.habitActivity ? `Longest dry spell: ${summary.habitActivity.longestInactive} days` : "",
       tags: ["Streaks", "Activity"],
       colSpan: 2,
       customContent: summary?.habitActivity ? generateHeatmap() : (
@@ -148,7 +147,7 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground truncate">{note.preview}</p>
               </div>
               <div className="text-xs text-muted-foreground ml-2">
-                {formatDate(note.updatedAt)}
+                {formatDate(note.updatedAtTimestamp)}
               </div>
             </div>
           ))}

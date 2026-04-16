@@ -123,15 +123,16 @@ export interface DashboardStatsDTO {
   totalEntities: number;
   totalHabits: number;
   activeHabits: number;
-  entityTypes: Record<string, number>;
+  totalTypes: number;
 }
 
 export interface StorageUsageDTO {
   usedBytes: number;
   limitBytes: number;
+  percentageUsed: number;
   formattedUsed: string;
   formattedLimit: string;
-  percentage: number;
+  isUnlimited: boolean;
 }
 
 export interface RecentNoteDTO {
@@ -139,16 +140,17 @@ export interface RecentNoteDTO {
   title: string;
   type: string;
   preview: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAtTimestamp: number;
+  updatedAtTimestamp: number;
   entityIds: string[];
 }
 
 export interface HabitActivityDTO {
   dailyCompletions: Record<string, number>;
+  totalDays: number;
+  maxStreak: number;
   currentStreak: number;
-  longestStreak: number;
-  inactivePeriods: number;
+  longestInactive: number;
 }
 
 export interface DashboardSummaryDTO {

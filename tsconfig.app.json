@@ -19,7 +19,7 @@
     "noUnusedParameters": false,
     "paths": {
       "@/*": [
-        "./src/*"
+        "frontend/src/*"
       ]
     },
     "skipLibCheck": true,
@@ -31,6 +31,6 @@
     "useDefineForClassFields": true
   },
   "include": [
-    "src"
+    "frontend/src"
   ]
 }
