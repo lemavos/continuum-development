@@ -24,7 +24,6 @@ public interface EntityRepository extends MongoRepository<Entity, String> {
     List<Entity> findByVaultId(String vaultId);
     List<Entity> findByVaultIdAndType(String vaultId, EntityType type);
     long countByUserIdAndVaultIdAndType(String userId, String vaultId, String type);
-    long countActiveHabits(String userId, String vaultId, java.time.LocalDate since);
     List<Entity> findByIdIn(List<String> ids);
 
     /**
