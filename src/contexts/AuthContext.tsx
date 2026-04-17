@@ -2,7 +2,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { authApi } from "@/lib/api";
 import type { Plan } from "@/types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// Lê em tempo de execução, não de build
+const getAPIBaseURL = () => {
+  return import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+};
 
 interface User {
   id: string;
@@ -68,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
+    const API_BASE_URL = getAPIBaseURL();
     window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
     return Promise.resolve();
   };

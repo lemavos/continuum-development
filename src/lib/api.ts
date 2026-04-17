@@ -1,7 +1,12 @@
 import axios from "axios";
 import { parseTiptapContent } from "@/lib/tiptap-content";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// Lê em tempo de execução, não de build
+const getAPIBaseURL = () => {
+  return import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+};
+
+const API_BASE_URL = getAPIBaseURL();
 
 export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
