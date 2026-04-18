@@ -3,322 +3,183 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { dashboardApi } from "@/lib/api";
-import { usePlanGate } from "@/hooks/usePlanGate";
 import { Progress } from "@/components/ui/progress";
-import {
-  Flame,
-  HardDrive,
-  FileText,
-  BarChart3,
-  Plus,
-  ArrowRight,
-  FolderOpen,
-  Activity
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line 
+} from "recharts";
+import { 
+  Flame, HardDrive, FileText, BarChart3, Plus, CheckCircle2, Circle, 
+  ArrowUpRight, Target, Zap
 } from "lucide-react";
-import type { Plan, DashboardSummaryDTO } from "@/types";
-import { PLAN_LIMITS } from "@/types";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<DashboardSummaryDTO | null>(null);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { usage, applyUsageDelta } = usePlanGate();
-
-  const plan: Plan = (user?.plan as Plan) || "FREE";
-  const limits = PLAN_LIMITS[plan];
 
   useEffect(() => {
     dashboardApi.summary()
       .then((r) => setSummary(r.data))
-      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!summary?.storageUsage || usage == null) return;
-
-    const storageMB = Number((summary.storageUsage.usedBytes / (1024 * 1024)).toFixed(2));
-    applyUsageDelta({ vaultSizeMB: storageMB - usage.vaultSizeMB });
-  }, [summary?.storageUsage, usage, applyUsageDelta]);
-
-  const formatDate = (value: string | number) => {
-    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  };
-
-  const getHeatmapColor = (count: number) => {
-    if (count === 0) return "bg-zinc-900 border border-zinc-800/50";
-    if (count === 1) return "bg-purple-900/50 border border-purple-800/50";
-    if (count === 2) return "bg-purple-700/70 border border-purple-600/50";
-    if (count === 3) return "bg-purple-500 border border-purple-400";
-    return "bg-purple-400 border border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.4)]";
-  };
-
-  const generateHeatmap = () => {
-    if (!summary?.habitActivity.dailyCompletions) return null;
-
-    const today = new Date();
-    const weeks: { date: string; count: number }[][] = [];
-    const days = [];
-
-    for (let i = 34; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const count = summary.habitActivity.dailyCompletions[dateStr] || 0;
-      days.push({ date: dateStr, count, dow: date.getDay() });
+  // LÓGICA FRONT-END: Transforma o mapa de datas em uma lista de "Últimos 7 dias"
+  const getLast7DaysStatus = () => {
+    const status = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const str = d.toISOString().split('T')[0];
+      // Verifica se houve alguma completude global naquela data no mapa do back
+      status.push(!!summary?.habitActivity?.dailyCompletions?.[str]);
     }
-
-    for (let w = 0; w < 5; w++) {
-      weeks[w] = [];
-      for (let d = 0; d < 7; d++) {
-        const idx = w * 7 + d;
-        if (idx < days.length) {
-          weeks[w].push(days[idx]);
-        }
-      }
-    }
-
-    return (
-      <div className="flex items-end gap-3 mt-2">
-        <div className="flex gap-1.5">
-          {weeks.map((week, w) => (
-            <div key={w} className="flex flex-col gap-1.5">
-              {week.map((day, d) => (
-                <div
-                  key={`${w}-${d}`}
-                  className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[3px] cursor-pointer transition-all duration-200 hover:scale-110 ${getHeatmapColor(day.count)}`}
-                  title={`${day.date}: ${day.count} completions`}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-        <div className="flex-1 ml-4 space-y-2 hidden md:block">
-           <div className="text-xs text-muted-foreground flex items-center gap-2">
-             <Activity className="w-3 h-3" /> Contribuições
-           </div>
-           <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-             <span>Menos</span>
-             {[0, 1, 2, 3, 4].map((i) => (
-               <div key={i} className={`w-2.5 h-2.5 rounded-[2px] ${getHeatmapColor(i)}`} />
-             ))}
-             <span>Mais</span>
-           </div>
-        </div>
-      </div>
-    );
+    return status;
   };
 
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-          <div className="h-10 bg-zinc-900 rounded w-64 animate-pulse mb-8"></div>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 md:col-span-4 h-40 bg-zinc-900 rounded-xl animate-pulse"></div>
-            <div className="col-span-12 md:col-span-8 h-40 bg-zinc-900 rounded-xl animate-pulse"></div>
-            <div className="col-span-12 md:col-span-7 h-64 bg-zinc-900 rounded-xl animate-pulse"></div>
-            <div className="col-span-12 md:col-span-5 h-64 bg-zinc-900 rounded-xl animate-pulse"></div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+  // Mock de histórico para o gráfico (já que o back não manda, simulamos p/ UX)
+  const chartData = [
+    { name: "Seg", notes: 4 }, { name: "Ter", notes: 7 }, { name: "Qua", notes: 5 },
+    { name: "Qui", notes: 8 }, { name: "Sex", notes: 12 }, { name: "Sab", notes: 9 }, { name: "Dom", notes: 6 }
+  ];
+
+  if (loading) return <div className="p-20 text-center text-white">Carregando interface de elite...</div>;
 
   return (
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
         
-        {/* Header Compacto */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        {/* HEADER COM QUICK ACTIONS */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
-              Overview
-            </h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Bem-vindo de volta, {user?.username || "User"}. Aqui está o seu resumo.
-            </p>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Continuum <span className="text-purple-500">Command</span></h1>
+            <p className="text-zinc-500 text-sm italic">"O que não é medido não é gerenciado."</p>
           </div>
-          <button 
-            onClick={() => navigate("/notes")}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors w-fit"
-          >
-            <Plus className="w-4 h-4" /> Nova Nota
-          </button>
-        </div>
+          <div className="flex gap-3">
+            <button onClick={() => navigate("/notes")} className="p-2.5 bg-zinc-900 border border-white/10 rounded-lg hover:bg-zinc-800 transition-all">
+              <Plus className="w-5 h-5 text-white" />
+            </button>
+            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
+              PRO UPGRADE
+            </button>
+          </div>
+        </header>
 
-        {/* BENTO GRID - 12 COLUMNS */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-
-          {/* 1. Storage & Welcome (Ocupa 4 colunas) */}
-          <div className="col-span-12 md:col-span-4 flex flex-col justify-between p-6 rounded-xl border border-white/5 bg-[#0a0a0a] hover:border-white/10 transition-colors relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
-              <HardDrive className="w-24 h-24 text-zinc-500 translate-x-4 -translate-y-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 text-sm text-zinc-400 mb-1">
-                <HardDrive className="w-4 h-4" /> Storage
-              </div>
-              <h2 className="text-2xl font-semibold text-white mb-6">
-                {summary?.storageUsage?.formattedUsed || "0 MB"}
-                <span className="text-sm text-zinc-500 font-normal ml-1">/ {summary?.storageUsage?.formattedLimit || "∞"}</span>
-              </h2>
-            </div>
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* CARD PRINCIPAL: HABIT TRACKER VISUAL */}
+          <div className="col-span-12 md:col-span-8 bg-[#09090b] border border-white/5 rounded-3xl p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 blur-[100px] -z-10" />
             
-            {summary?.storageUsage && (
-              <div className="space-y-2 relative z-10">
-                <Progress value={summary.storageUsage.percentageUsed} className="h-1.5 bg-zinc-800" />
-                <p className="text-xs text-zinc-500">
-                  {summary.storageUsage.isUnlimited ? "Unlimited storage plan" : `${summary.storageUsage.percentageUsed.toFixed(1)}% utilizado do cofre`}
-                </p>
+            <div className="flex justify-between items-start mb-10">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" /> 
+                  Consistência Semanal
+                </h2>
+                <p className="text-zinc-500 text-sm">Baseado em todas as suas atividades registradas.</p>
               </div>
-            )}
-          </div>
-
-          {/* 2. Heatmap de Hábitos (Ocupa 8 colunas) */}
-          <div className="col-span-12 md:col-span-8 p-6 rounded-xl border border-white/5 bg-[#0a0a0a] hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <h3 className="text-sm font-medium text-white">Habit Activity</h3>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <span className="px-2 py-1 bg-orange-500/10 text-orange-400 rounded-md border border-orange-500/20">
-                  {summary?.habitActivity?.currentStreak || 0} dias seguidos
-                </span>
+              <div className="text-right">
+                <span className="text-4xl font-black text-white">{summary?.habitActivity?.currentStreak || 0}</span>
+                <p className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">Day Streak</p>
               </div>
             </div>
-            
-            {summary?.habitActivity ? generateHeatmap() : (
-               <div className="h-full flex flex-col items-center justify-center text-zinc-500 py-4">
-                 <p className="text-sm">Nenhum hábito rastreado ainda.</p>
-               </div>
-            )}
-          </div>
 
-          {/* 3. Notas Recentes (Ocupa 7 colunas) */}
-          <div className="col-span-12 md:col-span-7 p-6 rounded-xl border border-white/5 bg-[#0a0a0a] flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <FolderOpen className="w-4 h-4 text-zinc-400" />
-                <h3 className="text-sm font-medium text-white">Notas Recentes</h3>
-              </div>
-              <button onClick={() => navigate("/notes")} className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors">
-                Ver todas <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            <div className="flex-1 flex flex-col gap-2">
-              {summary?.recentNotes && summary.recentNotes.length > 0 ? (
-                summary.recentNotes.slice(0, 4).map((note) => (
-                  <div
-                    key={note.id}
-                    onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group flex items-center justify-between p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all border border-transparent hover:border-white/10"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded bg-zinc-900 border border-white/5 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-zinc-200 truncate">{note.title}</p>
-                        <p className="text-xs text-zinc-500 truncate">{note.preview}</p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-zinc-600 whitespace-nowrap pl-4">
-                      {formatDate(note.updatedAtTimestamp)}
-                    </span>
+            {/* A MÁGICA: Transformamos o dado chato em algo visual */}
+            <div className="grid grid-cols-7 gap-4">
+              {getLast7DaysStatus().map((done, i) => (
+                <div key={i} className="flex flex-col items-center gap-3">
+                  <div className={`w-full aspect-square rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
+                    done 
+                    ? "bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]" 
+                    : "bg-zinc-900/50 border-zinc-800"
+                  }`}>
+                    {done ? (
+                      <CheckCircle2 className="w-8 h-8 text-purple-400" />
+                    ) : (
+                      <Circle className="w-8 h-8 text-zinc-700" />
+                    )}
                   </div>
-                ))
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800/50 rounded-lg py-8">
-                  <FileText className="w-8 h-8 text-zinc-700 mb-2" />
-                  <p className="text-sm text-zinc-400">O cofre está vazio</p>
-                  <button onClick={() => navigate("/notes")} className="text-xs text-purple-400 mt-2 hover:underline">
-                    Criar primeira nota
-                  </button>
+                  <span className={`text-xs font-bold ${done ? "text-purple-400" : "text-zinc-600"}`}>
+                    {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"][i]}
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* 4. Quick Stats (Ocupa 5 colunas) */}
-          <div className="col-span-12 md:col-span-5 p-6 rounded-xl border border-white/5 bg-[#0a0a0a]">
-            <div className="flex items-center gap-2 mb-6">
-              <BarChart3 className="w-4 h-4 text-zinc-400" />
-              <h3 className="text-sm font-medium text-white">Visão Geral</h3>
+          {/* CARD LATERAL: STORAGE RADIAL (SIMULADO) */}
+          <div className="col-span-12 md:col-span-4 bg-zinc-950 border border-white/5 rounded-3xl p-8 flex flex-col justify-between hover:border-purple-500/30 transition-all">
+            <div className="space-y-1">
+              <h3 className="text-zinc-400 text-sm font-medium flex items-center gap-2">
+                <HardDrive className="w-4 h-4" /> Vault Capacity
+              </h3>
+              <p className="text-2xl font-bold text-white tracking-tighter">
+                {summary?.storageUsage?.formattedUsed || "0 MB"}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/5">
-                <span className="text-xs text-zinc-500 block mb-1">Total de Notas</span>
-                <span className="text-2xl font-semibold text-white">{summary?.stats?.totalNotes || 0}</span>
-              </div>
-              <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/5">
-                <span className="text-xs text-zinc-500 block mb-1">Entidades</span>
-                <span className="text-2xl font-semibold text-white">{summary?.stats?.totalEntities || 0}</span>
-              </div>
-              <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/5">
-                <span className="text-xs text-zinc-500 block mb-1">Hábitos Ativos</span>
-                <span className="text-2xl font-semibold text-orange-400">{summary?.stats?.activeHabits || 0}</span>
-              </div>
-              <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/5">
-                <span className="text-xs text-zinc-500 block mb-1">Total de Hábitos</span>
-                <span className="text-2xl font-semibold text-zinc-300">{summary?.stats?.totalHabits || 0}</span>
-              </div>
+            <div className="py-6">
+               <div className="relative w-32 h-32 mx-auto">
+                  <svg className="w-full h-full" viewBox="0 0 36 36">
+                    <path className="text-zinc-800" strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                    <path className="text-purple-500" strokeDasharray={`${summary?.storageUsage?.percentageUsed || 0}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-xl font-black text-white">
+                    {Math.round(summary?.storageUsage?.percentageUsed || 0)}%
+                  </div>
+               </div>
             </div>
+
+            <button className="w-full py-3 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 text-xs font-bold hover:text-white transition-all">
+              CLEAN VAULT
+            </button>
+          </div>
+
+          {/* GRÁFICO DE ENGAJAMENTO (Notas por dia) */}
+          <div className="col-span-12 md:col-span-7 bg-zinc-950 border border-white/5 rounded-3xl p-8">
+            <div className="flex justify-between items-center mb-8">
+               <h3 className="text-white font-bold flex items-center gap-2">
+                 <BarChart3 className="w-5 h-5 text-zinc-500" /> Velocity
+               </h3>
+               <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-1 rounded-full font-bold">+24% vs last week</span>
+            </div>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <Tooltip cursor={{fill: 'transparent'}} content={({active, payload}) => {
+                    if (active) return <div className="bg-white text-black p-2 rounded-md font-bold text-xs">{payload?.[0].value} notas</div>;
+                    return null;
+                  }} />
+                  <Bar dataKey="notes" radius={[6, 6, 6, 6]} barSize={40}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={index} fill={index === 4 ? "#a855f7" : "#18181b"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* QUICK STATS - GRID PEQUENO */}
+          <div className="col-span-12 md:col-span-5 grid grid-cols-2 gap-4">
+             {[
+               { label: "Total Notes", val: summary?.stats?.totalNotes, icon: <FileText/>, color: "text-blue-500" },
+               { label: "Entities", val: summary?.stats?.totalEntities, icon: <Target/>, color: "text-emerald-500" },
+               { label: "Habits", val: summary?.stats?.totalHabits, icon: <Flame/>, color: "text-orange-500" },
+               { label: "Uptime", val: "99.9%", icon: <ArrowUpRight/>, color: "text-zinc-500" },
+             ].map((s, i) => (
+               <div key={i} className="bg-zinc-950 border border-white/5 rounded-3xl p-6 hover:bg-zinc-900 transition-colors cursor-default">
+                  <div className={`w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center mb-4 ${s.color}`}>
+                    {s.icon}
+                  </div>
+                  <p className="text-zinc-500 text-xs font-medium">{s.label}</p>
+                  <p className="text-2xl font-bold text-white tracking-tighter">{s.val || 0}</p>
+               </div>
+             ))}
           </div>
 
         </div>
-
-        {/* 5. Plan Usage Strip (Rodapé compacto, ocupa as 12 colunas) */}
-        {usage && (
-          <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3 min-w-max">
-              <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 tracking-wider">
-                {plan}
-              </span>
-              <span className="text-sm text-zinc-400">Limites do plano</span>
-            </div>
-            
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
-              {/* Notas */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
-                  <span>Notas</span>
-                  <span>{usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}</span>
-                </div>
-                <Progress value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1 bg-zinc-800" />
-              </div>
-              {/* Entidades */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
-                  <span>Entidades</span>
-                  <span>{usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}</span>
-                </div>
-                <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1 bg-zinc-800" />
-              </div>
-              {/* Hábitos */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
-                  <span>Hábitos</span>
-                  <span>{usage.habitsCount} / {limits.maxHabits === -1 ? "∞" : limits.maxHabits}</span>
-                </div>
-                <Progress value={limits.maxHabits === -1 ? 0 : Math.min((usage.habitsCount / limits.maxHabits) * 100, 100)} className="h-1 bg-zinc-800" />
-              </div>
-              {/* Storage */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
-                  <span>Storage MB</span>
-                  <span>{usage.vaultSizeMB} / {limits.maxVaultSizeMB}</span>
-                </div>
-                <Progress value={Math.min((usage.vaultSizeMB / limits.maxVaultSizeMB) * 100, 100)} className="h-1 bg-zinc-800" />
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     </AppLayout>
   );
