@@ -19,6 +19,18 @@ interface Entity { id: string; title: string; type: EntityType; description?: st
 const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, HABIT: Flame };
 const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Habit" };
 
+// Dynamic badge colors based on type
+function getEntityBadgeColor(type: EntityType): string {
+  const colors: Record<EntityType, string> = {
+    PERSON: "bg-blue-500/20 text-blue-200 border border-blue-500/30",
+    PROJECT: "bg-purple-500/20 text-purple-200 border border-purple-500/30",
+    TOPIC: "bg-amber-500/20 text-amber-200 border border-amber-500/30",
+    ORGANIZATION: "bg-teal-500/20 text-teal-200 border border-teal-500/30",
+    HABIT: "bg-rose-500/20 text-rose-200 border border-rose-500/30",
+  };
+  return colors[type] || "";
+}
+
 export default function Entities() {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [todayEvents, setTodayEvents] = useState<any[]>([]);
@@ -182,31 +194,70 @@ export default function Entities() {
             <p className="text-muted-foreground text-sm">No entities found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((entity) => {
               const Icon = typeIcons[entity.type] || Network;
               const tracked = isTrackedToday(entity);
+              const streak = entity.trackingDates?.length || 0;
+              
               return (
-                <div key={entity.id} className="bento-card group cursor-pointer" onClick={() => navigate(`/entities/${entity.id}`)}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bento-icon-box"><Icon className="w-4 h-4 text-gray-400" /></div>
-                    <span className="bento-status">{typeLabels[entity.type]}</span>
+                <div
+                  key={entity.id}
+                  onClick={() => navigate(`/entities/${entity.id}`)}
+                  className="group relative p-4 rounded-xl cursor-pointer transition-all border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/15 hover:border-white/30 hover:shadow-lg min-h-40 flex flex-col"
+                >
+                  {/* Icon and Type Badge */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                      <Icon className="w-5 h-5 text-white/70" />
+                    </div>
+                    <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-lg", getEntityBadgeColor(entity.type))}>
+                      {typeLabels[entity.type]}
+                    </span>
                   </div>
-                  <h3 className="font-medium text-foreground text-[15px] tracking-tight">{entity.title}</h3>
-                  {entity.description && <p className="text-sm text-slate-400 mt-1 line-clamp-2">{entity.description}</p>}
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex gap-1">
-                      {entity.type === "HABIT" && (
-                        <button onClick={(e) => handleTrack(entity.id, e)} className={cn("bento-tag flex items-center gap-1 transition-colors", tracked && "bg-gray-500/20 text-gray-300 border border-gray-500/30")}>
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-white/90 text-sm line-clamp-2 flex-1">{entity.title}</h3>
+
+                  {/* Description */}
+                  {entity.description && (
+                    <p className="text-xs text-white/50 line-clamp-2 mt-2 mb-auto">{entity.description}</p>
+                  )}
+
+                  {/* Footer - Track/Streak and Delete */}
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 gap-2">
+                    {entity.type === "HABIT" ? (
+                      <div className="flex items-center gap-1">
+                        {streak > 0 && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
+                            <Flame className="w-3.5 h-3.5 text-rose-400" />
+                            <span className="text-xs font-semibold text-rose-200">{streak}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={(e) => handleTrack(entity.id, e)}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border",
+                            tracked
+                              ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/30"
+                              : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20"
+                          )}
+                        >
                           <CheckCircle className="w-3 h-3" /> {tracked ? "Done" : "Track"}
                         </button>
-                      )}
-                      {entity.trackingDates && entity.trackingDates.length > 0 && (
-                        <span className="bento-tag flex items-center gap-1 text-gray-400"><Flame className="w-3 h-3" /> {entity.trackingDates.length}</span>
-                      )}
-                    </div>
-                    <button onClick={(e) => handleDelete(entity.id, e)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10">
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </div>
+                    ) : streak > 0 ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30">
+                        <Flame className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="text-xs font-semibold text-purple-200">{streak}</span>
+                      </div>
+                    ) : null}
+                    
+                    <button
+                      onClick={(e) => handleDelete(entity.id, e)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-rose-500/20"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400/60 hover:text-rose-400" />
                     </button>
                   </div>
                 </div>

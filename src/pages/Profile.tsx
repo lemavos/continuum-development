@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { BadgeCheck, CreditCard, Loader2, Moon, Sun } from "lucide-react";
+import { BadgeCheck, CreditCard, Loader2, Moon, Sun, Mail, User, Calendar, Lock } from "lucide-react";
 
 const formatLimitValue = (value: number, suffix = "") => (value === -1 ? "Unlimited" : `${value}${suffix}`);
 
@@ -82,110 +82,181 @@ export default function Profile() {
           </Button> */}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-          <section className="bento-card p-5 space-y-5">
-            <div className="space-y-1">
-              <h2 className="text-lg font-medium text-foreground">Account Data</h2>
-              <p className="text-sm text-muted-foreground">Update your main information.</p>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Account Section */}
+          <section className="space-y-4">
+            <div className="space-y-2">
+              <h2 className="font-display text-xl font-semibold text-white/90">Account</h2>
+              <p className="text-sm text-white/50">Manage your information and preferences.</p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="profile-username">Username</Label>
-                <Input id="profile-username" value={username} onChange={(e) => setUsername(e.target.value)} className="bg-accent border-border" />
+                <Label htmlFor="profile-username" className="text-xs text-white/70 uppercase tracking-wider">Username</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Input
+                    id="profile-username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Your username"
+                    className="pl-10 bg-white/5 border border-white/10 text-white/90 placeholder:text-white/30 focus:border-white/30 focus:bg-white/10 transition-colors"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-email">Email</Label>
+                <Label htmlFor="profile-email" className="text-xs text-white/70 uppercase tracking-wider">Email</Label>
                 <div className="relative">
-                  <Input id="profile-email" type="email" value={email} readOnly className="bg-accent/50 border-border pr-20" />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-accent px-2 py-0.5 rounded">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Input
+                    id="profile-email"
+                    type="email"
+                    value={email}
+                    readOnly
+                    className="pl-10 pr-16 bg-white/5 border border-white/10 text-white/50 cursor-not-allowed"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-white/50 bg-white/10 px-2 py-1 rounded">
                     Google
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">Email is managed by Google authentication</p>
+                <p className="text-xs text-white/40">Connected via Google Sign-In</p>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
+                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Plan</p>
+                  <p className="text-base font-semibold text-white/90">{currentPlan}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
+                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Member Since</p>
+                  <p className="text-base font-semibold text-white/90">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US") : "—"}</p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSave}
+                disabled={saving || !username.trim()}
+                className="w-full bg-white text-black hover:bg-gray-100 font-semibold shadow-lg transition-all"
+              >
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Save Changes
+              </Button>
             </div>
 
-            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-accent/50 p-3">
-                <p className="text-xs uppercase tracking-[0.18em]">Current Plan</p>
-                <p className="mt-2 text-foreground font-medium">{currentPlan}</p>
+            {/* Status Card */}
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                <BadgeCheck className="w-5 h-5 text-emerald-400" />
               </div>
-              <div className="rounded-lg border border-border bg-accent/50 p-3">
-                <p className="text-xs uppercase tracking-[0.18em]">Member Since</p>
-                <p className="mt-2 text-foreground font-medium">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US") : "—"}</p>
+              <div>
+                <p className="text-sm font-medium text-white/90">Account Status</p>
+                <p className="text-xs text-white/50">Email {user?.emailVerified ? "verified" : "pending verification"}</p>
               </div>
             </div>
-
-            <Button onClick={handleSave} disabled={saving || !username.trim()} className="bg-white text-black hover:bg-gray-100 shadow-lg">
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Save Changes
-            </Button>
           </section>
 
-          <section className="bento-card p-5 space-y-5">
-            <div className="space-y-1">
-              <h2 className="text-lg font-medium text-foreground">Preferences</h2>
-              <p className="text-sm text-muted-foreground">Choose the interface theme.</p>
+          {/* Settings Section */}
+          <section className="space-y-4">
+            <div className="space-y-2">
+              <h2 className="font-display text-xl font-semibold text-white/90">Preferences</h2>
+              <p className="text-sm text-white/50">Customize your experience.</p>
             </div>
 
-            <div className="rounded-lg border border-border bg-accent/50 p-4 space-y-4">
-              <div className="flex items-center justify-between gap-3">
+            {/* Theme Toggle */}
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
+              <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Dark mode</p>
-                  <p className="text-xs text-muted-foreground">Toggle between light and dark visual.</p>
+                  <p className="text-sm font-semibold text-white/90">Dark Mode</p>
+                  <p className="text-xs text-white/50">Toggle interface theme</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Sun className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-2">
+                  <Sun className="w-4 h-4 text-white/40" />
                   <Switch
                     checked={mounted ? theme !== "light" : true}
                     onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
                     disabled={!mounted}
                   />
-                  <Moon className="w-4 h-4 text-gray-400" />
+                  <Moon className="w-4 h-4 text-white/40" />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-accent/50 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-foreground">
-                <BadgeCheck className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium">Account Status</span>
+            {/* History Info */}
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-blue-400" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Email {user?.emailVerified ? "verified" : "pending verification"}
-              </p>
+              <div>
+                <p className="text-sm font-medium text-white/90">History Retention</p>
+                <p className="text-xs text-white/50">{formatLimitValue(limits.historyDays, " days")}</p>
+              </div>
             </div>
           </section>
         </div>
 
-        <section className="bento-card p-5 space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/90">Security</p>
+                <p className="text-xs text-white/50">Managed by Google Sign-In</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Plan Limits Section */}
+        <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-medium text-foreground">Plan Limits</h2>
-              <p className="text-sm text-muted-foreground">Current usage synchronized with your account.</p>
+              <h2 className="font-display text-xl font-semibold text-white/90">Plan Limits</h2>
+              <p className="text-sm text-white/50">Current usage synchronized with your account.</p>
             </div>
-            <span className="text-xs text-muted-foreground">History: {formatLimitValue(limits.historyDays, " days")}</span>
           </div>
 
           {usageLoading && !usage ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-white/30" /></div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {resources.map((resource) => {
                 const unlimited = resource.max === -1;
                 const percent = unlimited ? 100 : Math.min((resource.current / resource.max) * 100, 100);
+                const isCritical = percent >= 90;
+                const isWarning = percent >= 70;
 
                 return (
-                  <div key={resource.label} className="rounded-xl border border-border bg-accent/40 p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-foreground">{resource.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {unlimited ? "Unlimited" : `${resource.current.toFixed(resource.suffix ? 1 : 0)} / ${resource.max}${resource.suffix ?? ""}`}
+                  <div
+                    key={resource.label}
+                    className={`rounded-xl border backdrop-blur-sm p-4 space-y-3 transition-all ${
+                      isCritical
+                        ? "border-rose-500/50 bg-rose-500/10"
+                        : isWarning
+                        ? "border-amber-500/50 bg-amber-500/10"
+                        : "border-white/10 bg-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-white/90">{resource.label}</span>
+                      <span className={`text-xs font-mono font-medium ${
+                        isCritical ? "text-rose-300" : isWarning ? "text-amber-300" : "text-white/60"
+                      }`}>
+                        {unlimited ? "∞" : `${resource.current.toFixed(resource.suffix ? 1 : 0)}/${resource.max}${resource.suffix ?? ""}`}
                       </span>
                     </div>
-                    <Progress value={percent} className="h-1.5" />
+                    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isCritical
+                            ? "bg-gradient-to-r from-rose-500 to-rose-400"
+                            : isWarning
+                            ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                            : "bg-gradient-to-r from-purple-500 to-purple-400"
+                        }`}
+                        style={{ width: `${unlimited ? 0 : percent}%` }}
+                      />
+                    </div>
                   </div>
                 );
               })}

@@ -45,35 +45,91 @@ export default function Dashboard() {
   };
 
   const getHeatmapColor = (count: number) => {
-    if (count === 0) return "bg-gray-800";
-    if (count <= 2) return "bg-gray-700";
-    if (count <= 4) return "bg-gray-600";
-    return "bg-gray-500";
+    // Cores em escala de roxo/verde neon
+    if (count === 0) return "bg-gray-900 border border-gray-700";
+    if (count === 1) return "bg-purple-900 border border-purple-700";
+    if (count === 2) return "bg-purple-700 border border-purple-500";
+    if (count === 3) return "bg-purple-600 border border-purple-400";
+    if (count === 4) return "bg-purple-500 border border-purple-400";
+    return "bg-purple-400 border border-purple-300 shadow-lg shadow-purple-500/50";
   };
 
   const generateHeatmap = () => {
     if (!summary?.habitActivity.dailyCompletions) return null;
 
     const today = new Date();
+    const weeks: { date: string; count: number }[][] = [];
     const days = [];
-    // Generate last 30 days to match backend data
-    for (let i = 29; i >= 0; i--) {
+
+    // Generate 35 days (5 weeks x 7 days)
+    for (let i = 34; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       const count = summary.habitActivity.dailyCompletions[dateStr] || 0;
-      days.push({ date: dateStr, count });
+      days.push({ date: dateStr, count, dow: date.getDay() });
     }
 
+    // Group into weeks (Sunday to Saturday)
+    for (let w = 0; w < 5; w++) {
+      weeks[w] = [];
+      for (let d = 0; d < 7; d++) {
+        const idx = w * 7 + d;
+        if (idx < days.length) {
+          weeks[w].push(days[idx]);
+        }
+      }
+    }
+
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
     return (
-      <div className="grid grid-cols-10 gap-1 mt-4">
-        {days.map((day, i) => (
-          <div
-            key={i}
-            className={`w-3 h-3 rounded-sm ${getHeatmapColor(day.count)}`}
-            title={`${day.date}: ${day.count} completions`}
-          />
-        ))}
+      <div className="mt-6">
+        <div className="flex items-start gap-2">
+          {/* Day labels */}
+          <div className="flex flex-col gap-1.5">
+            {dayNames.map((d, i) => (
+              <div key={i} className="h-4 w-6 flex items-center justify-center">
+                <span className="text-[10px] text-gray-500 font-medium">{d}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Heatmap grid */}
+          <div className="flex gap-1.5">
+            {weeks.map((week, w) => (
+              <div key={w} className="flex flex-col gap-1.5">
+                {week.map((day, d) => (
+                  <div
+                    key={`${w}-${d}`}
+                    className={`w-5 h-5 rounded-sm cursor-pointer transition-transform hover:scale-110 ${getHeatmapColor(day.count)}`}
+                    title={`${day.date}: ${day.count} completions`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
+          <span>Less</span>
+          <div className="flex gap-1">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-sm ${
+                  i === 0 ? "bg-gray-900 border border-gray-700" :
+                  i === 1 ? "bg-purple-900 border border-purple-700" :
+                  i === 2 ? "bg-purple-600 border border-purple-400" :
+                  i === 3 ? "bg-purple-500 border border-purple-400" :
+                  "bg-purple-400 border border-purple-300 shadow-lg shadow-purple-500/50"
+                }`}
+              />
+            ))}
+          </div>
+          <span>More</span>
+        </div>
       </div>
     );
   };
@@ -212,19 +268,19 @@ export default function Dashboard() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-          <div className="space-y-1 mb-8">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">
-              Hello, {user?.username || "User"}
+        <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+          <div className="space-y-2 mb-8">
+            <h1 className="font-display text-4xl font-semibold tracking-tight text-white">
+              Welcome back
             </h1>
-            <p className="text-sm text-slate-400">Loading your dashboard...</p>
+            <p className="text-sm text-gray-500">Loading your dashboard...</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bento-card p-5 animate-pulse">
-                <div className="h-4 bg-card rounded mb-2"></div>
-                <div className="h-3 bg-card rounded mb-4"></div>
-                <div className="h-20 bg-card rounded"></div>
+              <div key={i} className="bento-card p-6 animate-pulse">
+                <div className="h-4 bg-gray-800 rounded mb-3"></div>
+                <div className="h-3 bg-gray-800 rounded mb-4 w-2/3"></div>
+                <div className="h-24 bg-gray-800 rounded"></div>
               </div>
             ))}
           </div>
@@ -235,13 +291,13 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">
-            Hello, {user?.username || "User"}
+      <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
+        <div className="space-y-2">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-white">
+            Welcome back, {user?.username || "User"}
           </h1>
-          <p className="text-sm text-slate-400">
-            Here's a summary of your activity
+          <p className="text-sm text-gray-500">
+            Here's a snapshot of your activity and progress
           </p>
         </div>
 
@@ -249,53 +305,56 @@ export default function Dashboard() {
 
         {/* Plan Usage */}
         {usage && (
-          <div className="bento-card p-5 space-y-4">
+          <div className="bento-card p-6 space-y-4 border border-white/5 glow-primary">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-foreground">
-                Plan <span className="text-gray-400">{plan}</span>
+              <h2 className="font-display text-lg font-semibold text-white">
+                Plan Usage
               </h2>
+              <span className="text-xs font-medium px-2 py-1 rounded bg-white/10 text-gray-300">
+                {plan}
+              </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Notes</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">Notes</span>
+                  <span className="text-gray-300 font-medium">
                     {usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}
                   </span>
                 </div>
                 <Progress
                   value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)}
-                  className="h-1"
+                  className="h-1.5"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Entities</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">Entities</span>
+                  <span className="text-gray-300 font-medium">
                     {usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}
                   </span>
                 </div>
                 <Progress
                   value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)}
-                  className="h-1"
+                  className="h-1.5"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Habits</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">Habits</span>
+                  <span className="text-gray-300 font-medium">
                     {usage.habitsCount} / {limits.maxHabits === -1 ? "∞" : limits.maxHabits}
                   </span>
                 </div>
                 <Progress
                   value={limits.maxHabits === -1 ? 0 : Math.min((usage.habitsCount / limits.maxHabits) * 100, 100)}
-                  className="h-1"
+                  className="h-1.5"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Storage</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">Storage</span>
+                  <span className="text-gray-300 font-medium">
                     {usage.vaultSizeMB}MB / {limits.maxVaultSizeMB}MB
                   </span>
                 </div>

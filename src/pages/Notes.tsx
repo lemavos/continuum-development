@@ -7,12 +7,33 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, StickyNote, Folder, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, StickyNote, Folder, Trash2, Loader2, Heart, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; }
+interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; }
 interface FolderItem { id: string; name: string; parentId?: string; }
+
+// Helper to get type badge colors
+function getTypeBadgeColor(type?: string): string {
+  if (!type) return "bg-white/5 text-white/70";
+  const hash = type.charCodeAt(0);
+  const colors = [
+    "bg-purple-500/20 text-purple-200 border border-purple-500/30",
+    "bg-blue-500/20 text-blue-200 border border-blue-500/30",
+    "bg-teal-500/20 text-teal-200 border border-teal-500/30",
+    "bg-amber-500/20 text-amber-200 border border-amber-500/30",
+    "bg-rose-500/20 text-rose-200 border border-rose-500/30",
+  ];
+  return colors[hash % colors.length];
+}
+
+// Get preview of note content
+function getPreview(content?: string): string {
+  if (!content) return "No content";
+  const plain = content.replace(/<[^>]*>/g, "").trim();
+  return plain.slice(0, 80) + (plain.length > 80 ? "..." : "");
+}
 
 export default function Notes() {
   const [notes, setNotes] = useState<NoteSummary[]>([]);
@@ -23,10 +44,22 @@ export default function Notes() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set(JSON.parse(localStorage.getItem("noteFavorites") || "[]")));
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading: authLoading } = useRequireAuth();
   const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
+
+  // Persist favorites to localStorage
+  const toggleFavorite = (noteId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const updated = new Set(prev);
+      updated.has(noteId) ? updated.delete(noteId) : updated.add(noteId);
+      localStorage.setItem("noteFavorites", JSON.stringify(Array.from(updated)));
+      return updated;
+    });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -78,12 +111,27 @@ export default function Notes() {
     catch { toast({ title: "Error deleting", variant: "destructive" }); }
   };
 
-  const filtered = notes.filter((n) => {
-    const matchSearch = n.title.toLowerCase().includes(search.toLowerCase());
-    const matchFolder = selectedFolder ? n.folderId === selectedFolder : true;
-    const matchType = selectedType ? n.type === selectedType : true;
-    return matchSearch && matchFolder && matchType;
-  });
+  const filtered = notes
+    .sort((a, b) => {
+      // Favorites first
+      const aFav = favorites.has(a.id);
+      const bFav = favorites.has(b.id);
+      if (aFav !== bFav) return bFav ? 1 : -1;
+      // Then by date
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    })
+    .filter((n) => {
+      const matchSearch = n.title.toLowerCase().includes(search.toLowerCase());
+      const matchFolder = selectedFolder ? n.folderId === selectedFolder : true;
+      const matchType = selectedType ? n.type === selectedType : true;
+      return matchSearch && matchFolder && matchType;
+    });
+
+  // Count notes by type
+  const typeCounts = types.map((type) => ({
+    type,
+    count: notes.filter((n) => n.type === type).length,
+  }));
 
   const limitMsg = getLimitMessage("notes");
 
@@ -144,18 +192,24 @@ export default function Notes() {
                   All Types
                 </button>
                 {types.length > 0 ? (
-                  types.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setSelectedType(type)}
-                      className={cn(
-                        "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all shrink-0",
-                        selectedType === type ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                      )}
-                    >
-                      <span className="text-xs">#</span> {type}
-                    </button>
-                  ))
+                  types.map((type) => {
+                    const count = typeCounts.find((t) => t.type === type)?.count || 0;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => setSelectedType(type)}
+                        className={cn(
+                          "flex items-center justify-between gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all w-full",
+                          selectedType === type ? "bg-white/10 text-white font-medium" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs">#</span> {type}
+                        </span>
+                        <span className="text-xs font-semibold bg-white/10 px-2 py-0.5 rounded">{count}</span>
+                      </button>
+                    );
+                  })
                 ) : (
                   <p className="text-xs text-muted-foreground px-3 py-1">No types yet. Add types to your notes to filter here.</p>
                 )}
@@ -177,23 +231,44 @@ export default function Notes() {
                 <p className="text-muted-foreground text-sm">No notes found</p>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map((note) => (
                   <div
                     key={note.id}
                     onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group flex items-center justify-between px-4 py-3 rounded-lg cursor-pointer transition-all hover:bg-accent border border-transparent hover:border-border/50"
+                    className="group relative p-4 rounded-xl cursor-pointer transition-all borders-white/10 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg min-h-40 flex flex-col"
                   >
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-medium text-foreground truncate">{note.title || "Untitled"}</h3>
-                      <p className="text-xs text-muted-foreground">{new Date(note.updatedAt).toLocaleDateString("en-US")}</p>
+                    {/* Header with favorite button */}
+                    <div className="flex items-start justify-between mb-3 gap-2">
+                      <h3 className="text-sm font-semibold text-white/90 line-clamp-2 flex-1">{note.title || "Untitled"}</h3>
+                      <button
+                        onClick={(e) => toggleFavorite(note.id, e)}
+                        className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+                      >
+                        <Heart className={cn("w-4 h-4", favorites.has(note.id) ? "fill-rose-400 text-rose-400" : "text-white/40 hover:text-white/60")} />
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => handleDeleteNote(note.id, e)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                    </button>
+
+                    {/* Type badge */}
+                    {note.type && (
+                      <div className={cn("inline-block text-xs font-medium px-2 py-1 rounded mb-3 w-fit", getTypeBadgeColor(note.type))}>
+                        {note.type}
+                      </div>
+                    )}
+
+                    {/* Preview */}
+                    <p className="text-xs text-white/50 line-clamp-2 mb-auto flex-1">{getPreview(note.content)}</p>
+
+                    {/* Footer with date and delete */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+                      <span className="text-xs text-white/40">{new Date(note.updatedAt).toLocaleDateString("en-US")}</span>
+                      <button
+                        onClick={(e) => handleDeleteNote(note.id, e)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-rose-500/20"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400/60 hover:text-rose-400" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

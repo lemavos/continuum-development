@@ -170,12 +170,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen bg-black text-white">
       <CommandPalette />
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-card/95 border border-border"
-        onClick={() => setSidebarOpen(true)}
-      >
-        <Menu className="w-5 h-5 text-foreground" />
-      </button>
+      
+      {/* Mobile Header - Sticky */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-white/5 px-4 py-3">
+        <button
+          className="p-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="w-5 h-5 text-white" />
+        </button>
+      </div>
 
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
@@ -193,7 +197,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="flex-1 overflow-auto min-w-0 bg-black">
-        <div className="lg:hidden h-14" />
+        <div className="lg:hidden h-16" />
         {children}
       </main>
     </div>
