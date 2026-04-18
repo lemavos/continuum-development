@@ -48,13 +48,11 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-
     try {
       await authApi.updateMe({
         username,
         name: username,
       });
-
       await refreshUser();
       toast({ title: "Profile updated" });
     } catch (err: any) {
@@ -76,10 +74,6 @@ export default function Profile() {
             <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">Profile</h1>
             <p className="text-sm text-slate-400 mt-1">Manage your account information.</p>
           </div>
-
-          {/* <Button variant="outline" className="border-border" onClick={() => navigate("/subscription")}>
-            <CreditCard className="w-4 h-4 mr-2" /> Manage Subscription
-          </Button> */}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -130,7 +124,9 @@ export default function Profile() {
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
                   <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Member Since</p>
-                  <p className="text-base font-semibold text-white/90">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US") : "—"}</p>
+                  <p className="text-base font-semibold text-white/90">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US") : "—"}
+                  </p>
                 </div>
               </div>
 
@@ -139,12 +135,11 @@ export default function Profile() {
                 disabled={saving || !username.trim()}
                 className="w-full bg-white text-black hover:bg-gray-100 font-semibold shadow-lg transition-all"
               >
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
             </div>
 
-            {/* Status Card */}
             <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <BadgeCheck className="w-5 h-5 text-emerald-400" />
@@ -156,7 +151,7 @@ export default function Profile() {
             </div>
           </section>
 
-          {/* Settings Section */}
+          {/* Preferences & Security Section */}
           <section className="space-y-4">
             <div className="space-y-2">
               <h2 className="font-display text-xl font-semibold text-white/90">Preferences</h2>
@@ -192,9 +187,8 @@ export default function Profile() {
                 <p className="text-xs text-white/50">{formatLimitValue(limits.historyDays, " days")}</p>
               </div>
             </div>
-          </section>
-        </div>
 
+            {/* Security Info */}
             <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                 <Lock className="w-5 h-5 text-purple-400" />
@@ -217,7 +211,9 @@ export default function Profile() {
           </div>
 
           {usageLoading && !usage ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-white/30" /></div>
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-white/30" />
+            </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {resources.map((resource) => {
