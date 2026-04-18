@@ -31,6 +31,6 @@
     "useDefineForClassFields": true
   },
   "include": [
-    "frontend/src"
+    "src"
   ]
 }

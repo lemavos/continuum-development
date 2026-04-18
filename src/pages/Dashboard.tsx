@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import type { Plan, DashboardSummaryDTO, Entity } from "@/types";
 import { PLAN_LIMITS } from "@/types";
-import { ForceGraph2D } from "react-force-graph-2d";
 
 // ==========================================
 // SKELETON
@@ -50,7 +49,7 @@ export default function Dashboard() {
   useEffect(() => {
     dashboardApi.summary()
       .then((r) => setSummary(r.data))
-      .catch((err) => console.error("Erro ao buscar summary:", err))
+      .catch((err) => console.error("Error fetching summary:", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -156,42 +155,62 @@ export default function Dashboard() {
               <span className="text-xs text-zinc-500">{graphData?.nodes?.length || summary?.stats?.totalNotes || 0} active nodes</span>
             </div>
             
-            {/* ForceGraph2D Preview */}
-            <div className="flex-1 min-h-[280px] bg-zinc-950/50 rounded-xl border border-white/5 overflow-hidden cursor-pointer" onClick={() => navigate("/graph")}>
+            {/* Graph Preview Placeholder */}
+            <div className="flex-1 min-h-[280px] bg-zinc-950/50 rounded-xl border border-white/5 overflow-hidden cursor-pointer relative" onClick={() => navigate("/graph")}>
               {graphPreviewData && graphPreviewData.nodes.length > 0 ? (
-                <ForceGraph2D
-                  graphData={graphPreviewData}
-                  width={undefined}
-                  height={280}
-                  backgroundColor="transparent"
-                  nodeColor={(node: any) => {
-                    const colors: Record<string, string> = {
-                      NOTE: "#ffffff",
-                      HABIT: "#22c55e",
-                      PERSON: "#eab308",
-                      PROJECT: "#3b82f6",
-                      TOPIC: "#a855f7",
-                      ORGANIZATION: "#f97316"
-                    };
-                    return colors[node.type] || "#64748b";
-                  }}
-                  nodeRelSize={4}
-                  nodeVal={(node: any) => 1}
-                  linkColor={() => "rgba(255,255,255,0.1)"}
-                  linkWidth={1}
-                  enableNodeDrag={false}
-                  enableZoomPanInteraction={false}
-                  cooldownTicks={100}
-                  d3AlphaDecay={0.02}
-                  d3VelocityDecay={0.3}
-                  onNodeClick={() => navigate("/graph")}
-                  onLinkClick={() => navigate("/graph")}
-                />
+                <div className="w-full h-full flex items-center justify-center relative">
+                  {/* Animated nodes simulation */}
+                  <div className="absolute inset-0">
+                    {graphPreviewData.nodes.slice(0, 8).map((node: any, index: number) => (
+                      <div
+                        key={node.id}
+                        className="absolute w-3 h-3 rounded-full animate-pulse"
+                        style={{
+                          backgroundColor: (() => {
+                            const colors: Record<string, string> = {
+                              NOTE: "#ffffff",
+                              HABIT: "#22c55e",
+                              PERSON: "#eab308",
+                              PROJECT: "#3b82f6",
+                              TOPIC: "#a855f7",
+                              ORGANIZATION: "#f97316"
+                            };
+                            return colors[node.type] || "#64748b";
+                          })(),
+                          left: `${20 + (index % 4) * 20}%`,
+                          top: `${20 + Math.floor(index / 4) * 30}%`,
+                          animationDelay: `${index * 0.2}s`,
+                          animationDuration: '2s'
+                        }}
+                      />
+                    ))}
+                    {/* Animated connections */}
+                    <svg className="absolute inset-0 w-full h-full opacity-20">
+                      <defs>
+                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+                          <stop offset="100%" stopColor="rgba(255,255,255,0.3)" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="25%" y1="25%" x2="45%" y2="25%" stroke="url(#lineGradient)" strokeWidth="1" />
+                      <line x1="45%" y1="25%" x2="65%" y2="25%" stroke="url(#lineGradient)" strokeWidth="1" />
+                      <line x1="25%" y1="55%" x2="45%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
+                      <line x1="45%" y1="55%" x2="65%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
+                      <line x1="35%" y1="25%" x2="35%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
+                      <line x1="55%" y1="25%" x2="55%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
+                    </svg>
+                  </div>
+                  <div className="text-center z-10">
+                    <Share2 className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
+                    <p className="text-sm text-zinc-500">Interactive knowledge graph</p>
+                    <p className="text-xs text-zinc-600 mt-1">Click to explore</p>
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="text-center">
                     <Share2 className="w-8 h-8 text-zinc-700 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm text-zinc-500">Clique para explorar o grafo de conhecimento</p>
+                    <p className="text-sm text-zinc-500">Click to explore the knowledge graph</p>
                   </div>
                 </div>
               )}
@@ -281,7 +300,7 @@ export default function Dashboard() {
                     <button 
                       onClick={() => navigate(`/entities/${habit.id}`)}
                       className="w-5 h-5 rounded-full border border-zinc-600 flex items-center justify-center group-hover:border-orange-500 transition-colors"
-                      title="Fazer check-in"
+                      title="Check in"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-orange-500 transition-colors" />
                     </button>
