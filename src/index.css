@@ -299,13 +299,14 @@
   /* Primary button for CTA */
   .btn-primary {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-300;
-    background-color: oklch(0.72 0.14 195);
-    color: oklch(0.09 0.012 260);
+    background-color: #111111;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .btn-primary:hover {
-    opacity: 0.9;
-    box-shadow: 0 0 20px oklch(0.72 0.14 195 / 0.4);
+    background-color: #1a1a1a;
+    transform: translateY(-1px);
   }
 
   .btn-primary:active {
@@ -321,27 +322,28 @@
   .btn-secondary {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-300;
     background-color: transparent;
-    color: oklch(0.93 0.005 60);
-    border: 1px solid oklch(0.72 0.14 195 / 0.3);
+    color: #888888;
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .btn-secondary:hover {
-    background-color: oklch(0.72 0.14 195 / 0.1);
-    border-color: oklch(0.72 0.14 195 / 0.5);
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
   }
 
   /* Pulse glow animation for buttons */
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 20px oklch(0.72 0.14 195 / 0.4);
+      box-shadow: 0 0 0 0 rgba(255,255,255,0);
     }
     50% {
-      box-shadow: 0 0 40px oklch(0.72 0.14 195 / 0.6);
+      box-shadow: 0 0 20px 4px rgba(255,255,255,0.18);
     }
   }
 
   .animate-pulse-glow {
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse-glow 3s ease-in-out infinite;
   }
 
   /* Container */

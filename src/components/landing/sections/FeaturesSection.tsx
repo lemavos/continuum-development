@@ -48,7 +48,7 @@ export default function FeaturesSection() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 50% 40% at 80% 20%, oklch(0.72 0.14 195 / 0.04) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 60%)",
         }}
       />
 
@@ -62,16 +62,16 @@ export default function FeaturesSection() {
               transition={{ duration: 0.5, ease: EASE }}
               className="mb-6"
             >
-              <span className="label-caps text-[oklch(0.72_0.14_195)]">Features</span>
+              <span className="label-caps text-[#888888]">Features</span>
             </motion.div>
             <motion.h2
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
-              className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-[oklch(0.93_0.005_60)]"
+              className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white"
             >
-              Built for how you{" "}
-              <span className="italic text-[oklch(0.72_0.14_195)]">actually think.</span>
+              Built for how you{' '}
+              <span className="italic text-[#888888]">actually think.</span>
             </motion.h2>
           </div>
         )}
@@ -86,29 +86,29 @@ export default function FeaturesSection() {
                 initial={{ opacity: 0, y: 24 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.55, ease: EASE, delay: 0.15 + i * 0.1 }}
-                className="relative group bg-[oklch(0.09_0.012_260)] p-8 lg:p-10 overflow-hidden hover:bg-[oklch(0.11_0.012_260)] transition-colors duration-300"
+                className="relative group bg-[#090909] p-8 lg:p-10 overflow-hidden hover:bg-[#121212] transition-colors duration-300"
               >
                 {/* Decorative number */}
                 <span
                   className="absolute top-4 right-6 font-display text-[5rem] font-bold leading-none select-none pointer-events-none"
-                  style={{ color: "oklch(1 0 0 / 0.025)" }}
+                  style={{ color: "rgba(255, 255, 255, 0.025)" }}
                 >
                   {feature.number}
                 </span>
 
                 {/* Left accent line on hover */}
-                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[oklch(0.72_0.14_195)] scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-white scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
 
                 {/* Icon */}
-                <div className="w-11 h-11 rounded-xl bg-[oklch(0.72_0.14_195/0.1)] border border-[oklch(0.72_0.14_195/0.2)] flex items-center justify-center mb-6 group-hover:bg-[oklch(0.72_0.14_195/0.15)] transition-colors duration-300">
-                  <Icon size={20} className="text-[oklch(0.72_0.14_195)]" />
+                <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/[0.12] flex items-center justify-center mb-6 group-hover:bg-white/15 transition-colors duration-300">
+                  <Icon size={20} className="text-white" />
                 </div>
 
                 {/* Content */}
-                <h3 className="font-display text-[1.25rem] font-semibold text-[oklch(0.9_0.005_60)] mb-3">
+                <h3 className="font-display text-[1.25rem] font-semibold text-white mb-3">
                   {feature.title}
                 </h3>
-                <p className="font-body text-[0.9375rem] leading-[1.75] text-[oklch(0.45_0.008_260)]">
+                <p className="font-body text-[0.9375rem] leading-[1.75] text-[#888888]">
                   {feature.body}
                 </p>
               </motion.div>

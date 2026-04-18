@@ -12,15 +12,15 @@ const solutions = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="3" fill="oklch(0.72 0.14 195)" />
-        <circle cx="3" cy="4" r="2" fill="oklch(0.72 0.14 195)" opacity="0.5" />
-        <circle cx="17" cy="4" r="2" fill="oklch(0.72 0.14 195)" opacity="0.5" />
-        <circle cx="3" cy="16" r="2" fill="oklch(0.72 0.14 195)" opacity="0.5" />
-        <circle cx="17" cy="16" r="2" fill="oklch(0.72 0.14 195)" opacity="0.5" />
-        <line x1="10" y1="7" x2="3" y2="4" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.4" />
-        <line x1="10" y1="7" x2="17" y2="4" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.4" />
-        <line x1="10" y1="13" x2="3" y2="16" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.4" />
-        <line x1="10" y1="13" x2="17" y2="16" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.4" />
+        <circle cx="10" cy="10" r="3" fill="#ffffff" />
+        <circle cx="3" cy="4" r="2" fill="#ffffff" opacity="0.5" />
+        <circle cx="17" cy="4" r="2" fill="#ffffff" opacity="0.5" />
+        <circle cx="3" cy="16" r="2" fill="#ffffff" opacity="0.5" />
+        <circle cx="17" cy="16" r="2" fill="#ffffff" opacity="0.5" />
+        <line x1="10" y1="7" x2="3" y2="4" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+        <line x1="10" y1="7" x2="17" y2="4" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+        <line x1="10" y1="13" x2="3" y2="16" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
+        <line x1="10" y1="13" x2="17" y2="16" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
       </svg>
     ),
     title: "Notes connect to entities.",
@@ -29,10 +29,10 @@ const solutions = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M3 10 Q10 3 17 10 Q10 17 3 10Z" stroke="oklch(0.72 0.14 195)" strokeWidth="1.2" fill="none" opacity="0.6" />
-        <circle cx="10" cy="10" r="2.5" fill="oklch(0.72 0.14 195)" />
-        <circle cx="3" cy="10" r="1.5" fill="oklch(0.72 0.14 195)" opacity="0.5" />
-        <circle cx="17" cy="10" r="1.5" fill="oklch(0.72 0.14 195)" opacity="0.5" />
+        <path d="M3 10 Q10 3 17 10 Q10 17 3 10Z" stroke="#ffffff" strokeWidth="1.2" fill="none" opacity="0.6" />
+        <circle cx="10" cy="10" r="2.5" fill="#ffffff" />
+        <circle cx="3" cy="10" r="1.5" fill="#ffffff" opacity="0.5" />
+        <circle cx="17" cy="10" r="1.5" fill="#ffffff" opacity="0.5" />
       </svg>
     ),
     title: "Ideas become a network.",
@@ -41,11 +41,11 @@ const solutions = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="7" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.3" />
-        <circle cx="10" cy="10" r="4" stroke="oklch(0.72 0.14 195)" strokeWidth="1" opacity="0.5" />
-        <circle cx="10" cy="10" r="2" fill="oklch(0.72 0.14 195)" />
-        <line x1="10" y1="3" x2="10" y2="1" stroke="oklch(0.72 0.14 195)" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="17" y1="10" x2="19" y2="10" stroke="oklch(0.72 0.14 195)" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="10" cy="10" r="7" stroke="#ffffff" strokeWidth="1" opacity="0.3" />
+        <circle cx="10" cy="10" r="4" stroke="#ffffff" strokeWidth="1" opacity="0.5" />
+        <circle cx="10" cy="10" r="2" fill="#ffffff" />
+        <line x1="10" y1="3" x2="10" y2="1" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="17" y1="10" x2="19" y2="10" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
     title: "You don't search — you discover.",
@@ -63,7 +63,7 @@ export default function SolutionSection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 70% 60% at 50% 50%, oklch(0.72 0.14 195 / 0.05) 0%, transparent 60%)
+            radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,255,255,0.05) 0%, transparent 60%)
           `,
         }}
       />
@@ -82,7 +82,7 @@ export default function SolutionSection() {
                 <div
                   className="absolute inset-0 rounded-2xl"
                   style={{
-                    background: "radial-gradient(ellipse 80% 80% at 50% 50%, oklch(0.72 0.14 195 / 0.1) 0%, transparent 70%)",
+                    background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 70%)",
                   }}
                 />
                 <img
@@ -91,7 +91,7 @@ export default function SolutionSection() {
                   className="w-full h-72 lg:h-96 object-cover rounded-2xl opacity-90"
                 />
                 {/* Overlay gradient */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[oklch(0.09_0.012_260/0.5)] via-transparent to-transparent" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
                 {/* Stats overlay */}
                 <motion.div
@@ -107,10 +107,10 @@ export default function SolutionSection() {
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="bg-[oklch(0.09_0.012_260/0.85)] backdrop-blur-sm border border-white/[0.08] rounded-lg p-3 text-center"
+                      className="bg-black/80 backdrop-blur-sm border border-white/[0.08] rounded-lg p-3 text-center"
                     >
-                      <div className="font-display text-xl font-bold text-[oklch(0.72_0.14_195)]">{stat.value}</div>
-                      <div className="label-caps text-[oklch(0.45_0.008_260)] mt-0.5">{stat.label}</div>
+                      <div className="font-display text-xl font-bold text-white">{stat.value}</div>
+                      <div className="label-caps text-[#888888] mt-0.5">{stat.label}</div>
                     </div>
                   ))}
                 </motion.div>
@@ -128,17 +128,17 @@ export default function SolutionSection() {
                   transition={{ duration: 0.5, ease: EASE }}
                   className="mb-6"
                 >
-                  <span className="label-caps text-[oklch(0.72_0.14_195)]">The solution</span>
+                  <span className="label-caps text-[#888888]">The solution</span>
                 </motion.div>
 
                 <motion.h2
                   initial={{ opacity: 0, y: 28 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
-                  className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-[oklch(0.93_0.005_60)] mb-12"
+                  className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white mb-12"
                 >
-                  A mind that{" "}
-                  <span className="italic text-[oklch(0.72_0.14_195)]">thinks with you.</span>
+                  A mind that{' '}
+                  <span className="italic text-[#888888]">thinks with you.</span>
                 </motion.h2>
 
                 <div className="flex flex-col gap-10">
@@ -150,14 +150,14 @@ export default function SolutionSection() {
                       transition={{ duration: 0.55, ease: EASE, delay: 0.2 + i * 0.1 }}
                       className="flex gap-5 group"
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[oklch(0.72_0.14_195/0.1)] border border-[oklch(0.72_0.14_195/0.2)] flex items-center justify-center group-hover:bg-[oklch(0.72_0.14_195/0.15)] transition-colors duration-300">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/10 border border-white/[0.12] flex items-center justify-center group-hover:bg-white/15 transition-colors duration-300">
                         {s.icon}
                       </div>
                       <div>
-                        <h3 className="font-display text-[1.125rem] font-semibold text-[oklch(0.85_0.005_60)] mb-2">
+                        <h3 className="font-display text-[1.125rem] font-semibold text-white mb-2">
                           {s.title}
                         </h3>
-                        <p className="font-body text-[0.9375rem] leading-[1.75] text-[oklch(0.45_0.008_260)]">
+                        <p className="font-body text-[0.9375rem] leading-[1.75] text-[#888888]">
                           {s.body}
                         </p>
                       </div>

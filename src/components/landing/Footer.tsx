@@ -7,12 +7,12 @@ import AppLogo from "./AppLogo";
 
 export default function Footer() {
   return (
-    <footer className="relative border-t border-white/[0.06]">
+    <footer className="relative border-t border-white/[0.06] bg-black">
       {/* Background */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 50% 100% at 50% 0%, oklch(0.72 0.14 195 / 0.02) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,255,255,0.02) 0%, transparent 60%)",
         }}
       />
 
@@ -21,25 +21,24 @@ export default function Footer() {
           <a href="/" className="flex items-center gap-2.5 mb-5">
             <AppLogo />
             <span
-              className="text-[oklch(0.93_0.005_60)] font-semibold tracking-tight text-[1.05rem]"
+              className="text-white font-semibold tracking-tight text-[1.05rem]"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Continuum
             </span>
           </a>
 
-          <p className="font-body text-sm leading-[1.75] text-[oklch(0.4_0.008_260)] max-w-lg">
+          <p className="font-body text-sm leading-[1.75] text-[#888888] max-w-lg">
             Continuum is a modern knowledge management platform designed to help you organize,
             connect, and discover your ideas at the speed of thought.
           </p>
 
           <div className="pt-8 mt-8 border-t border-white/[0.05] space-y-4">
-            <div className="flex gap-6 text-xs text-[oklch(0.35_0.008_260)]">
-              <a href="#features" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">Features</a>
-              <a href="#how-it-works" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">How it works</a>
-              {/* <a href="mailto:hello@continuum.app" className="hover:text-[oklch(0.72_0.14_195)] transition-colors">Contact</a> */}  
+            <div className="flex gap-6 text-xs text-[#888888]">
+              <a href="#features" className="hover:text-white transition-colors">Features</a>
+              <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
             </div>
-            <p className="font-body text-xs text-[oklch(0.3_0.008_260)]">
+            <p className="font-body text-xs text-[#888888]">
               © {new Date().getFullYear()} Continuum. All rights reserved.
             </p>
           </div>

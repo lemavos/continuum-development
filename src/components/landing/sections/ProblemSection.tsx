@@ -35,16 +35,16 @@ function ProblemCard({ number, title, body, delay }: typeof problems[0] & { dela
       className="group relative"
     >
       {/* Left accent line */}
-      <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[oklch(1_0_0/0.12)] to-transparent group-hover:via-[oklch(0.72_0.14_195/0.4)] transition-all duration-500" />
+      <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent group-hover:via-white/30 transition-all duration-500" />
 
       <div className="pl-6">
-        <span className="label-caps text-[oklch(0.35_0.008_260)] block mb-3">{number}</span>
+        <span className="label-caps text-[#888888] block mb-3">{number}</span>
         <h3
-          className="font-display text-[1.375rem] font-semibold text-[oklch(0.85_0.005_60)] mb-3 leading-tight"
+          className="font-display text-[1.375rem] font-semibold text-white mb-3 leading-tight"
         >
           {title}
         </h3>
-        <p className="font-body text-[0.9375rem] leading-[1.75] text-[oklch(0.45_0.008_260)]">
+        <p className="font-body text-[0.9375rem] leading-[1.75] text-[#888888]">
           {body}
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function ProblemSection() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.72 0.14 195 / 0.03) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(255,255,255,0.03) 0%, transparent 60%)",
         }}
       />
 
@@ -74,7 +74,7 @@ export default function ProblemSection() {
             transition={{ duration: 0.5, ease: EASE }}
             className="mb-16"
           >
-            <span className="label-caps text-[oklch(0.72_0.14_195)]">The problem</span>
+            <span className="label-caps text-[#888888]">The problem</span>
           </motion.div>
         )}
 
@@ -86,10 +86,10 @@ export default function ProblemSection() {
                 initial={{ opacity: 0, y: 28 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
-                className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-[oklch(0.93_0.005_60)] mb-8"
+                className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white mb-8"
               >
                 Your brain is full.{" "}
-                <span className="text-[oklch(0.45_0.008_260)] italic">Your tools aren't helping.</span>
+                <span className="text-[#888888] italic">Your tools aren't helping.</span>
               </motion.h2>
             )}
 
@@ -106,9 +106,9 @@ export default function ProblemSection() {
                   className="w-full h-64 lg:h-80 object-cover opacity-80"
                 />
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.09_0.012_260)] via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
-                  <p className="font-body text-sm text-[oklch(0.55_0.008_260)] italic">
+                  <p className="font-body text-sm text-[#888888] italic">
                     "Without connections, ideas stay isolated."
                   </p>
                 </div>

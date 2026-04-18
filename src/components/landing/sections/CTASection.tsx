@@ -21,13 +21,13 @@ export default function CTASection() {
       {/* Separator */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-      {/* Background: strong cyan glow */}
+      {/* Background: soft glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 50%, oklch(0.72 0.14 195 / 0.08) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 40% at 50% 50%, oklch(0.72 0.14 195 / 0.04) 0%, transparent 50%)
+            radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 50%)
           `,
         }}
       />
@@ -37,8 +37,8 @@ export default function CTASection() {
         className="absolute inset-0 pointer-events-none opacity-[0.02]"
         style={{
           backgroundImage: `
-            linear-gradient(oklch(0.72 0.14 195) 1px, transparent 1px),
-            linear-gradient(90deg, oklch(0.72 0.14 195) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -54,25 +54,25 @@ export default function CTASection() {
                 transition={{ duration: 0.5, ease: EASE }}
                 className="mb-8"
               >
-                <span className="label-caps text-[oklch(0.72_0.14_195)]">Get started today</span>
+                <span className="label-caps text-[#888888]">Get started today</span>
               </motion.div>
 
               <motion.h2
                 initial={{ opacity: 0, y: 32 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-                className="font-display text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.05] tracking-[-0.025em] text-[oklch(0.93_0.005_60)] mb-6"
+                className="font-display text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.05] tracking-[-0.025em] text-white mb-6"
               >
                 Transform how you think.
                 <br />
-                <span className="italic text-[oklch(0.72_0.14_195)]">Build your knowledge graph today for free.</span>
+                <span className="italic text-[#888888]">Build your knowledge graph today for free.</span>
               </motion.h2>
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
-                className="font-body text-[1.0625rem] leading-[1.75] text-[oklch(0.45_0.008_260)] mb-12 max-w-lg mx-auto"
+                className="font-body text-[1.0625rem] leading-[1.75] text-[#888888] mb-12 max-w-lg mx-auto"
               >
                 Start organizing, connecting, and discovering your knowledge now.
               </motion.p>
@@ -104,8 +104,8 @@ export default function CTASection() {
                   "Instant setup",
                   "Try risk-free",
                 ].map((item) => (
-                  <span key={item} className="flex items-center gap-1.5 label-caps text-[oklch(0.35_0.008_260)]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.72_0.14_195)]" />
+                  <span key={item} className="flex items-center gap-1.5 label-caps text-[#888888]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
                     {item}
                   </span>
                 ))}
