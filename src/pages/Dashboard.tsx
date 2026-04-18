@@ -3,30 +3,45 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { BentoGrid, type BentoItem } from "@/components/ui/bento-grid";
 import { dashboardApi, entitiesApi, trackingApi, graphApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { Progress } from "@/components/ui/progress";
-import {
-  Flame,
-  HardDrive,
-  FileText,
-  BarChart3,
-  Plus,
-  Network,
-  CheckCircle,
-  Circle,
+import { 
+  Flame, HardDrive, FileText, Plus, Share2, Activity, FolderOpen, CheckCircle2
 } from "lucide-react";
 import type { Plan, DashboardSummaryDTO, Entity } from "@/types";
 import { PLAN_LIMITS } from "@/types";
 
+// ==========================================
+// SKELETON
+// ==========================================
+const DashboardSkeleton = () => (
+  <AppLayout>
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+      <div className="flex justify-between items-center mb-8">
+        <div className="h-8 w-64 bg-zinc-900 rounded-md animate-pulse"></div>
+        <div className="h-10 w-32 bg-zinc-900 rounded-md animate-pulse"></div>
+      </div>
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-8 h-[380px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
+        <div className="col-span-12 lg:col-span-4 h-[380px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
+        <div className="col-span-12 lg:col-span-7 h-[280px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
+        <div className="col-span-12 lg:col-span-5 h-[280px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
+      </div>
+    </div>
+  </AppLayout>
+);
+
+// ==========================================
+// DASHBOARD PRINCIPAL
+// ==========================================
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummaryDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  
   const { usage, applyUsageDelta } = usePlanGate();
-
   const plan: Plan = (user?.plan as Plan) || "FREE";
   const limits = PLAN_LIMITS[plan];
 
@@ -34,7 +49,7 @@ export default function Dashboard() {
   useEffect(() => {
     dashboardApi.summary()
       .then((r) => setSummary(r.data))
-      .catch(() => {})
+      .catch((err) => console.error("Erro ao buscar summary:", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -61,14 +76,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!summary?.storageUsage || usage == null) return;
-
     const storageMB = Number((summary.storageUsage.usedBytes / (1024 * 1024)).toFixed(2));
     applyUsageDelta({ vaultSizeMB: storageMB - usage.vaultSizeMB });
   }, [summary?.storageUsage, usage, applyUsageDelta]);
-
-  const formatDate = (value: string | number) => {
-    return new Date(value).toLocaleDateString();
-  };
 
   // Get pending habits today
   const getPendingHabits = () => {
@@ -82,253 +92,190 @@ export default function Dashboard() {
 
   const pendingHabits = getPendingHabits();
 
-  const bentoItems: BentoItem[] = [
-    // Welcome/Storage Widget
-    {
-      title: `Welcome back, ${user?.username || "User"}`,
-      meta: summary?.storageUsage ? `${summary.storageUsage.formattedUsed} of ${summary.storageUsage.formattedLimit}` : "Loading...",
-      description: "Your storage usage and quick overview",
-      icon: <HardDrive className="w-4 h-4 text-cyan-400" />,
-      status: summary?.storageUsage
-        ? summary.storageUsage.isUnlimited
-          ? "Unlimited storage"
-          : `${summary.storageUsage.percentageUsed.toFixed(1)}% used`
-        : "",
-      colSpan: 2,
-      hasPersistentHover: true,
-      customContent: summary?.storageUsage ? (
-        <div className="mt-4">
-          <Progress value={summary.storageUsage.percentageUsed} className="h-2" />
-        </div>
-      ) : null,
-    },
-
-    // Recent Notes
-    {
-      title: "Recent Notes",
-      meta: summary?.recentNotes ? `${summary.recentNotes.length} recent` : "—",
-      description: "Quick access to your latest notes",
-      icon: <FileText className="w-4 h-4 text-cyan-400" />,
-      status: "Recently updated",
-      tags: ["Notes", "Recent"],
-      colSpan: 2,
-      customContent: summary?.recentNotes && summary.recentNotes.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          {summary.recentNotes.slice(0, 3).map((note) => (
-            <div
-              key={note.id}
-              className="flex items-center justify-between p-2 rounded-md bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
-              onClick={() => navigate(`/notes/${note.id}`)}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{note.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{note.preview}</p>
-              </div>
-              <div className="text-xs text-muted-foreground ml-2">
-                {formatDate(note.updatedAtTimestamp)}
-              </div>
-            </div>
-          ))}
-          {summary.recentNotes.length > 3 && (
-            <button
-              onClick={() => navigate("/notes")}
-              className="w-full text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              View all notes →
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="mt-4 text-center text-muted-foreground">
-          <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No notes yet</p>
-          <p className="text-xs">Create your first note to get started</p>
-          <button
-            onClick={() => navigate("/notes")}
-            className="mt-2 inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            Create note
-          </button>
-        </div>
-      ),
-      onClick: () => navigate("/notes"),
-    },
-
-    // Pending Habits Today
-    {
-      title: "Today's Habits",
-      meta: `${pendingHabits.length} pending`,
-      description: "Habits you haven't completed today",
-      icon: <Flame className="w-4 h-4 text-orange-400" />,
-      status: "Complete your daily habits",
-      tags: ["Habits", "Today"],
-      colSpan: 2,
-      customContent: pendingHabits.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          {pendingHabits.slice(0, 3).map((habit: Entity) => (
-            <div
-              key={habit.id}
-              className="flex items-center justify-between p-2 rounded-md bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
-              onClick={() => navigate(`/entities/${habit.id}`)}
-            >
-              <div className="flex items-center gap-2">
-                <Circle className="w-4 h-4 text-orange-400" />
-                <p className="text-sm font-medium">{habit.title}</p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Mark as complete
-                  navigate(`/entities/${habit.id}`);
-                }}
-                className="text-xs text-orange-400 hover:text-orange-300"
-              >
-                Complete
-              </button>
-            </div>
-          ))}
-          {pendingHabits.length > 3 && (
-            <button
-              onClick={() => navigate("/entities?type=HABIT")}
-              className="w-full text-xs text-orange-400 hover:text-orange-300 transition-colors"
-            >
-              View all habits →
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="mt-4 text-center text-muted-foreground">
-          <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50 text-green-400" />
-          <p className="text-sm">All habits completed today!</p>
-          <p className="text-xs">Great job keeping up with your routines</p>
-        </div>
-      ),
-      onClick: () => navigate("/entities?type=HABIT"),
-    },
-
-    // Graph Preview
-    {
-      title: "Knowledge Graph",
-      meta: graphData ? `${graphData.nodes?.length || 0} nodes` : "—",
-      description: "Preview of your knowledge connections",
-      icon: <Network className="w-4 h-4 text-purple-400" />,
-      status: "Click to explore",
-      tags: ["Graph", "Connections"],
-      colSpan: 2,
-      customContent: (
-        <div className="mt-4 text-center">
-          <div className="w-full h-20 bg-slate-800/50 rounded-md flex items-center justify-center cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => navigate("/graph")}>
-            <Network className="w-8 h-8 text-purple-400 opacity-50" />
-            <p className="text-xs text-muted-foreground ml-2">View Graph</p>
-          </div>
-        </div>
-      ),
-      onClick: () => navigate("/graph"),
-    },
-
-    // Plan Limits
-    {
-      title: "Plan Limits",
-      meta: `${plan} plan`,
-      description: "Your current usage limits",
-      icon: <BarChart3 className="w-4 h-4 text-cyan-400" />,
-      status: "Upgrade for more",
-      tags: ["Plan", "Limits"],
-      colSpan: 2,
-      customContent: usage ? (
-        <div className="mt-4 space-y-3">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Notes</span>
-              <span className="text-muted-foreground">
-                {usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}
-              </span>
-            </div>
-            <Progress
-              value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)}
-              className="h-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Entities</span>
-              <span className="text-muted-foreground">
-                {usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}
-              </span>
-            </div>
-            <Progress
-              value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)}
-              className="h-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Habits</span>
-              <span className="text-muted-foreground">
-                {usage.habitsCount} / {limits.maxHabits === -1 ? "∞" : limits.maxHabits}
-              </span>
-            </div>
-            <Progress
-              value={limits.maxHabits === -1 ? 0 : Math.min((usage.habitsCount / limits.maxHabits) * 100, 100)}
-              className="h-1"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Storage</span>
-              <span className="text-muted-foreground">
-                {usage.vaultSizeMB}MB / {limits.maxVaultSizeMB}MB
-              </span>
-            </div>
-            <Progress
-              value={Math.min((usage.vaultSizeMB / limits.maxVaultSizeMB) * 100, 100)}
-              className="h-1"
-            />
-          </div>
-        </div>
-      ) : null,
-      onClick: () => navigate("/subscription"),
-    },
-  ];
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-          <div className="space-y-1 mb-8">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">
-              Hello, {user?.username || "User"}
-            </h1>
-            <p className="text-sm text-slate-400">Loading your dashboard...</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bento-card p-5 animate-pulse">
-                <div className="h-4 bg-slate-700 rounded mb-2"></div>
-                <div className="h-3 bg-slate-700 rounded mb-4"></div>
-                <div className="h-20 bg-slate-700 rounded"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">
-            Hello, {user?.username || "User"}
-          </h1>
-          <p className="text-sm text-slate-400">
-            Here's a summary of your activity
-          </p>
-        </div>
+      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+        
+        {/* HEADER */}
+        <header className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-semibold text-white tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-sm text-zinc-500">Visão geral do seu cofre.</p>
+          </div>
+          <button 
+            onClick={() => navigate("/notes")}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Nova Nota
+          </button>
+        </header>
 
-        <BentoGrid items={bentoItems} />
+        {/* GRID PRINCIPAL */}
+        <div className="grid grid-cols-12 gap-6">
+
+          {/* 1. PREVIEW DO GRAFO */}
+          <div className="col-span-12 lg:col-span-8 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col relative overflow-hidden">
+            <div className="flex justify-between items-center mb-4 z-10">
+              <h2 className="text-white font-medium flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-zinc-400" /> Knowledge Graph
+              </h2>
+              <span className="text-xs text-zinc-500">{graphData?.nodes?.length || summary?.stats?.totalNotes || 0} nós ativos</span>
+            </div>
+            
+            {/* Placeholder para o grafo - pode ser substituído por ForceGraph2D */}
+            <div className="flex-1 min-h-[280px] bg-zinc-950/50 rounded-xl border border-white/5 flex items-center justify-center cursor-pointer hover:bg-zinc-950/70 transition-colors" onClick={() => navigate("/graph")}>
+               <div className="text-center">
+                 <Share2 className="w-8 h-8 text-zinc-700 mx-auto mb-2 opacity-50" />
+                 <p className="text-sm text-zinc-500">Clique para explorar o grafo de conhecimento</p>
+               </div>
+            </div>
+          </div>
+
+          {/* 2. LIMITES DO PLANO E STORAGE */}
+          <div className="col-span-12 lg:col-span-4 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-white font-medium flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-zinc-400" /> System Usage
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-1 rounded bg-purple-500/10 text-purple-400 tracking-widest uppercase">
+                  {plan}
+                </span>
+              </div>
+
+              {usage ? (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-zinc-400">
+                      <span>Notas</span>
+                      <span className="text-zinc-200">{usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}</span>
+                    </div>
+                    <Progress value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1.5 bg-zinc-800" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-zinc-400">
+                      <span>Entidades</span>
+                      <span className="text-zinc-200">{usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}</span>
+                    </div>
+                    <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1.5 bg-zinc-800" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-zinc-400">
+                      <span>Hábitos</span>
+                      <span className="text-zinc-200">{usage.habitsCount} / {limits.maxHabits === -1 ? "∞" : limits.maxHabits}</span>
+                    </div>
+                    <Progress value={limits.maxHabits === -1 ? 0 : Math.min((usage.habitsCount / limits.maxHabits) * 100, 100)} className="h-1.5 bg-zinc-800" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-zinc-500">Carregando limites...</div>
+              )}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/5">
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1">
+                    <HardDrive className="w-3 h-3" /> Storage Vault
+                  </div>
+                  <span className="text-2xl font-bold text-white tracking-tight">
+                    {summary?.storageUsage?.formattedUsed || "0 MB"}
+                  </span>
+                </div>
+                <span className="text-xs text-zinc-500">
+                  / {summary?.storageUsage?.formattedLimit || "∞"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. HÁBITOS PENDENTES */}
+          <div className="col-span-12 lg:col-span-7 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <h2 className="text-white font-medium">Para Hoje</h2>
+              </div>
+              {pendingHabits.length > 0 && (
+                <span className="text-[10px] font-bold px-2 py-1 bg-orange-500/10 text-orange-500 rounded uppercase tracking-widest">
+                  {pendingHabits.length} Pendentes
+                </span>
+              )}
+            </div>
+            
+            <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+              {pendingHabits.length > 0 ? (
+                pendingHabits.map((habit: Entity) => (
+                  <div 
+                    key={habit.id} 
+                    className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/5 transition-all group"
+                  >
+                    <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{habit.title}</span>
+                    <button 
+                      onClick={() => navigate(`/entities/${habit.id}`)}
+                      className="w-5 h-5 rounded-full border border-zinc-600 flex items-center justify-center group-hover:border-orange-500 transition-colors"
+                      title="Fazer check-in"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-orange-500 transition-colors" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-6">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-3 opacity-80" />
+                  <p className="text-sm text-zinc-300 font-medium">Tudo limpo por hoje!</p>
+                  <p className="text-xs text-zinc-500 mt-1">Nenhum hábito pendente.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 4. NOTAS RECENTES */}
+          <div className="col-span-12 lg:col-span-5 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-white font-medium flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-zinc-400" /> Notas Recentes
+              </h2>
+              <button onClick={() => navigate("/notes")} className="text-[10px] uppercase font-bold text-zinc-500 hover:text-white transition-colors">
+                Ver Todas
+              </button>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-3">
+              {summary?.recentNotes && summary.recentNotes.length > 0 ? (
+                summary.recentNotes.slice(0, 4).map((note: any) => (
+                  <div
+                    key={note.id}
+                    onClick={() => navigate(`/notes/${note.id}`)}
+                    className="group flex flex-col p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/10 cursor-pointer transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-sm font-medium text-zinc-200 truncate pr-4 group-hover:text-purple-400 transition-colors">
+                        {note.title}
+                      </span>
+                      <span className="text-[10px] text-zinc-600 whitespace-nowrap">
+                        {new Date(note.updatedAtTimestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    {note.preview && (
+                      <span className="text-xs text-zinc-500 truncate">{note.preview}</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-6">
+                  <FileText className="w-6 h-6 text-zinc-800 mb-2" />
+                  <p className="text-xs text-zinc-500">Nenhuma nota recente.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
       </div>
     </AppLayout>
   );
