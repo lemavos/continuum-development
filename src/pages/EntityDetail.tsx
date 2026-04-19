@@ -5,7 +5,7 @@ import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Calendar, Tag, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { HeatmapData, EntityStats } from "@/types";
@@ -271,11 +271,19 @@ export default function EntityDetail() {
           )}
         </div>
 
-        {isHabit && (
+        {(isHabit || entity?.type === "PROJECT") && (
           <>
-            <Button onClick={handleTrack} disabled={!!trackedToday} className={trackedToday ? "bg-gray-500/10 text-gray-300 border border-gray-500/30" : "bg-white text-black hover:bg-gray-100 shadow-lg"}>
-              <CheckCircle className="w-4 h-4 mr-1" /> {trackedToday ? "Done today ✓" : "Track today"}
-            </Button>
+            <div className="flex items-center gap-3">
+              {isHabit && (
+                <Button onClick={handleTrack} disabled={!!trackedToday} className={trackedToday ? "bg-gray-500/10 text-gray-300 border border-gray-500/30" : "bg-white text-black hover:bg-gray-100 shadow-lg"}>
+                  <CheckCircle className="w-4 h-4 mr-1" /> {trackedToday ? "Done today ✓" : "Track today"}
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => navigate(`/time-tracking/${id}`)} className="bg-accent border-border/50 hover:bg-accent/80">
+                <Clock className="w-4 h-4 mr-2" />
+                Time Tracking
+              </Button>
+            </div>
 
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Last 90 days activity</h2>

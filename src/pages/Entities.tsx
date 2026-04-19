@@ -6,7 +6,7 @@ import { usePlanGate } from "@/hooks/usePlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, CheckCircle, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, CheckCircle, Loader2, Trash2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -137,10 +137,15 @@ export default function Entities() {
             {entitiesLimit && <p className="text-xs text-slate-400 mt-1">{entitiesLimit}</p>}
             {habitsLimit && <p className="text-xs text-slate-400 mt-1">{habitsLimit}</p>}
           </div>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg"><Plus className="w-4 h-4 mr-1" /> New Entity</Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => navigate('/time-tracking')} className="bg-accent border-border/50 hover:bg-accent/80">
+              <Clock className="w-4 h-4 mr-2" />
+              Time Tracking
+            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg"><Plus className="w-4 h-4 mr-1" /> New Entity</Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border-border">
               <DialogHeader><DialogTitle className="text-foreground">Create Entity</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">

@@ -20,7 +20,9 @@ import java.time.LocalDate;
 public class TimeEntryResponse {
 
     private String id;
+    private String userId;
     private String entityId;
+    private String vaultId;
     private LocalDate date;
     private Long durationSeconds;
     private String formattedDuration;
@@ -32,7 +34,9 @@ public class TimeEntryResponse {
     public static TimeEntryResponse fromEntity(TimeEntry entry) {
         return TimeEntryResponse.builder()
                 .id(entry.getId())
+                .userId(entry.getUserId())
                 .entityId(entry.getEntityId())
+                .vaultId(entry.getVaultId())
                 .date(entry.getDate())
                 .durationSeconds(entry.getDurationSeconds())
                 .formattedDuration(entry.getFormattedDuration())
