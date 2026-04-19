@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Cale
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { HeatmapData, EntityStats } from "@/types";
+import { useTimeTracking } from "@/hooks/useTimeTracking";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
 
@@ -28,6 +29,21 @@ export default function EntityDetail() {
   const [newDescription, setNewDescription] = useState("");
   const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
+
+  // Time tracking
+  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { data: timeSummary } = getTotalTime(id!);
+  const { data: activeTimer } = getActiveTimer(id!);
+
+  const handleStartTimer = async () => {
+    if (!id) return;
+    await startTimer(id);
+  };
+
+  const handleStopTimer = async () => {
+    if (!id) return;
+    await stopTimer({ sessionId: id });
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -279,11 +295,38 @@ export default function EntityDetail() {
                   <CheckCircle className="w-4 h-4 mr-1" /> {trackedToday ? "Done today ✓" : "Track today"}
                 </Button>
               )}
-              <Button variant="outline" onClick={() => navigate(`/time-tracking/${id}`)} className="bg-accent border-border/50 hover:bg-accent/80">
-                <Clock className="w-4 h-4 mr-2" />
-                Time Tracking
-              </Button>
+              {activeTimerId === id ? (
+                <Button onClick={handleStopTimer} disabled={isStopping} className="bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30">
+                  <Pause className="w-4 h-4 mr-2" />
+                  {isStopping ? "Stopping..." : `Stop Timer (${activeTimer?.formattedElapsed || "00:00:00"})`}
+                </Button>
+              ) : (
+                <Button onClick={handleStartTimer} disabled={isStarting} className="bg-green-500/20 text-green-200 border border-green-500/30 hover:bg-green-500/30">
+                  <Play className="w-4 h-4 mr-2" />
+                  {isStarting ? "Starting..." : "Start Timer"}
+                </Button>
+              )}
             </div>
+
+            {/* Time Summary */}
+            {timeSummary && (
+              <div className="bento-card p-4">
+                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Time Tracking Summary
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Total Time:</span>
+                    <span className="ml-2 font-semibold text-foreground">{timeSummary.formattedTotal}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Sessions:</span>
+                    <span className="ml-2 font-semibold text-foreground">{timeSummary.entriesCount}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Last 90 days activity</h2>

@@ -18,7 +18,6 @@ import {
   Loader2,
   GitGraph,
   Settings,
-  Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -26,7 +25,6 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/notes", icon: StickyNote, label: "Notes" },
   { to: "/entities", icon: Network, label: "Entities" },
-  { to: "/time-tracking", icon: Clock, label: "Time Tracking" },
   { to: "/graph", icon: GitGraph, label: "Graph" },
   // { to: "/vault", icon: HardDrive, label: "Vault" },
   // { to: "/subscription", icon: CreditCard, label: "Subscription" },

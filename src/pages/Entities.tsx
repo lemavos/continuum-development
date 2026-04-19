@@ -6,13 +6,14 @@ import { usePlanGate } from "@/hooks/usePlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, CheckCircle, Loader2, Trash2, Clock } from "lucide-react";
+import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, CheckCircle, Loader2, Trash2, Play, Pause, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { EntityType } from "@/types";
+import { useTimeTracking } from "@/hooks/useTimeTracking";
 
 interface Entity { id: string; title: string; type: EntityType; description?: string; createdAt: string; trackingDates?: string[]; }
 
@@ -48,6 +49,24 @@ export default function Entities() {
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Time tracking
+  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { data: timeSummaries } = getAllSummaries();
+
+  const getTimeSummaryForEntity = (entityId: string) => {
+    return timeSummaries?.find(s => s.entityId === entityId);
+  };
+
+  const handleStartTimer = (entityId: string) => {
+    startTimer(entityId);
+  };
+
+  const handleStopTimer = (entityId: string) => {
+    if (activeTimerId === entityId) {
+      stopTimer({ sessionId: entityId });
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -132,20 +151,11 @@ export default function Entities() {
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">Entities</h1>
-            {entitiesLimit && <p className="text-xs text-slate-400 mt-1">{entitiesLimit}</p>}
-            {habitsLimit && <p className="text-xs text-slate-400 mt-1">{habitsLimit}</p>}
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => navigate('/time-tracking')} className="bg-accent border-border/50 hover:bg-accent/80">
-              <Clock className="w-4 h-4 mr-2" />
-              Time Tracking
-            </Button>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg"><Plus className="w-4 h-4 mr-1" /> New Entity</Button>
-              </DialogTrigger>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-white">Entities</h1>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg"><Plus className="w-4 h-4 mr-1" /> New Entity</Button>
+            </DialogTrigger>
             <DialogContent className="bg-card border-border">
               <DialogHeader><DialogTitle className="text-foreground">Create Entity</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
@@ -231,25 +241,59 @@ export default function Entities() {
 
                   {/* Footer - Track/Streak and Delete */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 gap-2">
-                    {entity.type === "HABIT" ? (
+                    {(entity.type === "HABIT" || entity.type === "PROJECT") ? (
                       <div className="flex items-center gap-1">
-                        {streak > 0 && (
+                        {entity.type === "HABIT" && streak > 0 && (
                           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
                             <Flame className="w-3.5 h-3.5 text-rose-400" />
                             <span className="text-xs font-semibold text-rose-200">{streak}</span>
                           </div>
                         )}
-                        <button
-                          onClick={(e) => handleTrack(entity.id, e)}
-                          className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border",
-                            tracked
-                              ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/30"
-                              : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20"
+                        {entity.type === "PROJECT" && (() => {
+                          const summary = getTimeSummaryForEntity(entity.id);
+                          return summary ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                              <Clock className="w-3.5 h-3.5 text-blue-400" />
+                              <span className="text-xs font-semibold text-blue-200">{summary.formattedTotal}</span>
+                            </div>
+                          ) : null;
+                        })()}
+                        <div className="flex items-center gap-1">
+                          {entity.type === "HABIT" && (
+                            <button
+                              onClick={(e) => handleTrack(entity.id, e)}
+                              className={cn(
+                                "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border",
+                                tracked
+                                  ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/30"
+                                  : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20"
+                              )}
+                            >
+                              <CheckCircle className="w-3 h-3" /> {tracked ? "Done" : "Track"}
+                            </button>
                           )}
-                        >
-                          <CheckCircle className="w-3 h-3" /> {tracked ? "Done" : "Track"}
-                        </button>
+                          {(entity.type === "PROJECT" || entity.type === "HABIT") && (
+                            <>
+                              {activeTimerId === entity.id ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleStopTimer(entity.id); }}
+                                  disabled={isStopping}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border bg-red-500/20 text-red-200 border-red-500/30 hover:bg-red-500/30"
+                                >
+                                  <Pause className="w-3 h-3" /> {isStopping ? "..." : "Stop"}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleStartTimer(entity.id); }}
+                                  disabled={isStarting}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border bg-green-500/20 text-green-200 border-green-500/30 hover:bg-green-500/30"
+                                >
+                                  <Play className="w-3 h-3" /> {isStarting ? "..." : "Timer"}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     ) : streak > 0 ? (
                       <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30">

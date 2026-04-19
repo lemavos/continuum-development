@@ -21,8 +21,6 @@ import Vault from "./pages/Vault";
 // import Subscription from "./pages/Subscription";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import TimeTracking from "./pages/TimeTracking";
-import TimeTrackingDetail from "./pages/TimeTrackingDetail";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -76,8 +74,6 @@ const AppRoutes = () => (
     <Route path="/notes/:id" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
     <Route path="/entities" element={<ProtectedRoute><Entities /></ProtectedRoute>} />
     <Route path="/entities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
-    <Route path="/time-tracking" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
-    <Route path="/time-tracking/:entityId" element={<ProtectedRoute><TimeTrackingDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
     {/* <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} /> */}
