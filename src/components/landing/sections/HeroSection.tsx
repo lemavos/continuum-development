@@ -92,11 +92,7 @@ export default function HeroSection() {
                 filter: "blur(20px)",
               }}
             />
-
-            {/* Canvas */}
-            <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.06]">
               <KnowledgeGraph className="relative z-10" />
-            </div>
           </motion.div>
         </div>
       </div>

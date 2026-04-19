@@ -16,7 +16,7 @@ import type { Entity } from '@/types';
 export function TimeTrackingList() {
   const navigate = useNavigate();
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
-  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimerId, activeEntityId, isStarting, isStopping } = useTimeTracking();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
     queryKey: ['entities', 'trackable'],
@@ -39,8 +39,8 @@ export function TimeTrackingList() {
   };
 
   const handleStopTimer = (entityId: string) => {
-    if (activeTimerId === entityId) {
-      stopTimer({ sessionId: entityId });
+    if (activeEntityId === entityId && activeTimerId) {
+      stopTimer({ sessionId: activeTimerId });
       setSelectedEntity(null);
     }
   };
@@ -85,7 +85,7 @@ export function TimeTrackingList() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {trackableEntities.map(entity => {
             const summary = getSummaryForEntity(entity.id);
-            const isTimerActive = activeTimerId === entity.id;
+            const isTimerActive = activeEntityId === entity.id;
 
             return (
               <Card

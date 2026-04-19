@@ -36,13 +36,234 @@ export interface TimeEntitySummary {
   hasActiveTimer: boolean;
 }
 
-// Global timer state to ensure smooth counting
-let globalElapsedSeconds = 0;
-let globalTimerIntervalId: NodeJS.Timeout | null = null;
-let globalActiveTimerId: string | null = null;
-let globalActiveEntityId: string | null = null;
+// Singleton timer state - prevents memory leaks and timer drift
+class TimerManager {
+  private static instance: TimerManager;
+  private intervalId: NodeJS.Timeout | null = null;
+  private startTime: number | null = null;
+  private activeTimerId: string | null = null;
+  private activeEntityId: string | null = null;
+  private listeners: Set<(elapsed: number) => void> = new Set();
+  private serviceWorkerController: ServiceWorker | null = null;
 
-/** 
+  static getInstance(): TimerManager {
+    if (!TimerManager.instance) {
+      TimerManager.instance = new TimerManager();
+    }
+    return TimerManager.instance;
+  }
+
+  private constructor() {
+    // Initialize Service Worker communication
+    this.initializeServiceWorker();
+  }
+
+  private async initializeServiceWorker() {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    try {
+      // Register service worker if not already registered
+      const registration = await navigator.serviceWorker.register('/timer-service-worker.js');
+      this.serviceWorkerController = registration.active;
+
+      // Listen for messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        this.handleServiceWorkerMessage(event);
+      });
+
+      console.log('Service Worker initialized for timer management');
+    } catch (error) {
+      console.warn('Service Worker registration failed:', error);
+    }
+  }
+
+  private handleServiceWorkerMessage(event: MessageEvent) {
+    const { type, data } = event.data;
+
+    switch (type) {
+      case 'TIMER_UPDATE':
+        if (data.elapsedSeconds !== undefined) {
+          // Service worker is reporting elapsed time - sync our state
+          const elapsed = Math.floor(data.elapsedSeconds);
+          this.listeners.forEach(listener => listener(elapsed));
+        }
+        break;
+      case 'TIMER_STOPPED':
+        // Service worker stopped the timer - clean up our state
+        this.stopTimer();
+        break;
+    }
+  }
+
+  startTimer(timerId: string, entityId: string, initialElapsed: number = 0) {
+    this.stopTimer(); // Clear any existing timer
+
+    this.activeTimerId = timerId;
+    this.activeEntityId = entityId;
+    this.startTime = Date.now() - (initialElapsed * 1000); // Adjust for initial elapsed time
+
+    // Start local interval for UI updates
+    this.intervalId = setInterval(() => {
+      const elapsed = this.getElapsedSeconds();
+      this.listeners.forEach(listener => listener(elapsed));
+    }, 100); // Update every 100ms for smooth UI
+
+    // Notify service worker
+    this.sendToServiceWorker('START_TIMER', {
+      timerId,
+      entityId,
+      startTime: this.startTime,
+      initialElapsed
+    });
+
+    console.log('Timer started:', { timerId, entityId, initialElapsed });
+  }
+
+  stopTimer(): number {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+
+    const elapsed = this.getElapsedSeconds();
+
+    // Notify service worker to stop
+    this.sendToServiceWorker('STOP_TIMER', { elapsed });
+
+    // Clear state
+    this.activeTimerId = null;
+    this.activeEntityId = null;
+    this.startTime = null;
+
+    console.log('Timer stopped, elapsed:', elapsed);
+    return elapsed;
+  }
+
+  private sendToServiceWorker(type: string, data: any) {
+    if (this.serviceWorkerController) {
+      this.serviceWorkerController.postMessage({ type, data });
+    }
+  }
+
+  getElapsedSeconds(): number {
+    if (!this.startTime) return 0;
+    return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  isActive(entityId?: string): boolean {
+    if (entityId) {
+      return this.activeEntityId === entityId;
+    }
+    return this.activeTimerId !== null;
+  }
+
+  getActiveTimerId(): string | null {
+    return this.activeTimerId;
+  }
+
+  getActiveEntityId(): string | null {
+    return this.activeEntityId;
+  }
+
+  addListener(listener: (elapsed: number) => void) {
+    this.listeners.add(listener);
+  }
+
+  removeListener(listener: (elapsed: number) => void) {
+    this.listeners.delete(listener);
+  }
+
+  destroy() {
+    this.stopTimer();
+    this.listeners.clear();
+  }
+}
+
+// Global timer manager instance
+const timerManager = TimerManager.getInstance();
+    }
+    return TimerManager.instance;
+  }
+
+  private constructor() {
+    // Singleton - private constructor
+  }
+
+  startTimer(timerId: string, entityId: string, initialElapsed: number = 0) {
+    this.stopTimer(); // Clear any existing timer
+
+    this.activeTimerId = timerId;
+    this.activeEntityId = entityId;
+    this.startTime = Date.now() - (initialElapsed * 1000); // Adjust for initial elapsed time
+
+    this.intervalId = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - (this.startTime || 0)) / 1000);
+      this.listeners.forEach(listener => listener(elapsed));
+    }, 100); // Update every 100ms for smooth UI
+  }
+
+  stopTimer(): number {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+
+    const elapsed = this.startTime ? Math.floor((Date.now() - this.startTime) / 1000) : 0;
+
+    this.activeTimerId = null;
+    this.activeEntityId = null;
+    this.startTime = null;
+
+    return elapsed;
+  }
+
+  getElapsedSeconds(): number {
+    if (!this.startTime) return 0;
+    return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  isActive(entityId?: string): boolean {
+    if (entityId) {
+      return this.activeEntityId === entityId;
+    }
+    return this.activeTimerId !== null;
+  }
+
+  getActiveTimerId(): string | null {
+    return this.activeTimerId;
+  }
+
+  getActiveEntityId(): string | null {
+    return this.activeEntityId;
+  }
+
+  addListener(listener: (elapsed: number) => void) {
+    this.listeners.add(listener);
+  }
+
+  removeListener(listener: (elapsed: number) => void) {
+    this.listeners.delete(listener);
+  }
+
+  destroy() {
+    this.stopTimer();
+    this.listeners.clear();
+  }
+}
+
+// Service Worker message handler - singleton
+let serviceWorkerInitialized = false;
+
+const initializeServiceWorkerListener = () => {
+  if (serviceWorkerInitialized || typeof window === 'undefined') return;
+  serviceWorkerInitialized = true;
+
+  // Service Worker is now handled by TimerManager singleton
+};
+
+initializeServiceWorkerListener();
+
+/**
  * Hook for managing time tracking operations
  */
 export const useTimeTracking = () => {
@@ -50,8 +271,30 @@ export const useTimeTracking = () => {
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSyncRef = useRef<number>(0);
+
+  // Update elapsed seconds when timer manager notifies
+  useEffect(() => {
+    const updateElapsed = (elapsed: number) => {
+      setElapsedSeconds(elapsed);
+    };
+
+    timerManager.addListener(updateElapsed);
+
+    return () => {
+      timerManager.removeListener(updateElapsed);
+    };
+  }, []);
+
+  // Sync state with timer manager on mount
+  useEffect(() => {
+    const syncState = () => {
+      setActiveTimerId(timerManager.getActiveTimerId());
+      setActiveEntityId(timerManager.getActiveEntityId());
+      setElapsedSeconds(timerManager.getElapsedSeconds());
+    };
+
+    syncState();
+  }, []);
 
   // Query: Get total time for an entity
   const getTotalTime = (entityId: string) => {
@@ -99,32 +342,21 @@ export const useTimeTracking = () => {
       return timeTrackingApi.startTimer(entityId).then(r => r.data);
     },
     onSuccess: (data: TimerSession, entityId: string) => {
-      console.log('Timer started successfully:', data, 'for entity:', entityId);
-      
-      // Update global state
-      globalActiveTimerId = data.id;
-      globalActiveEntityId = entityId;
-      globalElapsedSeconds = data.elapsedSeconds || 0;
-      
+      console.log('Timer started successfully:', data);
+
+      // Start timer manager with precise delta calculation
+      timerManager.startTimer(data.id, entityId, data.elapsedSeconds || 0);
+
       // Update component state
       setActiveTimerId(data.id);
       setActiveEntityId(entityId);
-      setElapsedSeconds(data.elapsedSeconds || 0);
-      
+
       // Save to localStorage for recovery
       localStorage.setItem('activeTimerId', data.id);
       localStorage.setItem('activeEntityId', entityId);
       localStorage.setItem('timerStarted', new Date().toISOString());
       localStorage.setItem('timerElapsed', String(data.elapsedSeconds || 0));
-      
-      // Start central timer if not already running
-      if (!globalTimerIntervalId) {
-        globalTimerIntervalId = setInterval(() => {
-          globalElapsedSeconds += 1;
-          localStorage.setItem('timerElapsed', String(globalElapsedSeconds));
-        }, 1000);
-      }
-      
+
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });
     },
     onError: (error) => {
@@ -136,31 +368,27 @@ export const useTimeTracking = () => {
   const stopTimerMutation = useMutation({
     mutationFn: (data: { sessionId: string; note?: string }) => {
       console.log('API call: stopTimer with sessionId:', data.sessionId);
+
+      // Stop timer and get precise elapsed time
+      const preciseElapsed = timerManager.stopTimer();
+
+      // Send stop request to backend (backend calculates elapsed time)
       return timeTrackingApi.stopTimer(data.sessionId, data.note).then(r => r.data);
     },
     onSuccess: () => {
       console.log('Timer stopped successfully');
-      
-      // Clear global state
-      globalActiveTimerId = null;
-      globalActiveEntityId = null;
-      globalElapsedSeconds = 0;
-      
-      if (globalTimerIntervalId) {
-        clearInterval(globalTimerIntervalId);
-        globalTimerIntervalId = null;
-      }
-      
+
       // Update component state
       setActiveTimerId(null);
       setActiveEntityId(null);
       setElapsedSeconds(0);
-      
+
       // Clear localStorage
       localStorage.removeItem('activeTimerId');
       localStorage.removeItem('activeEntityId');
       localStorage.removeItem('timerElapsed');
-      
+      localStorage.removeItem('timerStarted');
+
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });
     },
     onError: (error) => {
@@ -186,102 +414,32 @@ export const useTimeTracking = () => {
     },
   });
 
-  // Initialize Service Worker for background timer support
-  useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.register('/timer-service-worker.js')
-        .then(reg => {
-          console.log('Timer Service Worker registered:', reg);
-          
-          // Request periodic sync permission if available
-          if ('periodicSync' in reg) {
-            reg.periodicSync.register('sync-timer', { minInterval: 30 * 1000 });
-          }
-        })
-        .catch(err => console.warn('Service Worker registration failed:', err));
-        
-      // Listen for timer updates from Service Worker
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'TIMER_UPDATE' && event.data.data.elapsedSeconds) {
-          globalElapsedSeconds = event.data.data.elapsedSeconds;
-          setElapsedSeconds(event.data.data.elapsedSeconds);
-        }
-      });
-    }
-  }, []);
-  
-  // Notify Service Worker when timer starts/stops
-  useEffect(() => {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      if (activeTimerId) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'START_BACKGROUND_TIMER',
-          data: {
-            sessionId: activeTimerId,
-            entityId: activeEntityId,
-            elapsedSeconds: elapsedSeconds,
-          }
-        });
-      } else {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'STOP_BACKGROUND_TIMER'
-        });
-      }
-    }
-  }, [activeTimerId, elapsedSeconds, activeEntityId]);
+  // Initialize: Check for interrupted timers on mount and recovery
   useEffect(() => {
     const savedTimerId = localStorage.getItem('activeTimerId');
     const savedEntityId = localStorage.getItem('activeEntityId');
     const savedElapsed = localStorage.getItem('timerElapsed');
     const savedStartTime = localStorage.getItem('timerStarted');
-    
-    if (savedTimerId && savedEntityId) {
-      let elapsedTime = parseInt(savedElapsed || '0', 10);
-      
-      // Calculate elapsed time based on when the timer was saved
-      if (savedStartTime) {
-        const now = new Date().getTime();
-        const startTime = new Date(savedStartTime).getTime();
-        const timePassed = Math.floor((now - startTime) / 1000);
-        elapsedTime += timePassed;
-      }
-      
+
+    if (savedTimerId && savedEntityId && savedStartTime) {
+      const initialElapsed = parseInt(savedElapsed || '0', 10);
+
+      // Resume timer with TimerManager
+      timerManager.startTimer(savedTimerId, savedEntityId, initialElapsed);
+
+      // Update component state
       setActiveTimerId(savedTimerId);
       setActiveEntityId(savedEntityId);
-      setElapsedSeconds(elapsedTime);
-      
-      globalActiveTimerId = savedTimerId;
-      globalActiveEntityId = savedEntityId;
-      globalElapsedSeconds = elapsedTime;
-      
-      // Resume timer interval
-      if (!globalTimerIntervalId) {
-        globalTimerIntervalId = setInterval(() => {
-          globalElapsedSeconds += 1;
-          setElapsedSeconds(prev => prev + 1);
-          localStorage.setItem('timerElapsed', String(globalElapsedSeconds));
-        }, 1000);
-      }
+
+      console.log('Timer recovered from localStorage:', { savedTimerId, savedEntityId, initialElapsed });
     }
   }, []);
-  
-  // Sync global state to local state periodically
-  useEffect(() => {
-    const syncInterval = setInterval(() => {
-      if (globalActiveTimerId) {
-        setElapsedSeconds(globalElapsedSeconds);
-      }
-    }, 500);
-    
-    return () => clearInterval(syncInterval);
-  }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - only cleanup listeners, keep timer running
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      // Timer continues running even when component unmounts
+      // It will be stopped explicitly by user action
     };
   }, []);
 

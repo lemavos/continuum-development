@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
+import { usePlanGate } from "@/hooks/usePlanGate";
+import { PLAN_LIMITS, type Plan } from "@/types";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
 
@@ -31,9 +33,16 @@ export default function EntityDetail() {
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   // Time tracking
-  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeEntityId, isStarting, isStopping } = useTimeTracking();
+  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeEntityId, activeTimerId, isStarting, isStopping } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
   const { data: activeTimer } = getActiveTimer(id!);
+  
+  // Plan limits for heatmap
+  const { usage } = usePlanGate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const plan: Plan = (user?.plan as Plan) || "FREE";
+  const limits = PLAN_LIMITS[plan];
+  const historyDays = limits.historyDays === -1 ? 365 : limits.historyDays;
 
   const handleStartTimer = async () => {
     if (!id) return;
@@ -220,8 +229,46 @@ export default function EntityDetail() {
     return days;
   };
 
+  // Generate heatmap organized by days of the week (Sunday to Saturday)
+  const generateWeeklyHeatmap = (heatmapData: HeatmapData) => {
+    const today = new Date();
+    const weeks: { [weekKey: string]: { [dayOfWeek: number]: { date: string; count: number } } } = {};
+    
+    // Calculate start date based on plan limits
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - historyDays + 1);
+    
+    // Generate all dates within the history limit
+    for (let i = 0; i < historyDays; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dateStr = date.toISOString().split("T")[0];
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+      
+      // Calculate week key (YYYY-MM-DD of Sunday)
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - dayOfWeek);
+      const weekKey = weekStart.toISOString().split("T")[0];
+      
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = {};
+      }
+      
+      weeks[weekKey][dayOfWeek] = {
+        date: dateStr,
+        count: heatmapData[dateStr] || 0
+      };
+    }
+    
+    return weeks;
+  };
+
   const getHeatmapColor = (val: number) => {
-    return val > 0 ? "bg-[#00BFC0]" : "bg-zinc-900";
+    if (val === 0) return "bg-zinc-900";
+    if (val === 1) return "bg-[#00BFC0]/30";
+    if (val === 2) return "bg-[#00BFC0]/60";
+    if (val === 3) return "bg-[#00BFC0]/80";
+    return "bg-[#00BFC0]";
   };
 
   if (loading) return <AppLayout><div className="flex justify-center items-center h-full"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div></AppLayout>;
@@ -324,24 +371,69 @@ export default function EntityDetail() {
             )}
 
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Last 90 days activity</h2>
-              <div className="flex flex-wrap gap-1.5 bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                {days.map((day) => (
-                  <div 
-                    key={day} 
-                    title={`${day}: ${heatmap[day] || 0} completions`} 
-                    className={cn(
-                      "w-4 h-4 rounded transition-all hover:scale-125",
-                      getHeatmapColor(heatmap[day] || 0),
-                      heatmap[day] && heatmap[day] > 0 ? "shadow-lg shadow-[#00BFC0]/30" : ""
-                    )} 
-                  />
-                ))}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="font-medium">Activity:</span>
-                <div className="w-3 h-3 rounded-sm bg-[#00BFC0]" />
-                <span className="text-slate-500 ml-1">Tracked day</span>
+              <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Activity Heatmap (Last {historyDays} days)</h2>
+              <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                {/* Day labels */}
+                <div className="flex mb-2">
+                  <div className="w-8"></div> {/* Space for week labels */}
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} className="flex-1 text-center text-xs text-slate-400 font-medium">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Heatmap grid */}
+                <div className="space-y-1">
+                  {Object.entries(generateWeeklyHeatmap(heatmap))
+                    .sort(([a], [b]) => a.localeCompare(b)) // Sort weeks chronologically
+                    .slice(-12) // Show last 12 weeks
+                    .map(([weekKey, weekData]) => (
+                      <div key={weekKey} className="flex items-center">
+                        {/* Week label - show month/day */}
+                        <div className="w-8 text-xs text-slate-500 mr-2 text-right">
+                          {new Date(weekKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                        
+                        {/* Day cells */}
+                        {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
+                          const dayData = weekData[dayOfWeek];
+                          const count = dayData?.count || 0;
+                          const date = dayData?.date;
+                          
+                          return (
+                            <div
+                              key={dayOfWeek}
+                              title={date ? `${date}: ${count} completion${count !== 1 ? 's' : ''}` : 'No data'}
+                              className={cn(
+                                "flex-1 aspect-square rounded-sm border border-white/5 transition-all hover:scale-110 cursor-pointer",
+                                getHeatmapColor(count),
+                                count > 0 ? "shadow-sm" : ""
+                              )}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                </div>
+                
+                {/* Legend */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span className="font-medium">Less</span>
+                    <div className="flex gap-1">
+                      <div className="w-3 h-3 rounded-sm bg-zinc-900 border border-white/5"></div>
+                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/30 border border-white/5"></div>
+                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/60 border border-white/5"></div>
+                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/80 border border-white/5"></div>
+                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0] border border-white/5"></div>
+                    </div>
+                    <span className="font-medium">More</span>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {historyDays === -1 ? 'Unlimited history' : `${historyDays} days history`}
+                  </div>
+                </div>
               </div>
             </div>
           </>

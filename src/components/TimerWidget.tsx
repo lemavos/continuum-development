@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Play, Pause, Trash2 } from 'lucide-react';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
