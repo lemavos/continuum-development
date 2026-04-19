@@ -31,7 +31,7 @@ export default function EntityDetail() {
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   // Time tracking
-  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeEntityId, isStarting, isStopping } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
   const { data: activeTimer } = getActiveTimer(id!);
 
@@ -41,8 +41,8 @@ export default function EntityDetail() {
   };
 
   const handleStopTimer = async () => {
-    if (!id) return;
-    await stopTimer({ sessionId: id });
+    if (!activeTimerId) return;
+    await stopTimer({ sessionId: activeTimerId });
   };
 
   useEffect(() => {
@@ -290,7 +290,7 @@ export default function EntityDetail() {
         {entity?.type === "PROJECT" && (
           <>
             <div className="flex items-center gap-3">
-              {activeTimerId === id ? (
+              {activeEntityId === id ? (
                 <Button onClick={handleStopTimer} disabled={isStopping} className="bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30">
                   <Pause className="w-4 h-4 mr-2" />
                   {isStopping ? "Stopping..." : `Stop Timer (${activeTimer?.formattedElapsed || "00:00:00"})`}

@@ -51,7 +51,7 @@ export default function Entities() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Time tracking
-  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeEntityId, isStarting, isStopping } = useTimeTracking();
   const { data: timeSummaries } = getAllSummaries();
 
   const getTimeSummaryForEntity = (entityId: string) => {
@@ -63,8 +63,8 @@ export default function Entities() {
   };
 
   const handleStopTimer = (entityId: string) => {
-    if (activeTimerId === entityId) {
-      stopTimer({ sessionId: entityId });
+    if (activeTimerId) {
+      stopTimer({ sessionId: activeTimerId });
     }
   };
 
@@ -277,7 +277,7 @@ export default function Entities() {
                           )}
                           {entity.type === "PROJECT" && (
                             <>
-                              {activeTimerId === entity.id ? (
+                              {activeEntityId === entity.id ? (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleStopTimer(entity.id); }}
                                   disabled={isStopping}

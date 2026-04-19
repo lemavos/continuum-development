@@ -42,6 +42,7 @@ export interface TimeEntitySummary {
 export const useTimeTracking = () => {
   const queryClient = useQueryClient();
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
+  const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   const elapsedRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -84,12 +85,14 @@ export const useTimeTracking = () => {
   const startTimerMutation = useMutation({
     mutationFn: (entityId: string) =>
       timeTrackingApi.startTimer(entityId).then(r => r.data),
-    onSuccess: (data: TimerSession) => {
+    onSuccess: (data: TimerSession, entityId: string) => {
       setActiveTimerId(data.id);
+      setActiveEntityId(entityId);
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });
       
       // Save to localStorage for recovery
       localStorage.setItem('activeTimerId', data.id);
+      localStorage.setItem('activeEntityId', entityId);
       localStorage.setItem('timerStarted', new Date().toISOString());
     },
   });
@@ -100,7 +103,9 @@ export const useTimeTracking = () => {
       timeTrackingApi.stopTimer(data.sessionId, data.note).then(r => r.data),
     onSuccess: () => {
       setActiveTimerId(null);
+      setActiveEntityId(null);
       localStorage.removeItem('activeTimerId');
+      localStorage.removeItem('activeEntityId');
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });
     },
   });
@@ -126,8 +131,10 @@ export const useTimeTracking = () => {
   // Recovery: Check for interrupted timers on mount
   useEffect(() => {
     const savedTimerId = localStorage.getItem('activeTimerId');
-    if (savedTimerId) {
+    const savedEntityId = localStorage.getItem('activeEntityId');
+    if (savedTimerId && savedEntityId) {
       setActiveTimerId(savedTimerId);
+      setActiveEntityId(savedEntityId);
     }
   }, []);
 
@@ -166,6 +173,7 @@ export const useTimeTracking = () => {
     
     // Status
     activeTimerId,
+    activeEntityId,
     isStarting: startTimerMutation.isPending,
     isStopping: stopTimerMutation.isPending,
     isAdding: addTimeMutation.isPending,
