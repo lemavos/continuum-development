@@ -360,7 +360,11 @@ export default function EntityDetail() {
                 </div>
               </div>
             )}
+          </>
+        )}
 
+        {entity?.type === "HABIT" && (
+          <>
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Activity Heatmap (Last {historyDays} days)</h2>
               <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10 overflow-x-auto">
@@ -388,15 +392,15 @@ export default function EntityDetail() {
                         {/* Day cells */}
                         {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
                           const dayData = weekData[dayOfWeek];
-                          const count = dayData?.count || 0;
-                          const date = dayData?.date;
+                          const count = dayData ? dayData.count : 0;
+                          const date = dayData ? dayData.date : '';
                           
                           return (
                             <div
                               key={dayOfWeek}
                               title={date ? `${date}: ${count} completion${count !== 1 ? 's' : ''}` : 'No data'}
                               className={cn(
-                                "flex-1 aspect-square rounded-sm border border-white/5 transition-all hover:scale-110 cursor-pointer",
+                                "flex-1 aspect-square rounded-sm border border-white/5 transition-all hover:scale-110 cursor-pointer min-w-[2.5rem]",
                                 getHeatmapColor(count),
                                 count > 0 ? "shadow-sm" : ""
                               )}
