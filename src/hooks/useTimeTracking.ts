@@ -36,7 +36,7 @@ export interface TimeEntitySummary {
   hasActiveTimer: boolean;
 }
 
-/**
+/** 
  * Hook for managing time tracking operations
  */
 export const useTimeTracking = () => {
