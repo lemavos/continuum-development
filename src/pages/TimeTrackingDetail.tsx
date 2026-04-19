@@ -1,13 +1,4 @@
-import AppLayout from "@/components/AppLayout";
-import { TimeTrackingDetail } from "@/components/TimeTrackingDetail";
-
-/**
- * Time tracking detail page - view and manage a specific entity's time
- */
+// This file has been removed - time tracking is now integrated into entities
 export default function TimeTrackingDetailPage() {
-  return (
-    <AppLayout>
-      <TimeTrackingDetail />
-    </AppLayout>
-  );
+  return null;
 }

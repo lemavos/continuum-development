@@ -1,4 +1,4 @@
-import AppLayout from "@/components/AppLayout";
+// This file has been removed - time tracking is now integrated into entitiesimport AppLayout from "@/components/AppLayout";
 import { TimeTrackingList } from "@/components/TimeTrackingList";
 
 /**

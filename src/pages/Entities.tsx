@@ -157,7 +157,10 @@ export default function Entities() {
               <Button size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg"><Plus className="w-4 h-4 mr-1" /> New Entity</Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-border">
-              <DialogHeader><DialogTitle className="text-foreground">Create Entity</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Create Entity</DialogTitle>
+                <DialogDescription className="text-muted-foreground">Create a new entity to organize your knowledge and track activities.</DialogDescription>
+              </DialogHeader>
               <div className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Title</Label>
@@ -272,7 +275,7 @@ export default function Entities() {
                               <CheckCircle className="w-3 h-3" /> {tracked ? "Done" : "Track"}
                             </button>
                           )}
-                          {(entity.type === "PROJECT" || entity.type === "HABIT") && (
+                          {entity.type === "PROJECT" && (
                             <>
                               {activeTimerId === entity.id ? (
                                 <button

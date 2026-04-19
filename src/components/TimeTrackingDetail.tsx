@@ -4,7 +4,6 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
-import { TimerWidget } from '@/components/TimerWidget';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
@@ -155,12 +154,6 @@ export function TimeTrackingDetail() {
           </p>
         </div>
       </div>
-
-      {/* Timer Widget */}
-      <TimerWidget
-        entityId={entityId!}
-        entityName={entity.title}
-      />
 
       {/* Stats Cards */}
       {summaryLoading ? (
