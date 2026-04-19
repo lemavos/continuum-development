@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Calendar, Tag, Clock, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
-import { usePlanGate } from "@/hooks/usePlanGate";
 import { PLAN_LIMITS, type Plan } from "@/types";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
@@ -36,10 +36,9 @@ export default function EntityDetail() {
   const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeEntityId, activeTimerId, isStarting, isStopping } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
   const { data: activeTimer } = getActiveTimer(id!);
-  
+
   // Plan limits for heatmap
-  const { usage } = usePlanGate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user } = useAuth();
   const plan: Plan = (user?.plan as Plan) || "FREE";
   const limits = PLAN_LIMITS[plan];
   const historyDays = limits.historyDays === -1 ? 365 : limits.historyDays;
@@ -222,13 +221,6 @@ export default function EntityDetail() {
     } catch { toast({ title: "Error updating description", variant: "destructive" }); }
   };
 
-  const getLast90Days = () => {
-    const days: string[] = [];
-    const today = new Date();
-    for (let i = 89; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); days.push(d.toISOString().split("T")[0]); }
-    return days;
-  };
-
   // Generate heatmap organized by days of the week (Sunday to Saturday)
   const generateWeeklyHeatmap = (heatmapData: HeatmapData) => {
     const today = new Date();
@@ -274,7 +266,6 @@ export default function EntityDetail() {
   if (loading) return <AppLayout><div className="flex justify-center items-center h-full"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div></AppLayout>;
   if (!entity) return null;
 
-  const days = getLast90Days();
   const isHabit = entity.type === "HABIT";
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.some((date) => date.startsWith(today));
@@ -372,22 +363,21 @@ export default function EntityDetail() {
 
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Activity Heatmap (Last {historyDays} days)</h2>
-              <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+              <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10 overflow-x-auto">
                 {/* Day labels */}
-                <div className="flex mb-2">
+                <div className="flex mb-2 min-w-max">
                   <div className="w-8"></div> {/* Space for week labels */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div key={day} className="flex-1 text-center text-xs text-slate-400 font-medium">
+                    <div key={day} className="flex-1 text-center text-xs text-slate-400 font-medium min-w-[2.5rem]">
                       {day}
                     </div>
                   ))}
                 </div>
                 
                 {/* Heatmap grid */}
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-max">
                   {Object.entries(generateWeeklyHeatmap(heatmap))
                     .sort(([a], [b]) => a.localeCompare(b)) // Sort weeks chronologically
-                    .slice(-12) // Show last 12 weeks
                     .map(([weekKey, weekData]) => (
                       <div key={weekKey} className="flex items-center">
                         {/* Week label - show month/day */}
