@@ -261,20 +261,24 @@ export const useTimeTracking = () => {
   // Sync state with timer manager on mount and when it changes
   useEffect(() => {
     const syncState = () => {
-      const newActiveTimers = new Map<string, { timerId: string; elapsedSeconds: number }>();
-      for (const [entityId, timer] of timerManager.getActiveTimers()) {
-        newActiveTimers.set(entityId, {
-          timerId: entityId, // Using entityId as timerId for simplicity
-          elapsedSeconds: timerManager.getElapsedSeconds(entityId)
-        });
-      }
-      setActiveTimers(newActiveTimers);
+      // Don't reset activeTimers on sync - preserve the timerId from startMutation
+      // Only refresh elapsed seconds
+      setActiveTimers(prev => {
+        const newMap = new Map(prev);
+        for (const [entityId, timerData] of newMap) {
+          newMap.set(entityId, {
+            ...timerData,
+            elapsedSeconds: timerManager.getElapsedSeconds(entityId)
+          });
+        }
+        return newMap;
+      });
     };
 
     // Initial sync
     syncState();
 
-    // Set up periodic sync to catch changes from other instances
+    // Set up periodic sync to update elapsed seconds
     const intervalId = setInterval(syncState, 200);
 
     return () => clearInterval(intervalId);
@@ -329,20 +333,21 @@ export const useTimeTracking = () => {
       console.log('Timer started successfully:', data);
 
       // Start timer manager with precise delta calculation
-      timerManager.startTimer(data.id, entityId, data.elapsedSeconds || 0);
+      const initialElapsed = (data.elapsedSeconds || 0) / 1000; // Convert ms to seconds if needed
+      timerManager.startTimer(data.id, entityId, initialElapsed);
 
-      // Update component state
+      // Update component state immediately with server's elapsed time
       setActiveTimers(prev => {
         const newMap = new Map(prev);
-        newMap.set(entityId, { timerId: data.id, elapsedSeconds: data.elapsedSeconds || 0 });
+        newMap.set(entityId, { timerId: data.id, elapsedSeconds: initialElapsed });
         return newMap;
       });
 
-      // Save to localStorage for recovery (for now, only save the last started timer)
+      // Save to localStorage for recovery
       localStorage.setItem('activeTimerId', data.id);
       localStorage.setItem('activeEntityId', entityId);
-      localStorage.setItem('timerStarted', new Date().toISOString());
-      localStorage.setItem('timerElapsed', String(data.elapsedSeconds || 0));
+      localStorage.setItem('timerStartTime', Date.now().toString());
+      localStorage.setItem('timerInitialElapsed', String(initialElapsed));
 
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });
     },
@@ -354,7 +359,7 @@ export const useTimeTracking = () => {
   // Mutation: Stop timer
   const stopTimerMutation = useMutation({
     mutationFn: (data: { sessionId: string; note?: string }) => {
-      console.log('API call: stopTimer with sessionId:', data.sessionId);
+      console.log('API call: stopTimer with sessionId:', data.sessionId, 'note:', data.note || '');
 
       // Find the entityId for this sessionId
       const entityId = Array.from(activeTimers.entries()).find(([_, timer]) => timer.timerId === data.sessionId)?.[0];
@@ -363,8 +368,8 @@ export const useTimeTracking = () => {
       // Stop timer and get precise elapsed time
       const preciseElapsed = timerManager.stopTimer(entityId);
 
-      // Send stop request to backend (backend calculates elapsed time)
-      return timeTrackingApi.stopTimer(data.sessionId, data.note).then(r => r.data);
+      // Send stop request to backend with note (default to empty string if not provided)
+      return timeTrackingApi.stopTimer(data.sessionId, data.note || '').then(r => r.data);
     },
     onSuccess: (data, variables) => {
       console.log('Timer stopped successfully');
@@ -383,8 +388,8 @@ export const useTimeTracking = () => {
       if (activeTimers.size <= 1) {
         localStorage.removeItem('activeTimerId');
         localStorage.removeItem('activeEntityId');
-        localStorage.removeItem('timerElapsed');
-        localStorage.removeItem('timerStarted');
+        localStorage.removeItem('timerStartTime');
+        localStorage.removeItem('timerInitialElapsed');
       }
 
       queryClient.invalidateQueries({ queryKey: ['timeTracking'] });

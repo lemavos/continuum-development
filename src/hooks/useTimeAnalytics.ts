@@ -19,12 +19,14 @@ interface DayData {
 
 interface UseTimeAnalyticsOptions {
   initialDate?: Date;
+  projectId?: string; // Filter by project
 }
 
 /**
  * Hook for managing time analytics calendar data and state
+ * Can filter by specific project if projectId is provided
  */
-export function useTimeAnalytics({ initialDate = new Date() }: UseTimeAnalyticsOptions = {}) {
+export function useTimeAnalytics({ initialDate = new Date(), projectId }: UseTimeAnalyticsOptions = {}) {
   const [currentDate, setCurrentDate] = useState(initialDate);
   const { user } = useAuth();
 
@@ -73,6 +75,11 @@ export function useTimeAnalytics({ initialDate = new Date() }: UseTimeAnalyticsO
 
     // Aggregate data by day
     usageData.forEach((entry: any) => {
+      // Filter by projectId if provided
+      if (projectId && entry.entityId !== projectId) {
+        return;
+      }
+
       const dateKey = entry.date;
       const existing = map.get(dateKey);
       if (existing) {
@@ -88,7 +95,7 @@ export function useTimeAnalytics({ initialDate = new Date() }: UseTimeAnalyticsO
     });
 
     return map;
-  }, [usageData, calendarDays]);
+  }, [usageData, calendarDays, projectId]);
 
   // Calculate monthly totals
   const monthlyStats = useMemo(() => {

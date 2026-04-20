@@ -19,7 +19,7 @@ interface DayData {
 }
 
 /**
- * Time Tracking page - main entry point with analytics calendar
+ * Time Tracking Overview - Lists all projects with timer controls
  */
 export default function TimeTracking() {
   const [selectedDayData, setSelectedDayData] = useState<DayData | null>(null);

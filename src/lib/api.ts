@@ -282,7 +282,7 @@ export const vaultApi = {
 export const timeTrackingApi = {
   // Timer operations
   startTimer: (entityId: string) => api.post("/api/time-tracking/start", { entityId }),
-  stopTimer: (sessionId: string, note?: string) => api.post("/api/time-tracking/stop", { sessionId, note }),
+  stopTimer: (sessionId: string, note?: string) => api.post("/api/time-tracking/stop", { sessionId, note: note || null }),
   
   // Manual time entry
   addTime: (entityId: string, date: string, durationSeconds: number, note?: string) => 

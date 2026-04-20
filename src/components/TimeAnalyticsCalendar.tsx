@@ -15,14 +15,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
 interface TimeAnalyticsCalendarProps {
+  projectId?: string; // Filter analytics by project
   onDayClick?: (dayData: any) => void;
 }
 
 /**
  * Interactive calendar component for time analytics
  * Shows monthly view with time spent per day
+ * Can be filtered by projectId for project-specific analytics
  */
-export function TimeAnalyticsCalendar({ onDayClick }: TimeAnalyticsCalendarProps) {
+export function TimeAnalyticsCalendar({ projectId, onDayClick }: TimeAnalyticsCalendarProps) {
   const {
     currentDate,
     canAccessAnalytics,

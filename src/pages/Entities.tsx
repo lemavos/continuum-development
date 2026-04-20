@@ -19,6 +19,8 @@ interface Entity { id: string; title: string; type: EntityType; description?: st
 
 const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, HABIT: Flame };
 const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Habit" };
+// Timer only available for Projects
+const timerableTypes = ['PROJECT'];
 
 // Dynamic badge colors based on type
 function getEntityBadgeColor(type: EntityType): string {
@@ -67,7 +69,7 @@ export default function Entities() {
     console.log('Stopping timer for entity:', entityId);
     const activeTimerData = activeTimers.get(entityId);
     if (activeTimerData) {
-      stopTimer({ sessionId: activeTimerData.timerId });
+      stopTimer({ sessionId: activeTimerData.timerId, note: '' });
     } else {
       console.error('No active timer to stop');
     }

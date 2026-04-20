@@ -22,7 +22,8 @@ export function TimeTrackingList() {
     queryKey: ['entities', 'trackable'],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      return (response.data as Entity[]).filter(e => e.type === 'PROJECT' || e.type === 'HABIT');
+      // Only return Projects (timer only for projects, not habits)
+      return (response.data as Entity[]).filter(e => e.type === 'PROJECT');
     },
   });
 
@@ -41,7 +42,8 @@ export function TimeTrackingList() {
   const handleStopTimer = (entityId: string) => {
     const activeTimerData = activeTimers.get(entityId);
     if (activeTimerData) {
-      stopTimer({ sessionId: activeTimerData.timerId });
+      // Pass the sessionId (timerId) correctly with empty note as default
+      stopTimer({ sessionId: activeTimerData.timerId, note: '' });
       setSelectedEntity(null);
     }
   };
@@ -87,12 +89,14 @@ export function TimeTrackingList() {
           {trackableEntities.map(entity => {
             const summary = getSummaryForEntity(entity.id);
             const isEntityTimerActive = isTimerActive(entity.id);
+            // Only show timer for Projects
+            const showTimer = entity.type === 'PROJECT';
 
             return (
               <Card
                 key={entity.id}
                 className={`p-4 cursor-pointer transition-all ${
-                  isEntityTimerActive
+                  isEntityTimerActive && showTimer
                     ? 'ring-2 ring-cyan-500 bg-cyan-950/20'
                     : 'hover:border-white/20'
                 }`}
@@ -132,50 +136,52 @@ export function TimeTrackingList() {
                     </div>
                   </div>
 
-                  {/* Timer Controls */}
-                  <div className="flex gap-2">
-                    {isEntityTimerActive ? (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="flex-1 gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStopTimer(entity.id);
-                        }}
-                        disabled={isStopping}
-                      >
-                        <Pause className="w-4 h-4" />
-                        Stop
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartTimer(entity.id);
-                        }}
-                        disabled={isStarting}
-                      >
-                        <Play className="w-4 h-4" />
-                        Start
-                      </Button>
-                    )}
+                  {/* Timer Controls - Only for Projects */}
+                  {showTimer && (
+                    <div className="flex gap-2">
+                      {isEntityTimerActive ? (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStopTimer(entity.id);
+                          }}
+                          disabled={isStopping}
+                        >
+                          <Pause className="w-4 h-4" />
+                          Stop
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartTimer(entity.id);
+                          }}
+                          disabled={isStarting}
+                        >
+                          <Play className="w-4 h-4" />
+                          Start
+                        </Button>
+                      )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/time-tracking/${entity.id}`);
-                      }}
-                      className="text-xs"
-                    >
-                      Details
-                    </Button>
-                  </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/entities/${entity.id}`);
+                        }}
+                        className="text-xs"
+                      >
+                        Details
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
