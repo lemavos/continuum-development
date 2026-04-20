@@ -150,34 +150,7 @@ export default function Notes() {
 
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="lg:w-44 lg:shrink-0 space-y-4">
-            {/* Folders section */}
-            <div>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-3">Folders</h3>
-              <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-                <button
-                  onClick={() => setSelectedFolder(null)}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all shrink-0",
-                    !selectedFolder ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                >
-                  <StickyNote className="w-3.5 h-3.5" /> All
-                </button>
-                {folders.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setSelectedFolder(f.id)}
-                    className={cn(
-                      "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all shrink-0",
-                      selectedFolder === f.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    )}
-                  >
-                    <Folder className="w-3.5 h-3.5" /> {f.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+            
             {/* Types section */}
             <div>
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-3">Types</h3>

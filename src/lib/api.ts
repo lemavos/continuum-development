@@ -233,6 +233,7 @@ export const entitiesApi = {
 export const metricsApi = {
   dashboard: () => api.get("/api/metrics/dashboard"),
   timeline: (entityId: string) => api.get(`/api/metrics/entities/${entityId}/timeline`),
+  usage: (month: number, year: number) => api.get("/api/metrics/usage", { params: { month, year } }),
 };
 
 // Dashboard
