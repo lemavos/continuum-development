@@ -20,13 +20,13 @@ export function TimerWidget({
   onTimerStop,
   compact = false,
 }: TimerWidgetProps) {
-  const { activeTimerId, elapsedSeconds, startTimer, stopTimer, isStarting, isStopping, getActiveTimer, formatSeconds } = useTimeTracking();
+  const { activeTimers, isTimerActive, getElapsedSeconds, startTimer, stopTimer, isStarting, isStopping, getActiveTimer, formatSeconds } = useTimeTracking();
   
   const { data: activeTimer, isLoading: timerLoading } = getActiveTimer(entityId);
-  const isRunning = activeTimerId === entityId;
+  const isRunning = isTimerActive(entityId);
 
   // Get the current timer value from the hook's shared state
-  const currentElapsed = isRunning ? elapsedSeconds : (activeTimer?.elapsedSeconds || 0);
+  const currentElapsed = isRunning ? getElapsedSeconds(entityId) : (activeTimer?.elapsedSeconds || 0);
 
   const handleStart = async () => {
     try {
@@ -39,8 +39,9 @@ export function TimerWidget({
 
   const handleStop = async () => {
     try {
-      if (activeTimerId) {
-        await stopTimer({ sessionId: activeTimerId });
+      const activeTimerData = activeTimers.get(entityId);
+      if (activeTimerData) {
+        await stopTimer({ sessionId: activeTimerData.timerId });
         onTimerStop?.(currentElapsed);
       }
     } catch (error) {

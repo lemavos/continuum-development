@@ -51,7 +51,7 @@ export default function Entities() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Time tracking
-  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeEntityId, activeTimerId, isStarting, isStopping } = useTimeTracking();
+  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimers, isTimerActive, getElapsedSeconds, isStarting, isStopping } = useTimeTracking();
   const { data: timeSummaries } = getAllSummaries();
 
   const getTimeSummaryForEntity = (entityId: string) => {
@@ -64,10 +64,12 @@ export default function Entities() {
   };
 
   const handleStopTimer = (entityId: string) => {
-    console.log('Stopping timer for entity:', entityId, 'activeTimerId:', activeTimerId);
-    if (activeTimerId) {
-      stopTimer({ sessionId: activeTimerId });
-    } else {
+    console.log('Stopping timer for entity:', entityId);
+    const activeTimerData = activeTimers.get(entityId);
+    if (activeTimerData) {
+      stopTimer({ sessionId: activeTimerData.timerId });
+    }
+  };
       console.error('No active timer to stop');
     }
   };
@@ -281,7 +283,7 @@ export default function Entities() {
                           )}
                           {entity.type === "PROJECT" && (
                             <>
-                              {activeEntityId === entity.id ? (
+                              {isTimerActive(entity.id) ? (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleStopTimer(entity.id); }}
                                   disabled={isStopping}
