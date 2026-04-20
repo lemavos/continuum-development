@@ -68,8 +68,7 @@ export default function Entities() {
     const activeTimerData = activeTimers.get(entityId);
     if (activeTimerData) {
       stopTimer({ sessionId: activeTimerData.timerId });
-    }
-  };
+    } else {
       console.error('No active timer to stop');
     }
   };

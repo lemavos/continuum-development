@@ -86,13 +86,13 @@ export function TimeTrackingList() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {trackableEntities.map(entity => {
             const summary = getSummaryForEntity(entity.id);
-            const isTimerActive = isTimerActive(entity.id);
+            const isEntityTimerActive = isTimerActive(entity.id);
 
             return (
               <Card
                 key={entity.id}
                 className={`p-4 cursor-pointer transition-all ${
-                  isTimerActive
+                  isEntityTimerActive
                     ? 'ring-2 ring-cyan-500 bg-cyan-950/20'
                     : 'hover:border-white/20'
                 }`}
@@ -134,7 +134,7 @@ export function TimeTrackingList() {
 
                   {/* Timer Controls */}
                   <div className="flex gap-2">
-                    {isTimerActive ? (
+                    {isEntityTimerActive ? (
                       <Button
                         variant="destructive"
                         size="sm"

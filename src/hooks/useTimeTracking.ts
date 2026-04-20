@@ -83,15 +83,20 @@ class TimerManager {
 
     switch (type) {
       case 'TIMER_UPDATE':
-        if (data.elapsedSeconds !== undefined) {
-          // Service worker is reporting elapsed time - sync our state
-          const elapsed = Math.floor(data.elapsedSeconds);
-          this.listeners.forEach(listener => listener(elapsed));
+        if (data.entityId && data.elapsedSeconds !== undefined) {
+          // Service worker is reporting elapsed time for this entity
+          const timer = this.timers.get(data.entityId);
+          if (timer) {
+            const elapsed = Math.floor(data.elapsedSeconds);
+            timer.listeners.forEach(listener => listener(data.entityId, elapsed));
+          }
         }
         break;
       case 'TIMER_STOPPED':
-        // Service worker stopped the timer - clean up our state
-        this.stopTimer();
+        // Service worker stopped the timer - clean up state for this entity
+        if (data.entityId) {
+          this.stopTimer(data.entityId);
+        }
         break;
     }
   }
@@ -187,6 +192,10 @@ class TimerManager {
     }
   }
 
+  getActiveTimers(): Map<string, { intervalId: NodeJS.Timeout | null; startTime: number | null; entityId: string; listeners: Set<(entityId: string, elapsed: number) => void> }> {
+    return this.timers;
+  }
+
   destroy() {
     for (const [entityId, timer] of this.timers) {
       if (timer.intervalId) {
@@ -238,12 +247,12 @@ export const useTimeTracking = () => {
     };
 
     // Add listeners for all current timers
-    for (const entityId of timerManager.timers.keys()) {
+    for (const entityId of timerManager.getActiveTimers().keys()) {
       timerManager.addListener(entityId, updateElapsed);
     }
 
     return () => {
-      for (const entityId of timerManager.timers.keys()) {
+      for (const entityId of timerManager.getActiveTimers().keys()) {
         timerManager.removeListener(entityId, updateElapsed);
       }
     };
@@ -253,7 +262,7 @@ export const useTimeTracking = () => {
   useEffect(() => {
     const syncState = () => {
       const newActiveTimers = new Map<string, { timerId: string; elapsedSeconds: number }>();
-      for (const [entityId, timer] of timerManager.timers) {
+      for (const [entityId, timer] of timerManager.getActiveTimers()) {
         newActiveTimers.set(entityId, {
           timerId: entityId, // Using entityId as timerId for simplicity
           elapsedSeconds: timerManager.getElapsedSeconds(entityId)
