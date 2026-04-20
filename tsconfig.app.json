@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "allowImportingTsExtensions": true,
     "ignoreDeprecations": "6.0",
     "isolatedModules": true,
@@ -19,7 +20,7 @@
     "noUnusedParameters": false,
     "paths": {
       "@/*": [
-        "frontend/src/*"
+        "./src/*"
       ]
     },
     "skipLibCheck": true,

@@ -222,9 +222,9 @@ export default function EntityDetail() {
   };
 
   // Generate heatmap organized by days of the week (Sunday to Saturday)
-  const generateWeeklyHeatmap = (heatmapData: HeatmapData) => {
+  const generateWeeklyHeatmap = (heatmapData: HeatmapData): Record<string, Record<number, { date: string; count: number }>> => {
     const today = new Date();
-    const weeks: { [weekKey: string]: { [dayOfWeek: number]: { date: string; count: number } } } = {};
+    const weeks: Record<string, Record<number, { date: string; count: number }>> = {};
     
     // Calculate start date based on plan limits
     const startDate = new Date(today);
@@ -391,18 +391,16 @@ export default function EntityDetail() {
                         
                         {/* Day cells */}
                         {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
-                          const dayData = weekData[dayOfWeek];
-                          const count = dayData ? dayData.count : 0;
-                          const date = dayData ? dayData.date : '';
+                          const dayData = weekData[dayOfWeek] || { date: '', count: 0 };
                           
                           return (
                             <div
                               key={dayOfWeek}
-                              title={date ? `${date}: ${count} completion${count !== 1 ? 's' : ''}` : 'No data'}
+                              title={dayData.date ? `${dayData.date}: ${dayData.count} completion${dayData.count !== 1 ? 's' : ''}` : 'No data'}
                               className={cn(
                                 "flex-1 aspect-square rounded-sm border border-white/5 transition-all hover:scale-110 cursor-pointer min-w-[2.5rem]",
-                                getHeatmapColor(count),
-                                count > 0 ? "shadow-sm" : ""
+                                getHeatmapColor(dayData.count),
+                                dayData.count > 0 ? "shadow-sm" : ""
                               )}
                             />
                           );

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "allowJs": true,
     "ignoreDeprecations": "6.0",
     "noImplicitAny": false,
@@ -7,7 +8,7 @@
     "noUnusedParameters": false,
     "paths": {
       "@/*": [
-        "frontend/src/*"
+        "./src/*"
       ]
     },
     "skipLibCheck": true,
