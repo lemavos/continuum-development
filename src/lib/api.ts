@@ -210,7 +210,20 @@ export const foldersApi = {
 
 // Entities
 export const entitiesApi = {
-  list: () => api.get("/api/entities"),
+  list: (params?: { page?: number; size?: number }) =>
+    api.get("/api/entities", { params }).then((response) => {
+      if (Array.isArray(response.data)) {
+        return response;
+      }
+
+      const pageData = response.data as Record<string, unknown> | null;
+      if (pageData && Array.isArray(pageData.content)) {
+        response.data = pageData.content;
+      } else {
+        response.data = [];
+      }
+      return response;
+    }),
   get: (id: string) => api.get(`/api/entities/${id}`),
   create: (title: string, type: string, description?: string) =>
     api.post("/api/entities", { title, type, description }),
