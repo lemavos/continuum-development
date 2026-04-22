@@ -11,12 +11,17 @@ import tech.lemnova.continuum.controller.dto.entity.EntityCreateRequest;
 import tech.lemnova.continuum.controller.dto.entity.EntityResponse;
 import tech.lemnova.continuum.controller.dto.entity.EntityUpdateRequest;
 import tech.lemnova.continuum.domain.entity.Entity;
+import tech.lemnova.continuum.domain.entity.EntityLink;
 import tech.lemnova.continuum.domain.entity.EntityType;
 import tech.lemnova.continuum.domain.note.Note;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
+import tech.lemnova.continuum.domain.plan.PlanType;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
 import tech.lemnova.continuum.infra.persistence.EntityRepository;
@@ -120,7 +125,7 @@ public class EntityService {
 
         // Verificar limite de entidades baseado no plano do usuário
         User user = getUser(userId);
-        if (user.getEntityCount() >= planConfig.getMaxEntities(user.getPlan())) {
+        if (!planConfig.canCreateEntity(user.getPlan(), user.getEntityCount())) {
             throw new PlanLimitException("Limite de entidades atingido para seu plano. Atualize para uma assinatura superior.");
         }
         

@@ -52,9 +52,9 @@ public class AccountController {
         User u = userRepo.findById(user.getUserId()).orElseThrow();
         return ResponseEntity.ok(new UserLimitsResponse(
                 u.getEntityCount(),
-                planConfig.getMaxEntities(u.getPlan()),
+                planConfig.getLimits(u.getPlan()).maxEntities(),
                 u.getHabitCount(),
-                planConfig.getMaxHabits(u.getPlan()),
+                planConfig.getLimits(u.getPlan()).maxHabits(),
                 planConfig.getHistoryDays(u.getPlan())
         ));
     }
