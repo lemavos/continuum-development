@@ -2,8 +2,9 @@ package tech.lemnova.continuum.domain.timetracking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -17,7 +18,8 @@ import java.time.LocalDate;
  * Represents a time entry for an entity on a specific date.
  * Multiple entries per entity-date combination are allowed and will be summed.
  */
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
