@@ -1,9 +1,8 @@
 package tech.lemnova.continuum.domain.note;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -12,8 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * Índice leve das notas — evita carregar o .md inteiro do B2 para listar.
  * O conteúdo real fica em _notes/{id}.md no vault B2.
  */
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

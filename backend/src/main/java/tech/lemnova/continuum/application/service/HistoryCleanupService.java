@@ -7,7 +7,7 @@ import tech.lemnova.continuum.domain.plan.PlanType;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
 import tech.lemnova.continuum.infra.persistence.EntityRepository;
-import tech.lemnova.continuum.infra.persistence.TimeEntryRepository;
+import tech.lemnova.continuum.infra.repository.TimeEntryRepository;
 import tech.lemnova.continuum.infra.persistence.TrackingEventRepository;
 
 import java.time.Instant;

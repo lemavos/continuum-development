@@ -2,9 +2,8 @@ package tech.lemnova.continuum.domain.timetracking;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,8 +15,7 @@ import java.time.Instant;
  * Represents an active or completed timer session.
  * Used to track running timers and recover from interrupted sessions.
  */
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

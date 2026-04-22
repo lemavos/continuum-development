@@ -2,9 +2,8 @@ package tech.lemnova.continuum.domain.note;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -23,8 +22,7 @@ import java.time.Instant;
  * - { targetNoteId, userId, vaultId }: busca rápida de backlinks
  * - { sourceNoteId, userId, vaultId }: busca rápida de links forward
  */
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

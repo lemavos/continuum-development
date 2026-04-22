@@ -8,6 +8,7 @@ import tech.lemnova.continuum.domain.entity.EntityType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.List;
 
 /**
  * Repository para entidades com suporte a Text Search otimizado.

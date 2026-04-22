@@ -13,6 +13,9 @@ import tech.lemnova.continuum.controller.dto.entity.EntityUpdateRequest;
 import tech.lemnova.continuum.domain.entity.Entity;
 import tech.lemnova.continuum.domain.entity.EntityType;
 import tech.lemnova.continuum.domain.note.Note;
+
+import java.time.LocalDate;
+import java.util.List;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;

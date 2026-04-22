@@ -11,7 +11,6 @@ import java.util.List;
 @Repository
 public interface TrackingEventRepository extends MongoRepository<TrackingEvent, String> {
         List<TrackingEvent> findByUserIdAndEntityIdAndArchivedAtIsNull(String userId, String entityId);
-        List<TrackingEvent> findByUserIdAndArchivedAtIsNull(String userId);
     List<TrackingEvent> findByUserId(String userId);
     List<TrackingEvent> findByUserIdAndEntityId(String userId, String entityId);
     List<TrackingEvent> findByUserIdAndEntityIdAndDate(String userId, String entityId, LocalDate date);
