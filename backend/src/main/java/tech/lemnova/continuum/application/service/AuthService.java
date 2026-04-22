@@ -188,41 +188,11 @@ public class AuthService {
     }
 
     @Transactional
-    public void changePassword(String userId, String currentPassword, String newPassword) {
-        User user = users.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
-        if (!passwordEncoder.matches(currentPassword, user.getPassword()))
-            throw new BadRequestException("Current password incorrect");
-        user.setPassword(passwordEncoder.encode(newPassword));
-        users.save(user);
-    }
-
-    @Transactional
     public void updateUsername(String userId, String username) {
         User user = users.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
         user.setUsername(username);
         user.setUpdatedAt(Instant.now());
         users.save(user);
-    }
-
-    @Transactional
-    public void initiateEmailChange(String userId, String newEmail) {
-        if (users.existsByEmail(newEmail)) throw new BadRequestException("Email in use");
-        User user = users.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
-        
-        String token = UUID.randomUUID().toString();
-        EmailVerificationToken ev = EmailVerificationToken.builder()
-                .token(token)
-                .userId(user.getId())
-                .expiresAt(Instant.now().plus(24, ChronoUnit.HOURS))
-                .newEmail(newEmail)
-                .build();
-        
-        tokenRepo.save(ev);
-        try { 
-            emailService.sendEmailChangeVerification(newEmail, token); 
-        } catch (Exception e) {
-            log.error("Erro ao enviar verificação de troca de e-mail: {}", e.getMessage());
-        }
     }
 
     public UserContextResponse getContext(String userId) {
@@ -249,40 +219,6 @@ public class AuthService {
                 .userId(userId).planType(PlanType.FREE).status(SubscriptionStatus.ACTIVE)
                 .currentPeriodStart(Instant.now()).currentPeriodEnd(Instant.now().plus(36500, ChronoUnit.DAYS)).build();
         subscriptions.save(sub);
-    }
-
-    @Transactional
-    public void initiatePasswordReset(String email) {
-        User user = users.findByEmail(email).orElse(null);
-        if (user == null) return;
-        
-        String tokenValue = UUID.randomUUID().toString();
-        PasswordResetToken token = PasswordResetToken.builder()
-                .token(tokenValue)
-                .userId(user.getId())
-                .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
-                .build();
-        
-        passwordResetRepo.save(token);
-        try { 
-            emailService.sendPasswordResetEmail(user.getEmail(), tokenValue); 
-        } catch (Exception e) {
-            log.error("Erro ao enviar e-mail de reset: {}", e.getMessage());
-        }
-    }
-
-    @Transactional
-    public void completePasswordReset(String tokenValue, String newPassword) {
-        PasswordResetToken token = passwordResetRepo.findByToken(tokenValue)
-                .orElseThrow(() -> new BadRequestException("Invalid token"));
-        if (token.getExpiresAt().isBefore(Instant.now())) throw new BadRequestException("Token expired");
-        
-        User user = users.findById(token.getUserId())
-                .orElseThrow(() -> new NotFoundException("User not found"));
-        
-        user.setPassword(passwordEncoder.encode(newPassword));
-        users.save(user);
-        passwordResetRepo.delete(token);
     }
 
     /**
