@@ -12,9 +12,6 @@ import tech.lemnova.continuum.domain.subscription.SubscriptionRepository;
 import tech.lemnova.continuum.domain.token.TokenBlacklistRepository;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
-import tech.lemnova.continuum.domain.email.EmailVerificationTokenRepository;
-import tech.lemnova.continuum.domain.email.PasswordResetTokenRepository;
-import tech.lemnova.continuum.infra.email.EmailService;
 import tech.lemnova.continuum.infra.security.JwtService;
 import tech.lemnova.continuum.infra.vault.VaultStorageService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,12 +35,9 @@ class AuthServiceGoogleOAuth2Test {
 
     @Mock private UserRepository userRepository;
     @Mock private SubscriptionRepository subscriptionRepository;
-    @Mock private EmailVerificationTokenRepository emailTokenRepository;
-    @Mock private PasswordResetTokenRepository passwordResetRepository;
     @Mock private TokenBlacklistRepository tokenBlacklistRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtService jwtService;
-    @Mock private EmailService emailService;
     @Mock private VaultStorageService vaultStorage;
     @Mock private PlanConfiguration planConfig;
 

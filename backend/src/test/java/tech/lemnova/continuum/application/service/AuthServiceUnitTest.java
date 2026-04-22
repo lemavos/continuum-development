@@ -14,9 +14,6 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import tech.lemnova.continuum.controller.dto.auth.RegisterRequest;
 import tech.lemnova.continuum.controller.dto.auth.LoginRequest;
-import tech.lemnova.continuum.domain.email.EmailVerificationToken;
-import tech.lemnova.continuum.domain.email.EmailVerificationTokenRepository;
-import tech.lemnova.continuum.domain.email.PasswordResetTokenRepository;
 import tech.lemnova.continuum.domain.token.TokenBlacklistRepository;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
 import tech.lemnova.continuum.domain.plan.PlanType;
@@ -44,12 +41,6 @@ class AuthServiceUnitTest {
     SubscriptionRepository subscriptions;
 
     @Mock
-    EmailVerificationTokenRepository tokenRepo;
-
-    @Mock
-    PasswordResetTokenRepository passwordResetRepo;
-
-    @Mock
     TokenBlacklistRepository tokenBlacklistRepo;
 
     @Mock
@@ -57,9 +48,6 @@ class AuthServiceUnitTest {
 
     @Mock
     JwtService jwtService;
-
-    @Mock
-    EmailService emailService;
 
     @Mock
     VaultStorageService vaultStorage;
@@ -126,31 +114,6 @@ class AuthServiceUnitTest {
 
         var resp = authService.login(req);
         assertThat(resp.token()).isEqualTo("tok-2");
-    }
-
-    @Test
-    void verifyEmail_activatesUser_and_deletesToken() {
-        String tokenValue = "t1";
-        EmailVerificationToken verificationToken = new EmailVerificationToken();
-        verificationToken.setToken(tokenValue);
-        verificationToken.setUserId("u-3");
-        verificationToken.setExpiresAt(java.time.Instant.now().plusSeconds(3600));
-
-        User user = new User();
-        user.setId("u-3");
-        user.setActive(false);
-        user.setEmailVerified(false);
-
-        when(tokenRepo.findByToken(tokenValue)).thenReturn(Optional.of(verificationToken));
-        when(users.findById("u-3")).thenReturn(Optional.of(user));
-
-        authService.verifyEmail(tokenValue);
-
-        verify(users).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getActive()).isTrue();
-        assertThat(userCaptor.getValue().isEmailVerified()).isTrue();
-
-        verify(tokenRepo).delete(verificationToken);
     }
 
     @Test
