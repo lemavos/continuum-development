@@ -1,0 +1,9 @@
+{
+  "profile": "openai",
+  "env": {
+    "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+    "OPENAI_MODEL": "sourceful/riverflow-v2-standard-preview",
+    "OPENAI_API_KEY": "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"
+  },
+  "createdAt": "2026-04-22T00:02:08.076Z"
+}

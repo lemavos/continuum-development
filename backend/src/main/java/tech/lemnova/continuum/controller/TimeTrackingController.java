@@ -105,8 +105,8 @@ public class TimeTrackingController {
     public ResponseEntity<List<TimeEntryResponse>> getTimeInRange(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String entityId,
-            @RequestParam LocalDate from,
-            @RequestParam LocalDate to) {
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to) {
         List<TimeEntryResponse> entries = timeTrackingService.getTimeInRange(
                 user.getUserId(),
                 entityId,

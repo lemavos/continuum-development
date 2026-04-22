@@ -16,8 +16,11 @@ import tech.lemnova.continuum.controller.dto.note.NoteSummaryDTO;
 import tech.lemnova.continuum.domain.entity.Entity;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
 
-import java.util.Collections;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/entities")
@@ -40,13 +43,15 @@ public class EntityController {
 
     @GetMapping
     @Operation(summary = "List all entities", description = "Retrieves all entities (knowledge graph nodes) for the authenticated user")
-    public ResponseEntity<List<EntityResponse>> list(
-            @AuthenticationPrincipal CustomUserDetails user) {
-        List<Entity> entities = entityService.listByUser(user.getUserId());
-        List<EntityResponse> responses = entities != null && !entities.isEmpty() 
-            ? entities.stream().map(EntityResponse::from).toList()
-            : Collections.emptyList();
-        return ResponseEntity.ok(responses);
+    public ResponseEntity<Page<EntityResponse>> list(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Entity> entities = entityService.listByUser(user.getUserId(), pageable, startDate, endDate);
+        return ResponseEntity.ok(entities.map(EntityResponse::from));
     }
 
     @GetMapping("/{id}")

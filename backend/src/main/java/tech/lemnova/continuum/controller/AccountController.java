@@ -11,7 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import tech.lemnova.continuum.application.service.AuthService;
 import tech.lemnova.continuum.application.service.ExportService;
 import tech.lemnova.continuum.application.service.UserService;
+import tech.lemnova.continuum.controller.dto.account.UserLimitsResponse;
 import tech.lemnova.continuum.controller.dto.auth.UserContextResponse;
+import tech.lemnova.continuum.domain.plan.PlanConfiguration;
+import tech.lemnova.continuum.domain.user.User;
+import tech.lemnova.continuum.domain.user.UserRepository;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
 
 import java.util.Map;
@@ -25,17 +29,34 @@ public class AccountController {
     private final AuthService authService;
     private final ExportService exportService;
     private final UserService userService;
+    private final PlanConfiguration planConfig;
+    private final UserRepository userRepo;
 
-    public AccountController(AuthService authService, ExportService exportService, UserService userService) {
+    public AccountController(AuthService authService, ExportService exportService, UserService userService, PlanConfiguration planConfig, UserRepository userRepo) {
         this.authService = authService;
         this.exportService = exportService;
         this.userService = userService;
+        this.planConfig = planConfig;
+        this.userRepo = userRepo;
     }
 
     @GetMapping("/me")
     @Operation(summary = "Get account info", description = "Retrieves the current user's account information and profile")
     public ResponseEntity<UserContextResponse> getMe(@AuthenticationPrincipal CustomUserDetails user) {
         return ResponseEntity.ok(authService.getContext(user.getUserId()));
+    }
+
+    @GetMapping("/limits")
+    @Operation(summary = "Get user limits", description = "Retrieves the current user's usage limits and counts")
+    public ResponseEntity<UserLimitsResponse> getLimits(@AuthenticationPrincipal CustomUserDetails user) {
+        User u = userRepo.findById(user.getUserId()).orElseThrow();
+        return ResponseEntity.ok(new UserLimitsResponse(
+                u.getEntityCount(),
+                planConfig.getMaxEntities(u.getPlan()),
+                u.getHabitCount(),
+                planConfig.getMaxHabits(u.getPlan()),
+                planConfig.getHistoryDays(u.getPlan())
+        ));
     }
 
     @PatchMapping("/me")

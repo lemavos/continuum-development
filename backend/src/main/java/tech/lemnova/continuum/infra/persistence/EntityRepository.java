@@ -6,8 +6,8 @@ import org.springframework.stereotype.Repository;
 import tech.lemnova.continuum.domain.entity.Entity;
 import tech.lemnova.continuum.domain.entity.EntityType;
 
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Repository para entidades com suporte a Text Search otimizado.
@@ -17,7 +17,10 @@ import java.util.Optional;
  */
 @Repository
 public interface EntityRepository extends MongoRepository<Entity, String> {
+        List<Entity> findByVaultIdAndArchivedAtIsNull(String vaultId);
+        List<Entity> findByVaultIdAndTypeAndArchivedAtIsNull(String vaultId, EntityType type);
     List<Entity> findByUserId(String userId);
+    Page<Entity> findByUserId(String userId, Pageable pageable);
     long countByUserId(String userId);
     long countByUserIdAndVaultId(String userId, String vaultId);
     void deleteByUserId(String userId);
@@ -34,6 +37,7 @@ public interface EntityRepository extends MongoRepository<Entity, String> {
      * @return Lista de entidades com apenas os campos essenciais para o grafo
      */
     @Query(value = "{ 'userId': ?0 }", fields = "{ 'id': 1, 'title': 1, 'type': 1 }")
+    @Query(value = "{ 'userId': ?0, 'archivedAt': null }", fields = "{ 'id': 1, 'title': 1, 'type': 1 }")
     List<Entity> findGraphDataByUserId(String userId);
     
     /**
@@ -53,5 +57,20 @@ public interface EntityRepository extends MongoRepository<Entity, String> {
         }
         """, fields = "{ score: { $meta: 'textScore' } }")
     List<Entity> findByTextSearch(String userId, String query);
+
+    /**
+     * Find active (non-archived) entities by userId
+     */
+    List<Entity> findByUserIdAndArchivedAtIsNull(String userId);
+
+    /**
+     * Find active (non-archived) entities by userId with pagination
+     */
+    Page<Entity> findByUserIdAndArchivedAtIsNull(String userId, Pageable pageable);
+
+    /**
+     * Find active (non-archived) entities by list of IDs
+     */
+    List<Entity> findByIdInAndArchivedAtIsNull(List<String> ids);
 }
 

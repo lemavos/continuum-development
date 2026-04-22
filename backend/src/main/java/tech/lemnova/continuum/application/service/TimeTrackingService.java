@@ -8,10 +8,10 @@ import tech.lemnova.continuum.domain.timetracking.*;
 import tech.lemnova.continuum.infra.repository.TimeEntryRepository;
 import tech.lemnova.continuum.infra.repository.TimerSessionRepository;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
+import tech.lemnova.continuum.domain.plan.PlanConfiguration;
+import tech.lemnova.continuum.domain.plan.PlanType;
+import tech.lemnova.continuum.domain.user.User;
+import tech.lemnova.continuum.domain.user.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +19,16 @@ public class TimeTrackingService {
 
     private final TimeEntryRepository timeEntryRepository;
     private final TimerSessionRepository timerSessionRepository;
+    private final PlanConfiguration planConfig;
+    private final UserRepository userRepo;
+
+    private LocalDate getDefaultStartDate(String userId) {
+        User user = userRepo.findById(userId).orElseThrow();
+        if (user.getPlan() == PlanType.FREE) {
+            return LocalDate.now().minusMonths(3);
+        }
+        return null;
+    }
 
     /**
      * Start a new timer for an entity
@@ -173,8 +183,10 @@ public class TimeTrackingService {
      * Get time spent on an entity in a date range
      */
     public List<TimeEntryResponse> getTimeInRange(String userId, String entityId, LocalDate from, LocalDate to) {
+        LocalDate effectiveFrom = from != null ? from : getDefaultStartDate(userId);
+        LocalDate effectiveTo = to != null ? to : LocalDate.now();
         List<TimeEntry> entries = timeEntryRepository.findByUserIdAndEntityIdAndDateBetweenOrderByDateDesc(
-                userId, entityId, from, to
+                userId, entityId, effectiveFrom, effectiveTo
         );
 
         return entries.stream()

@@ -2,18 +2,17 @@ package tech.lemnova.continuum.application.service;
 
 import org.springframework.stereotype.Service;
 import tech.lemnova.continuum.application.exception.BadRequestException;
-import tech.lemnova.continuum.application.exception.NotFoundException;
+import tech.lemnova.continuum.application.exception.PlanLimitException;
 import tech.lemnova.continuum.controller.dto.tracking.TrackEventRequest;
 import tech.lemnova.continuum.domain.entity.Entity;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
 import tech.lemnova.continuum.domain.tracking.TrackingEvent;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
-import tech.lemnova.continuum.infra.vault.VaultDataService;
+import tech.lemnova.continuum.infra.persistence.TrackingEventRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,45 +20,45 @@ import java.util.stream.Collectors;
 public class TrackingService {
 
     private final UserRepository userRepo;
-    private final VaultDataService vaultData;
+    private final TrackingEventRepository trackingRepo;
     private final EntityService entityService;
     private final PlanConfiguration planConfig;
 
     public TrackingService(UserRepository userRepo,
-                           VaultDataService vaultData,
+                           TrackingEventRepository trackingRepo,
                            EntityService entityService,
                            PlanConfiguration planConfig) {
-        this.userRepo       = userRepo;
-        this.vaultData      = vaultData;
-        this.entityService  = entityService;
-        this.planConfig     = planConfig;
+        this.userRepo = userRepo;
+        this.trackingRepo = trackingRepo;
+        this.entityService = entityService;
+        this.planConfig = planConfig;
+    }
+
+    private User getUser(String userId) {
+        return userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     public TrackingEvent track(String userId, String entityId, TrackEventRequest req) {
         User user = getUser(userId);
         Entity entity = entityService.get(userId, entityId);
-        if (!entity.isTrackable())
-            throw new BadRequestException("Entity is not trackable. Enable tracking first.");
+        if (!entity.isTrackable()) throw new BadRequestException("Entity not trackable");
+
+        // Removed: history days check, since no data deletion
 
         LocalDate date = req.date() != null ? req.date() : LocalDate.now();
-        List<TrackingEvent> events = vaultData.readTrackingEvents(user.getVaultId());
-
-        // Upsert: se já existe para (entityId, date), atualiza
-        Optional<TrackingEvent> existing = events.stream()
-                .filter(e -> e.getEntityId().equals(entityId) && date.equals(e.getDate()))
-                .findFirst();
+        List<TrackingEvent> events = trackingRepo.findByUserIdAndEntityIdAndDate(userId, entityId, date);
 
         TrackingEvent event;
-        if (existing.isPresent()) {
-            event = existing.get();
+        if (!events.isEmpty()) {
+            event = events.get(0);  // Update existing
         } else {
-            event = new TrackingEvent();
-            event.setId(UUID.randomUUID().toString().replace("-", ""));
-            event.setUserId(userId);
-            event.setEntityId(entityId);
-            event.setDate(date);
-            event.setCreatedAt(Instant.now());
-            events.add(event);
+            event = TrackingEvent.builder()
+                    .id(UUID.randomUUID().toString().replace("-", ""))
+                    .userId(userId)
+                    .entityId(entityId)
+                    .date(date)
+                    .createdAt(Instant.now())
+                    .build();
         }
 
         event.setValue(req.value() != null ? req.value() : 1);
@@ -67,36 +66,33 @@ public class TrackingService {
         event.setNote(req.note());
         event.setUpdatedAt(Instant.now());
 
-        vaultData.writeTrackingEvents(user.getVaultId(), events);
-        return event;
+        return trackingRepo.save(event);
     }
 
     public void untrack(String userId, String entityId, LocalDate date) {
-        User user = getUser(userId);
-        List<TrackingEvent> events = vaultData.readTrackingEvents(user.getVaultId());
-        events.removeIf(e -> e.getEntityId().equals(entityId) && date.equals(e.getDate()));
-        vaultData.writeTrackingEvents(user.getVaultId(), events);
+        Instant now = Instant.now();
+        trackingRepo.findByUserIdAndEntityIdAndDate(userId, entityId, date)
+                .forEach(event -> {
+                    event.setArchivedAt(now);
+                    trackingRepo.save(event);
+                });
     }
 
     public Map<LocalDate, Double> getHeatmap(String userId, String entityId) {
         User user = getUser(userId);
         int days = planConfig.getHistoryDays(user.getPlan());
-        LocalDate end   = LocalDate.now();
+        LocalDate end = LocalDate.now();
         LocalDate start = days == Integer.MAX_VALUE ? end.minusYears(10) : end.minusDays(days);
         return getHeatmap(userId, entityId, start, end);
     }
 
     public Map<LocalDate, Double> getHeatmap(String userId, String entityId,
                                                LocalDate start, LocalDate end) {
-        User user = getUser(userId);
-        return vaultData.readTrackingEvents(user.getVaultId()).stream()
-                .filter(e -> e.getEntityId().equals(entityId)
-                        && !e.getDate().isBefore(start)
-                        && !e.getDate().isAfter(end))
-                .collect(Collectors.toMap(
-                        TrackingEvent::getDate,
-                        e -> e.getNumericValue().doubleValue()));
+        return trackingRepo.findByUserIdAndEntityId(userId, entityId).stream()
+                .filter(e -> !e.getDate().isBefore(start) && !e.getDate().isAfter(end))
+                .collect(Collectors.toMap(TrackingEvent::getDate, e -> e.getNumericValue().doubleValue()));
     }
+}
 
     public TrackingStats getStats(String userId, String entityId) {
         User user = getUser(userId);

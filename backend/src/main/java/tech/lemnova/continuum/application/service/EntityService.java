@@ -17,25 +17,26 @@ import tech.lemnova.continuum.domain.plan.PlanConfiguration;
 import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
 import tech.lemnova.continuum.infra.persistence.EntityRepository;
-import tech.lemnova.continuum.infra.persistence.NoteRepository;
+import tech.lemnova.continuum.infra.persistence.EntityLinkRepository;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class EntityService {
 
     private final EntityRepository entityRepo;
     private final NoteRepository noteRepo;
+    private final EntityLinkRepository entityLinkRepo;
     private final UserRepository userRepo;
     private final UserService userService;
     private final PlanConfiguration planConfig;
 
-    public EntityService(EntityRepository entityRepo, NoteRepository noteRepo, UserRepository userRepo, UserService userService, PlanConfiguration planConfig) {
+    public EntityService(EntityRepository entityRepo, NoteRepository noteRepo, EntityLinkRepository entityLinkRepo, UserRepository userRepo, UserService userService, PlanConfiguration planConfig) {
         this.entityRepo = entityRepo;
         this.noteRepo = noteRepo;
+        this.entityLinkRepo = entityLinkRepo;
         this.userRepo = userRepo;
         this.userService = userService;
         this.planConfig = planConfig;
@@ -60,6 +61,13 @@ public class EntityService {
             return userDetails.getVaultId();
         }
         throw new IllegalStateException("Authenticated user not found");
+    }
+
+    private LocalDate getDefaultStartDate(User user) {
+        if (user.getPlan() == PlanType.FREE) {
+            return LocalDate.now().minusMonths(3);
+        }
+        return null; // No limit for VISION
     }
     
     /**
@@ -99,7 +107,7 @@ public class EntityService {
     
     public List<Entity> listByType(String userId, EntityType type) {
         User user = getUser(userId);
-        return entityRepo.findByVaultIdAndType(user.getVaultId(), type);
+        return entityRepo.findByVaultIdAndTypeAndArchivedAtIsNull(user.getVaultId(), type);
     }
 
     public Entity create(EntityCreateRequest req) {
@@ -108,8 +116,7 @@ public class EntityService {
 
         // Verificar limite de entidades baseado no plano do usuário
         User user = getUser(userId);
-        long currentEntityCount = entityRepo.countByUserId(userId);
-        if (!planConfig.canCreateEntity(user.getPlan(), currentEntityCount)) {
+        if (user.getEntityCount() >= planConfig.getMaxEntities(user.getPlan())) {
             throw new PlanLimitException("Limite de entidades atingido para seu plano. Atualize para uma assinatura superior.");
         }
         
@@ -123,7 +130,8 @@ public class EntityService {
                 .createdAt(Instant.now())
                 .build();
         Entity saved = entityRepo.save(entity);
-        userService.incrementEntityCount(userId);
+        user.incrementEntityCount();
+        userRepo.save(user);
         return saved;
     }
 
@@ -169,13 +177,18 @@ public class EntityService {
         // Validação de posse: garante que a entidade pertence ao usuário
         validateOwnership(userId, vaultId, entityId);
         
-        // 1. Encontrar IDs de notas que citam esta entidade
+        // Direct links
+        List<String> directIds = entityLinkRepo.findByUserIdAndFromEntityId(userId, entityId)
+                .stream().map(EntityLink::getToEntityId).collect(Collectors.toList());
+        directIds.addAll(entityLinkRepo.findByUserIdAndToEntityId(userId, entityId)
+                .stream().map(EntityLink::getFromEntityId).collect(Collectors.toList()));
+
+        // Note-based links
         List<String> noteIdsWithThisEntity = noteRepo.findByUserId(userId).stream()
                 .filter(n -> n.getEntityIds() != null && n.getEntityIds().contains(entityId))
                 .map(Note::getId)
                 .collect(Collectors.toList());
 
-        // 2. Encontrar outras entidades que aparecem nessas mesmas notas
         List<String> connectedEntityIds = noteRepo.findByUserId(userId).stream()
                 .filter(n -> noteIdsWithThisEntity.contains(n.getId()))
                 .flatMap(n -> n.getEntityIds().stream())
@@ -183,7 +196,9 @@ public class EntityService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        return entityRepo.findByIdIn(connectedEntityIds);
+        // Combine and deduplicate
+        List<String> allIds = Stream.concat(directIds.stream(), connectedEntityIds.stream()).distinct().collect(Collectors.toList());
+        return entityRepo.findByIdInAndArchivedAtIsNull(allIds);
     }
 
     public Entity update(String userId, String vaultId, String entityId, EntityUpdateRequest req) {
@@ -214,11 +229,32 @@ public class EntityService {
     }
 
     public List<Entity> listByVault(String vaultId) {
-        return entityRepo.findByVaultId(vaultId);
+        return entityRepo.findByVaultIdAndArchivedAtIsNull(vaultId);
     }
     
     public List<Entity> listByUser(String userId) {
-        return entityRepo.findByUserId(userId);
+        return entityRepo.findByUserIdAndArchivedAtIsNull(userId);
+    }
+
+    public Page<Entity> listByUser(String userId, Pageable pageable) {
+        return entityRepo.findByUserIdAndArchivedAtIsNull(userId, pageable);
+    }
+
+    public Page<Entity> listByUser(String userId, Pageable pageable, LocalDate startDate, LocalDate endDate) {
+        User user = getUser(userId);
+        LocalDate effectiveStart = startDate != null ? startDate : getDefaultStartDate(user);
+        LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.now();
+        // Note: EntityRepository needs a method to filter by createdAt between start and end
+        // For now, assume we filter in memory or add to repo
+        Page<Entity> all = entityRepo.findByUserId(userId, pageable);
+        List<Entity> filtered = all.getContent().stream()
+                .filter(e -> {
+                    LocalDate created = e.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+                    return (effectiveStart == null || !created.isBefore(effectiveStart)) &&
+                           !created.isAfter(effectiveEnd);
+                })
+                .collect(Collectors.toList());
+        return new org.springframework.data.domain.PageImpl<>(filtered, pageable, all.getTotalElements());
     }
     
     /**

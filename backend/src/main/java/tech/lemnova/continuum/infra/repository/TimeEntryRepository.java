@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface TimeEntryRepository extends MongoRepository<TimeEntry, String> {
+    List<TimeEntry> findByUserIdAndEntityIdAndArchivedAtIsNull(String userId, String entityId);
+    List<TimeEntry> findByUserIdAndArchivedAtIsNull(String userId);
 
     /**
      * Find all time entries for an entity
@@ -47,6 +49,12 @@ public interface TimeEntryRepository extends MongoRepository<TimeEntry, String> 
      * Delete entries for a specific entity-date combination
      */
     void deleteByUserIdAndEntityIdAndDate(String userId, String entityId, LocalDate date);
+
+    /**
+     * Find old events for cleanup
+     */
+    @Query("{ 'userId': ?0, 'date': { $lt: ?1 } }")
+    List<TimeEntry> findOldEventsByUserId(String userId, LocalDate cutoffDate);
 
     /**
      * Delete all entries for an entity (cascade delete)

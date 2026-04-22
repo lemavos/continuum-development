@@ -56,6 +56,8 @@ public class TimeEntry {
     @Indexed
     private Instant updatedAt;
 
+    private Instant archivedAt;  // For cleanup
+
     /**
      * Calculate duration in hours (with decimal precision)
      */
