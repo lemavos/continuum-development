@@ -4,17 +4,22 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import tech.lemnova.continuum.domain.plan.PlanType;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Setter
 @Document(collection = "users")
 public class User {
 
@@ -22,11 +27,14 @@ public class User {
     private String id;
 
     @Indexed(unique = true)
+    @NotBlank @Size(min = 3, max = 50)
     private String username;
 
     @Indexed(unique = true)
+    @NotBlank @Email
     private String email;
 
+    @NotBlank @Size(min = 6, max = 100)
     private String password;
 
     @Builder.Default
