@@ -54,8 +54,6 @@ public class AuthService {
                        PlanConfiguration planConfig) {
         this.users = users;
         this.subscriptions = subscriptions;
-        this.tokenRepo = tokenRepo;
-        this.passwordResetRepo = passwordResetRepo;
         this.tokenBlacklistRepository = tokenBlacklistRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;

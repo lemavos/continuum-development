@@ -72,49 +72,52 @@ public class AccountController {
             authService.updateUsername(user.getUserId(), username.trim());
         }
         
-        if (email != null && !email.isBlank()) {
-            authService.initiateEmailChange(user.getUserId(), email.trim());
-        }
+        // Email change functionality removed
+        // if (email != null && !email.isBlank()) {
+        //     authService.initiateEmailChange(user.getUserId(), email.trim());
+        // }
 
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/password/change")
-    @Operation(summary = "Change password", description = "Changes the user's password after verifying the current password")
-    public ResponseEntity<Void> changePassword(
-            @AuthenticationPrincipal CustomUserDetails user,
-            @RequestBody Map<String, String> body) {
-        
-        String current = body.get("currentPassword");
-        String next = body.get("newPassword");
-        
-        if (current == null || next == null) return ResponseEntity.badRequest().build();
-        
-        authService.changePassword(user.getUserId(), current, next);
-        return ResponseEntity.noContent().build();
-    }
+    // Password change functionality removed
+    // @PostMapping("/password/change")
+    // @Operation(summary = "Change password", description = "Changes the user's password after verifying the current password")
+    // public ResponseEntity<Void> changePassword(
+    //         @AuthenticationPrincipal CustomUserDetails user,
+    //         @RequestBody Map<String, String> body) {
+    //     
+    //     String current = body.get("currentPassword");
+    //     String next = body.get("newPassword");
+    //     
+    //     if (current == null || next == null) return ResponseEntity.badRequest().build();
+    //     
+    //     authService.changePassword(user.getUserId(), current, next);
+    //     return ResponseEntity.noContent().build();
+    // }
 
-    @PostMapping("/password/forgot")
-    @Operation(summary = "Initiate password reset", description = "Sends a password reset link to the user's email")
-    public ResponseEntity<Void> forgotPassword(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        if (email == null || email.isBlank()) return ResponseEntity.badRequest().build();
-        
-        authService.initiatePasswordReset(email.trim());
-        return ResponseEntity.noContent().build();
-    }
+    // Password reset functionality removed
+    // @PostMapping("/password/forgot")
+    // @Operation(summary = "Initiate password reset", description = "Sends a password reset link to the user's email")
+    // public ResponseEntity<Void> forgotPassword(@RequestBody Map<String, String> body) {
+    //     String email = body.get("email");
+    //     if (email == null || email.isBlank()) return ResponseEntity.badRequest().build();
+    //     
+    //     authService.initiatePasswordReset(email.trim());
+    //     return ResponseEntity.noContent().build();
+    // }
 
-    @PostMapping("/password/reset")
-    @Operation(summary = "Complete password reset", description = "Completes the password reset process using the reset token")
-    public ResponseEntity<Void> resetPassword(@RequestBody Map<String, String> body) {
-        String token = body.get("token");
-        String newPass = body.get("newPassword");
-        
-        if (token == null || newPass == null) return ResponseEntity.badRequest().build();
-        
-        authService.completePasswordReset(token, newPass);
-        return ResponseEntity.noContent().build();
-    }
+    // @PostMapping("/password/reset")
+    // @Operation(summary = "Complete password reset", description = "Completes the password reset process using the reset token")
+    // public ResponseEntity<Void> resetPassword(@RequestBody Map<String, String> body) {
+    //     String token = body.get("token");
+    //     String newPass = body.get("newPassword");
+    //     
+    //     if (token == null || newPass == null) return ResponseEntity.badRequest().build();
+    //     
+    //     authService.completePasswordReset(token, newPass);
+    //     return ResponseEntity.noContent().build();
+    // }
 
     @GetMapping("/export")
     @Operation(summary = "Export user data", description = "Exports all user data (notes, entities, etc) as JSON for backup or migration")
