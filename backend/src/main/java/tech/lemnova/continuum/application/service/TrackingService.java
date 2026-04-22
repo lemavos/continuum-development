@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class TrackingService {
@@ -92,12 +93,9 @@ public class TrackingService {
                 .filter(e -> !e.getDate().isBefore(start) && !e.getDate().isAfter(end))
                 .collect(Collectors.toMap(TrackingEvent::getDate, e -> e.getNumericValue().doubleValue()));
     }
-}
 
     public TrackingStats getStats(String userId, String entityId) {
-        User user = getUser(userId);
-        List<TrackingEvent> all = vaultData.readTrackingEvents(user.getVaultId()).stream()
-                .filter(e -> e.getEntityId().equals(entityId))
+        List<TrackingEvent> all = trackingRepo.findByUserIdAndEntityId(userId, entityId).stream()
                 .sorted(Comparator.comparing(TrackingEvent::getDate, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
 
@@ -121,9 +119,8 @@ public class TrackingService {
     }
 
     public List<TrackingEvent> getTodayEvents(String userId) {
-        User user = getUser(userId);
         LocalDate today = LocalDate.now();
-        return vaultData.readTrackingEvents(user.getVaultId()).stream()
+        return trackingRepo.findByUserId(userId).stream()
                 .filter(e -> today.equals(e.getDate()))
                 .collect(Collectors.toList());
     }
@@ -155,17 +152,11 @@ public class TrackingService {
         return longest;
     }
 
-    private User getUser(String userId) {
-        return userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-    }
-
     /**
      * Conta hábitos ativos (que tiveram pelo menos um evento de tracking desde a data especificada)
      */
     public long countActiveHabits(String userId, LocalDate since) {
-        User user = getUser(userId);
-        List<TrackingEvent> events = vaultData.readTrackingEvents(user.getVaultId());
+        List<TrackingEvent> events = trackingRepo.findByUserId(userId);
         Set<String> activeEntityIds = events.stream()
                 .filter(e -> !e.getDate().isBefore(since))
                 .map(TrackingEvent::getEntityId)
@@ -177,8 +168,7 @@ public class TrackingService {
      * Retorna dados de atividade de hábitos para heatmap (últimos 30 dias)
      */
     public Map<String, Integer> getHabitActivityData(String userId, int days) {
-        User user = getUser(userId);
-        List<TrackingEvent> events = vaultData.readTrackingEvents(user.getVaultId());
+        List<TrackingEvent> events = trackingRepo.findByUserId(userId);
         LocalDate end = LocalDate.now();
         LocalDate start = end.minusDays(days - 1);
 
@@ -194,8 +184,3 @@ public class TrackingService {
             int currentStreak, int longestStreak,
             double averageValue, double weeklyCompletionRate) {}
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// APPLICATION — MetricsService [ARCH-6][V11-ARCH]
-// Lê NoteReferences do vault B2.
-// ─────────────────────────────────────────────────────────────────────────────
