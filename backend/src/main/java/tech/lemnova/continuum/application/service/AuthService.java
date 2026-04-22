@@ -39,7 +39,6 @@ public class AuthService {
 
     private final UserRepository users;
     private final SubscriptionRepository subscriptions;
-    private final PasswordResetTokenRepository passwordResetRepo;
     private final TokenBlacklistRepository tokenBlacklistRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -48,7 +47,6 @@ public class AuthService {
 
     public AuthService(UserRepository users,
                        SubscriptionRepository subscriptions,
-                       PasswordResetTokenRepository passwordResetRepo,
                        TokenBlacklistRepository tokenBlacklistRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
