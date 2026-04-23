@@ -150,7 +150,7 @@ export function TimeTrackingDetail() {
             {entity.title}
           </h1>
           <p className="text-sm text-zinc-500">
-            {entity.type === 'PROJECT' ? '📁 Project' : '🔥 Habit'} • {entity.description}
+            {entity.type === 'PROJECT' ? '📁 Project' : '🔥 Activity'} • {entity.description}
           </p>
         </div>
       </div>

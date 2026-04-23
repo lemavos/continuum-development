@@ -43,24 +43,9 @@ export default function TimeTracking() {
             Tracking
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Track time spent on your projects and habits
+            Track your projects and activities
           </p>
         </div>
-
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <TimeTrackingList />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <TimeAnalyticsCalendar onDayClick={handleDayClick} />
-          </TabsContent>
-        </Tabs>
 
         <DayDetailsModal
           dayData={selectedDayData}

@@ -13,7 +13,7 @@ import type { Entity, EntityStats, Note } from "@/types";
 
 const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   NOTE: { label: "Note", icon: "📝" },
-  HABIT: { label: "Habit", icon: "🟢" },
+  HABIT: { label: "Activity", icon: "🟢" },
   PROJECT: { label: "Project", icon: "🔵" },
   PERSON: { label: "Person", icon: "🟡" },
   TOPIC: { label: "Topic", icon: "🟣" },
@@ -328,7 +328,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                       {displayEntity.type === "HABIT" && stats && (
                         <Card>
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold">Habit Metrics</CardTitle>
+                            <CardTitle className="text-sm font-semibold">Activity Metrics</CardTitle>
                           </CardHeader>
                           <CardContent className="grid grid-cols-3 gap-3 text-center text-xs text-muted-foreground">
                             <div>

@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 interface UpgradeModalProps { open: boolean; onOpenChange: (open: boolean) => void; reason?: string; }
 
 const plans = [
-  { id: "PLUS", name: "Plus", price: "$19.90/month", icon: Zap, color: "text-primary", features: ["100 entities", "500 notes", "10 habits", "180 days history", "1GB Vault"] },
-  { id: "PRO", name: "Pro", icon: Rocket, price: "$39.90/month", color: "text-warning", popular: true, features: ["Unlimited entities", "Unlimited notes", "Unlimited habits", "2 years history", "2GB Vault"] },
+  { id: "PLUS", name: "Plus", price: "$19.90/month", icon: Zap, color: "text-primary", features: ["100 entities", "500 notes", "10 activities", "180 days history", "1GB Vault"] },
+  { id: "PRO", name: "Pro", icon: Rocket, price: "$39.90/month", color: "text-warning", popular: true, features: ["Unlimited entities", "Unlimited notes", "Unlimited activities", "2 years history", "2GB Vault"] },
   { id: "GOLD", name: "Gold", icon: Gem, price: "$79.90/month", color: "text-warning", features: ["Everything unlimited", "4GB Vault", "Priority support", "Early access"] },
 ];
 

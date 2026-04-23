@@ -101,7 +101,7 @@ export default function Subscription() {
                     {[
                       `${formatLimit(limits.maxEntities)} entities`,
                       `${formatLimit(limits.maxNotes)} notes`,
-                      `${formatLimit(limits.maxHabits)} habits`,
+                      `${formatLimit(limits.maxHabits)} activities`,
                       `${formatLimit(limits.historyDays, " days")} history`,
                       `${formatLimit(limits.maxVaultSizeMB, "MB")} Vault`,
                     ].map((f) => (

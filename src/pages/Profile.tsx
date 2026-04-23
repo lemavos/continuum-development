@@ -43,7 +43,7 @@ export default function Profile() {
   const resources = useMemo(() => ([
     { label: "Notes", current: usage?.notesCount ?? 0, max: limits.maxNotes, suffix: "" },
     { label: "Entities", current: usage?.entitiesCount ?? 0, max: limits.maxEntities, suffix: "" },
-    { label: "Habits", current: usage?.habitsCount ?? 0, max: limits.maxHabits, suffix: "" },
+    { label: "Activities", current: usage?.habitsCount ?? 0, max: limits.maxHabits, suffix: "" },
   ]), [usage, limits]);
 
   const handleSave = async () => {

@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Cale
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { PLAN_LIMITS, type Plan } from "@/types";
@@ -224,48 +225,6 @@ export default function EntityDetail() {
     } catch { toast({ title: "Error updating description", variant: "destructive" }); }
   };
 
-  // Generate heatmap organized by days of the week (Sunday to Saturday)
-  const generateWeeklyHeatmap = (heatmapData: HeatmapData): Record<string, Record<number, { date: string; count: number }>> => {
-    const today = new Date();
-    const weeks: Record<string, Record<number, { date: string; count: number }>> = {};
-    
-    // Calculate start date based on plan limits
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - historyDays + 1);
-    
-    // Generate all dates within the history limit
-    for (let i = 0; i < historyDays; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      const dateStr = date.toISOString().split("T")[0];
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-      
-      // Calculate week key (YYYY-MM-DD of Sunday)
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - dayOfWeek);
-      const weekKey = weekStart.toISOString().split("T")[0];
-      
-      if (!weeks[weekKey]) {
-        weeks[weekKey] = {};
-      }
-      
-      weeks[weekKey][dayOfWeek] = {
-        date: dateStr,
-        count: heatmapData[dateStr] || 0
-      };
-    }
-    
-    return weeks;
-  };
-
-  const getHeatmapColor = (val: number) => {
-    if (val === 0) return "bg-zinc-900";
-    if (val === 1) return "bg-[#00BFC0]/30";
-    if (val === 2) return "bg-[#00BFC0]/60";
-    if (val === 3) return "bg-[#00BFC0]/80";
-    return "bg-[#00BFC0]";
-  };
-
   if (loading) return <AppLayout><div className="flex justify-center items-center h-full"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div></AppLayout>;
   if (!entity) return null;
 
@@ -368,69 +327,10 @@ export default function EntityDetail() {
 
         {entity?.type === "HABIT" && (
           <>
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50 tracking-tight">Activity Heatmap (Last {historyDays} days)</h2>
-              <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-white/10 overflow-x-auto">
-                {/* Day labels */}
-                <div className="flex mb-2 min-w-max">
-                  <div className="w-8"></div> {/* Space for week labels */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div key={day} className="flex-1 text-center text-xs text-slate-400 font-medium min-w-[2.5rem]">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Heatmap grid */}
-                <div className="space-y-1 min-w-max">
-                  {Object.entries(generateWeeklyHeatmap(heatmap))
-                    .sort(([a], [b]) => a.localeCompare(b)) // Sort weeks chronologically
-                    .map(([weekKey, weekData]) => (
-                      <div key={weekKey} className="flex items-center">
-                        {/* Week label - show month/day */}
-                        <div className="w-8 text-xs text-slate-500 mr-2 text-right">
-                          {new Date(weekKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </div>
-                        
-                        {/* Day cells */}
-                        {[0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
-                          const dayData = weekData[dayOfWeek] || { date: '', count: 0 };
-                          
-                          return (
-                            <div
-                              key={dayOfWeek}
-                              title={dayData.date ? `${dayData.date}: ${dayData.count} completion${dayData.count !== 1 ? 's' : ''}` : 'No data'}
-                              className={cn(
-                                "flex-1 aspect-square rounded-sm border border-white/5 transition-all hover:scale-110 cursor-pointer min-w-[2.5rem]",
-                                getHeatmapColor(dayData.count),
-                                dayData.count > 0 ? "shadow-sm" : ""
-                              )}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                </div>
-                
-                {/* Legend */}
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="font-medium">Less</span>
-                    <div className="flex gap-1">
-                      <div className="w-3 h-3 rounded-sm bg-zinc-900 border border-white/5"></div>
-                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/30 border border-white/5"></div>
-                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/60 border border-white/5"></div>
-                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0]/80 border border-white/5"></div>
-                      <div className="w-3 h-3 rounded-sm bg-[#00BFC0] border border-white/5"></div>
-                    </div>
-                    <span className="font-medium">More</span>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {historyDays === -1 ? 'Unlimited history' : `${historyDays} days history`}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ActivityAnalyticsCalendar 
+              trackingDates={entity.trackingDates}
+              historyDays={historyDays}
+            />
           </>
         )}
 

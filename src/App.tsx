@@ -82,7 +82,7 @@ const AppRoutes = () => (
     {/* Analytics Routes */}
     <Route path="/tracking/:id" element={<ProtectedRoute><TimeTrackingDetail /></ProtectedRoute>} />
     <Route path="/projects/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
-    <Route path="/habits/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
+    <Route path="/activities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
     {/* <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} /> */}

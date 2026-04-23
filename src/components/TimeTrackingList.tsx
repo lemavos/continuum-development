@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Play, Pause, MoreVertical, FolderOpen, Briefcase, Flame } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import type { Entity } from '@/types';
 
 /**
@@ -24,7 +25,7 @@ export function TimeTrackingList() {
     queryKey: ['entities', 'trackable'],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      // Return Projects and Habits
+      // Return Projects and Activities
       return (response.data as Entity[]).filter(e => e.type === 'PROJECT' || e.type === 'HABIT');
     },
   });
@@ -56,7 +57,7 @@ export function TimeTrackingList() {
 
   const types = ['PROJECT', 'HABIT'];
   const typeIcons: Record<string, any> = { PROJECT: Briefcase, HABIT: Flame };
-  const typeLabels: Record<string, string> = { PROJECT: 'Project', HABIT: 'Habit' };
+  const typeLabels: Record<string, string> = { PROJECT: 'Project', HABIT: 'Activity' };
 
   return (
     <div className="space-y-6">
@@ -117,7 +118,7 @@ export function TimeTrackingList() {
               <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium text-white mb-2">No {selectedType ? typeLabels[selectedType].toLowerCase() + 's' : 'entities'} yet</h3>
               <p className="text-sm text-zinc-500 mb-4">
-                Create a {selectedType ? typeLabels[selectedType].toLowerCase() : 'project or habit'} to start tracking time
+                Create a {selectedType ? typeLabels[selectedType].toLowerCase() : 'project or activity'} to start tracking time
               </p>
               <Button onClick={() => navigate('/entities/new')}>
                 Create {selectedType ? typeLabels[selectedType] : 'Entity'}
@@ -149,7 +150,7 @@ export function TimeTrackingList() {
                             {entity.title}
                           </h3>
                           <p className="text-xs text-zinc-500">
-                            {entity.type === 'PROJECT' ? '📁 Project' : '🔥 Habit'}
+                            {entity.type === 'PROJECT' ? '📁 Project' : '🔥 Activity'}
                           </p>
                         </div>
                         <button className="text-zinc-400 hover:text-white p-1" onClick={(e) => e.stopPropagation()}>
@@ -157,23 +158,33 @@ export function TimeTrackingList() {
                         </button>
                       </div>
 
-                      {/* Stats */}
-                      <div className="bg-zinc-950/50 rounded-lg p-3 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-zinc-400">Total Time</span>
-                          <span className="font-mono font-bold text-cyan-400">
-                            {summary?.formattedTotal || '00:00:00'}
-                          </span>
+                      {/* Stats - Only for Projects */}
+                      {showTimer && (
+                        <div className="bg-zinc-950/50 rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-zinc-400">Total Time</span>
+                            <span className="font-mono font-bold text-cyan-400">
+                              {summary?.formattedTotal || '00:00:00'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-zinc-400">
+                              {summary?.entriesCount || 0} entries
+                            </span>
+                            <span className="text-zinc-400">
+                              {summary?.totalHours?.toFixed(1) || '0.0'}h
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-zinc-400">
-                            {summary?.entriesCount || 0} entries
-                          </span>
-                          <span className="text-zinc-400">
-                            {summary?.totalHours?.toFixed(1) || '0.0'}h
-                          </span>
-                        </div>
-                      </div>
+                      )}
+
+                      {/* Completion Calendar - Only for Activities */}
+                      {!showTimer && (
+                        <ActivityCompletionCalendar
+                          entityId={entity.id}
+                          trackingDates={entity.trackingDates}
+                        />
+                      )}
 
                       {/* Timer Controls - Only for Projects */}
                       {showTimer && (
