@@ -9,8 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import tech.lemnova.continuum.application.exception.BadRequestException;
 import tech.lemnova.continuum.application.exception.NotFoundException;
 import tech.lemnova.continuum.controller.dto.auth.AuthResponse;
-import tech.lemnova.continuum.controller.dto.auth.LoginRequest;
-import tech.lemnova.continuum.controller.dto.auth.RegisterRequest;
 import tech.lemnova.continuum.controller.dto.auth.UserContextResponse;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
 import tech.lemnova.continuum.domain.plan.PlanType;
