@@ -26,7 +26,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/notes", icon: StickyNote, label: "Notes" },
   { to: "/entities", icon: Network, label: "Entities" },
-  { to: "/time-tracking", icon: Clock, label: "Time Tracking" },
+  { to: "/tracking", icon: Clock, label: "Tracking" },
   { to: "/graph", icon: GitGraph, label: "Graph" },
   // { to: "/vault", icon: HardDrive, label: "Vault" },
   // { to: "/subscription", icon: CreditCard, label: "Subscription" },

@@ -40,7 +40,7 @@ export default function TimeTracking() {
       <div className="p-6 lg:p-8">
         <div className="mb-6">
           <h1 className="text-3xl font-display font-semibold text-white">
-            Time Tracking
+            Tracking
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
             Track time spent on your projects and habits

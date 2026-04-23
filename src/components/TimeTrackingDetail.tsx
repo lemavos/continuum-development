@@ -126,7 +126,7 @@ export function TimeTrackingDetail() {
     return (
       <div className="p-6 text-center">
         <p className="text-zinc-500">Entity not found</p>
-        <Button variant="outline" onClick={() => navigate('/time-tracking')} className="mt-4">
+        <Button variant="outline" onClick={() => navigate('/tracking')} className="mt-4">
           Back to List
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function TimeTrackingDetail() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/time-tracking')}
+          onClick={() => navigate('/tracking')}
           className="h-10 w-10"
         >
           <ArrowLeft className="w-5 h-5" />

@@ -76,11 +76,11 @@ const AppRoutes = () => (
     <Route path="/notes/:id" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
     <Route path="/entities" element={<ProtectedRoute><Entities /></ProtectedRoute>} />
     <Route path="/entities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
-    {/* Time Tracking Routes */}
-    <Route path="/time-tracking" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
+    {/* Tracking Routes */}
+    <Route path="/tracking" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
     <Route path="/projects" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
     {/* Analytics Routes */}
-    <Route path="/time-tracking/:id" element={<ProtectedRoute><TimeTrackingDetail /></ProtectedRoute>} />
+    <Route path="/tracking/:id" element={<ProtectedRoute><TimeTrackingDetail /></ProtectedRoute>} />
     <Route path="/projects/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/habits/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />

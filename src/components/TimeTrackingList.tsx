@@ -60,15 +60,7 @@ export function TimeTrackingList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-display font-semibold text-white">
-            Time Tracking
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Track time spent on your projects and habits
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => navigate('/entities/new')} className="gap-2">
           <FolderOpen className="w-4 h-4" />
           New Project
@@ -147,7 +139,7 @@ export function TimeTrackingList() {
                         ? 'ring-2 ring-cyan-500 bg-cyan-950/20'
                         : 'hover:border-white/20'
                     }`}
-                    onClick={() => navigate(`/time-tracking/${entity.id}`)}
+                    onClick={() => navigate(`/entities/${entity.id}`)}
                   >
                     <div className="space-y-3">
                       {/* Header */}
