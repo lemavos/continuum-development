@@ -9,7 +9,7 @@ RUN ./mvnw dependency:go-offline
 
 # Build the app
 COPY src ./src
-RUN ./mvnw -DskipTests package
+RUN ./mvnw -Dmaven.test.skip=true package
 
 # Extração de camadas (O segredo da velocidade)
 RUN java -Djarmode=layertools -jar target/*SNAPSHOT.jar extract
