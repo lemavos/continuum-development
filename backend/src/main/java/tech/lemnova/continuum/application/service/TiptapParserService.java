@@ -152,10 +152,10 @@ public class TiptapParserService {
             return;
         }
         
-        // Se este nó é uma menção, extrai seu conteúdo
+        // Se este nó é uma menção de entidade, extrai seu conteúdo
         if (node.isObject()) {
             JsonNode typeNode = node.get("type");
-            if (typeNode != null && "mention".equals(typeNode.asText())) {
+            if (typeNode != null && "mention".equals(typeNode.asText()) && !isNoteMentionNode(node)) {
                 Mention mention = extractMentionFromNode(node);
                 if (mention != null) {
                     mentions.add(mention);
@@ -184,16 +184,24 @@ public class TiptapParserService {
         }
         
         if (node.isObject()) {
-            // Verificar se é um link para uma nota
             JsonNode typeNode = node.get("type");
-            if (typeNode != null && "link".equals(typeNode.asText())) {
-                JsonNode hrefNode = node.get("attrs");
-                if (hrefNode != null && hrefNode.has("href")) {
-                    String href = hrefNode.get("href").asText();
-                    if (href.startsWith("note://")) {
-                        String noteId = href.replace("note://", "");
-                        NoteReference ref = new NoteReference(noteId, extractNodeText(node));
-                        references.add(ref);
+            if (typeNode != null) {
+                if ("link".equals(typeNode.asText())) {
+                    JsonNode hrefNode = node.get("attrs");
+                    if (hrefNode != null && hrefNode.has("href")) {
+                        String href = hrefNode.get("href").asText();
+                        if (href.startsWith("note://")) {
+                            String noteId = href.replace("note://", "");
+                            NoteReference ref = new NoteReference(noteId, extractNodeText(node));
+                            references.add(ref);
+                        }
+                    }
+                } else if ("noteMention".equals(typeNode.asText()) || ("mention".equals(typeNode.asText()) && isNoteMentionNode(node))) {
+                    JsonNode attrsNode = node.get("attrs");
+                    if (attrsNode != null && attrsNode.has("id")) {
+                        String noteId = attrsNode.get("id").asText();
+                        String label = attrsNode.has("label") ? attrsNode.get("label").asText() : extractNodeText(node);
+                        references.add(new NoteReference(noteId, label));
                     }
                 }
             }
@@ -208,6 +216,20 @@ public class TiptapParserService {
                 traverseAndExtractNoteReferences(arrayElement, references);
             }
         }
+    }
+
+    private boolean isNoteMentionNode(JsonNode node) {
+        if (node == null || node.isNull() || !node.isObject()) {
+            return false;
+        }
+
+        JsonNode attrsNode = node.get("attrs");
+        if (attrsNode == null || !attrsNode.isObject()) {
+            return false;
+        }
+
+        JsonNode typeNode = attrsNode.get("type");
+        return typeNode != null && "NOTE".equalsIgnoreCase(typeNode.asText());
     }
     
     /**
@@ -226,12 +248,22 @@ public class TiptapParserService {
                 textBuilder.append(textNode.asText()).append(" ");
             }
             
-            // Se é uma menção, adicione seu label
             JsonNode typeNode = node.get("type");
-            if (typeNode != null && "mention".equals(typeNode.asText())) {
-                JsonNode attrsNode = node.get("attrs");
-                if (attrsNode != null && attrsNode.has("label")) {
-                    textBuilder.append("@").append(attrsNode.get("label").asText()).append(" ");
+            if (typeNode != null) {
+                if ("mention".equals(typeNode.asText())) {
+                    JsonNode attrsNode = node.get("attrs");
+                    if (attrsNode != null && attrsNode.has("label")) {
+                        if (attrsNode.has("type") && "NOTE".equalsIgnoreCase(attrsNode.get("type").asText())) {
+                            textBuilder.append(attrsNode.get("label").asText()).append(" ");
+                        } else {
+                            textBuilder.append("@").append(attrsNode.get("label").asText()).append(" ");
+                        }
+                    }
+                } else if ("noteMention".equals(typeNode.asText())) {
+                    JsonNode attrsNode = node.get("attrs");
+                    if (attrsNode != null && attrsNode.has("label")) {
+                        textBuilder.append(attrsNode.get("label").asText()).append(" ");
+                    }
                 }
             }
             

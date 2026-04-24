@@ -67,6 +67,10 @@ export function extractMentionIds(content: unknown): string[] {
     }
 
     if (node.type === "mention" && isRecord(node.attrs) && typeof node.attrs.id === "string" && node.attrs.id) {
+      const attrs = node.attrs as JsonRecord;
+      if (attrs.type === "NOTE") {
+        return;
+      }
       ids.add(node.attrs.id);
     }
 
@@ -81,8 +85,16 @@ export function extractMentionIds(content: unknown): string[] {
 }
 
 const sanitizeNode = (node: TiptapNode, entitiesById: Map<string, Entity>, removedIds: Set<string>): TiptapNode => {
+  if (node.type === "noteMention") {
+    return node;
+  }
+
   if (node.type === "mention") {
     const attrs = isRecord(node.attrs) ? node.attrs : {};
+    if (attrs.type === "NOTE") {
+      return node;
+    }
+
     const mentionId = typeof attrs.id === "string" ? attrs.id : "";
     const fallbackLabel =
       typeof attrs.label === "string"
@@ -143,7 +155,7 @@ export function tiptapContentToPlainText(content: unknown): string {
       return typeof node.text === "string" ? node.text : "";
     }
 
-    if (node.type === "mention") {
+    if (node.type === "mention" || node.type === "noteMention") {
       const attrs = isRecord(node.attrs) ? node.attrs : {};
       const label =
         typeof attrs.label === "string"
@@ -152,7 +164,11 @@ export function tiptapContentToPlainText(content: unknown): string {
             ? attrs.id
             : "entidade";
 
-      return label.startsWith("@") ? label : `@${label}`;
+      if (node.type === "mention") {
+        return label.startsWith("@") ? label : `@${label}`;
+      }
+
+      return label;
     }
 
     const contentText = Array.isArray(node.content)

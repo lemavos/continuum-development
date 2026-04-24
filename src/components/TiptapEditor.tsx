@@ -16,13 +16,21 @@ import {
 import { ReactRenderer } from "@tiptap/react";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
-import { entitiesApi } from "@/lib/api";
+import { entitiesApi, notesApi } from "@/lib/api";
 import type { Entity } from "@/types";
 
-/* ── Mention suggestion list ── */
+interface NoteSuggestion {
+  id: string;
+  title: string;
+  type: "NOTE";
+}
+
+type MentionItem = Entity | NoteSuggestion;
+
 interface MentionListProps {
-  items: Entity[];
-  command: (attrs: { id: string; label: string }) => void;
+  items: MentionItem[];
+  command: (attrs: { id: string; label: string; type?: string }) => void;
+  emptyMessage: string;
 }
 
 interface MentionListRef {
@@ -30,14 +38,20 @@ interface MentionListRef {
 }
 
 const MentionList = forwardRef<MentionListRef, MentionListProps>(
-  ({ items, command }, ref) => {
+  ({ items, command, emptyMessage }, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     useEffect(() => setSelectedIndex(0), [items]);
 
     const selectItem = (index: number) => {
       const item = items[index];
-      if (item) command({ id: item.id, label: item.title });
+      if (item) {
+        if (item.type === "NOTE") {
+          command({ id: item.id, label: item.title, type: "NOTE" });
+        } else {
+          command({ id: item.id, label: item.title });
+        }
+      }
     };
 
     useImperativeHandle(ref, () => ({
@@ -61,7 +75,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
     if (!items.length) {
       return (
         <div className="rounded-lg border border-border bg-popover p-2 shadow-xl">
-          <p className="px-2 py-1 text-xs text-muted-foreground">No entities found</p>
+          <p className="px-2 py-1 text-xs text-muted-foreground">{emptyMessage}</p>
         </div>
       );
     }
@@ -79,7 +93,17 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
             }`}
           >
             <span className="text-xs opacity-60">
-              {item.type === "HABIT" ? "🟢" : item.type === "PERSON" ? "🟡" : item.type === "PROJECT" ? "🔵" : item.type === "ORGANIZATION" ? "🟠" : "🟣"}
+              {item.type === "NOTE"
+                ? "📝"
+                : item.type === "HABIT"
+                ? "🟢"
+                : item.type === "PERSON"
+                ? "🟡"
+                : item.type === "PROJECT"
+                ? "🔵"
+                : item.type === "ORGANIZATION"
+                ? "🟠"
+                : "🟣"}
             </span>
             <span className="truncate">{item.title}</span>
           </button>
@@ -90,17 +114,28 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
 );
 MentionList.displayName = "MentionList";
 
+const NoteMention = Mention.extend({
+  name: "noteMention",
+});
+
 /* ── Suggestion plugin config ── */
-interface EntityCacheState {
+interface CacheState<T> {
   token: string | null;
   fetchedAt: number;
-  entities: Entity[];
-  pending: Promise<Entity[]> | null;
+  entities: T[];
+  pending: Promise<T[]> | null;
 }
 
 const ENTITY_CACHE_TTL = 5000;
 
-const entityCache: EntityCacheState = {
+const entityCache: CacheState<Entity> = {
+  token: null,
+  fetchedAt: 0,
+  entities: [],
+  pending: null,
+};
+
+const noteCache: CacheState<NoteSuggestion> = {
   token: null,
   fetchedAt: 0,
   entities: [],
@@ -112,6 +147,13 @@ const resetEntityCache = () => {
   entityCache.fetchedAt = 0;
   entityCache.entities = [];
   entityCache.pending = null;
+};
+
+const resetNoteCache = () => {
+  noteCache.token = null;
+  noteCache.fetchedAt = 0;
+  noteCache.entities = [];
+  noteCache.pending = null;
 };
 
 const loadEntities = async () => {
@@ -151,6 +193,47 @@ const loadEntities = async () => {
   return entityCache.pending;
 };
 
+const loadNotes = async () => {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null;
+  const now = Date.now();
+
+  if (noteCache.token !== token) {
+    resetNoteCache();
+    noteCache.token = token;
+  }
+
+  if (noteCache.pending) {
+    return noteCache.pending;
+  }
+
+  if (noteCache.entities.length > 0 && now - noteCache.fetchedAt < ENTITY_CACHE_TTL) {
+    return noteCache.entities;
+  }
+
+  noteCache.pending = notesApi
+    .list()
+    .then(({ data }) => {
+      const nextNotes = Array.isArray(data) ? data : [];
+      noteCache.entities = nextNotes.map((note) => ({
+        id: note.id,
+        title: note.title,
+        type: "NOTE",
+      }));
+      noteCache.fetchedAt = Date.now();
+      return noteCache.entities;
+    })
+    .catch(() => {
+      noteCache.entities = [];
+      noteCache.fetchedAt = 0;
+      return [];
+    })
+    .finally(() => {
+      noteCache.pending = null;
+    });
+
+  return noteCache.pending;
+};
+
 const mentionSuggestion = {
   char: "@",
   items: async ({ query }: { query: string }) => {
@@ -167,7 +250,7 @@ const mentionSuggestion = {
     return {
       onStart: (props: SuggestionProps<Entity>) => {
         component = new ReactRenderer(MentionList, {
-          props,
+          props: { ...props, emptyMessage: "No entities found" },
           editor: props.editor,
         });
 
@@ -206,11 +289,62 @@ const mentionSuggestion = {
   },
 };
 
-/* ── Bracket link suggestion (same as mention but with [[) ── */
-const bracketSuggestion = {
+/* ── Bracket link suggestion builder (same as mention but with [[) ── */
+const createBracketSuggestion = (currentNoteId?: string) => ({
   ...mentionSuggestion,
   char: "[[",
-};
+  items: async ({ query }: { query: string }) => {
+    const notes = await loadNotes();
+    return notes
+      .filter((note) => note.id !== currentNoteId)
+      .filter((note) => note.title.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 8);
+  },
+  render: () => {
+    let component: ReactRenderer<MentionListRef> | null = null;
+    let popup: TippyInstance[] | null = null;
+
+    return {
+      onStart: (props: SuggestionProps<MentionItem>) => {
+        component = new ReactRenderer(MentionList, {
+          props: { ...props, emptyMessage: "No notes found" },
+          editor: props.editor,
+        });
+
+        if (!props.clientRect) return;
+
+        popup = tippy("body", {
+          getReferenceClientRect: props.clientRect as () => DOMRect,
+          appendTo: () => document.body,
+          content: component.element,
+          showOnCreate: true,
+          interactive: true,
+          trigger: "manual",
+          placement: "bottom-start",
+        });
+      },
+      onUpdate(props: SuggestionProps<MentionItem>) {
+        component?.updateProps(props);
+        if (props.clientRect) {
+          popup?.[0]?.setProps({
+            getReferenceClientRect: props.clientRect as () => DOMRect,
+          });
+        }
+      },
+      onKeyDown(props: SuggestionKeyDownProps) {
+        if (props.event.key === "Escape") {
+          popup?.[0]?.hide();
+          return true;
+        }
+        return component?.ref?.onKeyDown(props) ?? false;
+      },
+      onExit() {
+        popup?.[0]?.destroy();
+        component?.destroy();
+      },
+    };
+  },
+});
 
 /* ── Editor component ── */
 export interface TiptapEditorHandle {
@@ -225,10 +359,11 @@ interface TiptapEditorProps {
   onChange?: (json: any) => void;
   editable?: boolean;
   className?: string;
+  currentNoteId?: string;
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
-  ({ content, onChange, editable = true, className }, ref) => {
+  ({ content, onChange, editable = true, className, currentNoteId }, ref) => {
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
 
@@ -238,7 +373,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           heading: { levels: [1, 2, 3] },
         }),
         Placeholder.configure({
-          placeholder: "Start writing or use @ to mention entities",
+          placeholder: "Start writing or use @ to mention entities or [[ to link notes",
         }),
         LinkExtension.configure({
           openOnClick: false,
@@ -251,6 +386,12 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
             class: "mention bg-primary/10 text-primary rounded px-1 py-0.5 font-medium text-sm",
           },
           suggestion: mentionSuggestion,
+        }),
+        NoteMention.configure({
+          HTMLAttributes: {
+            class: "mention bg-secondary/10 text-secondary rounded px-1 py-0.5 font-medium text-sm",
+          },
+          suggestion: createBracketSuggestion(currentNoteId),
         }),
       ],
       content: content || "",
@@ -286,11 +427,15 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
       if (editor) editor.setEditable(editable);
     }, [editor, editable]);
 
-    // Invalidate entity cache periodically
+    // Invalidate entity and note caches periodically
     useEffect(() => {
       resetEntityCache();
+      resetNoteCache();
 
-      const handleFocus = () => resetEntityCache();
+      const handleFocus = () => {
+        resetEntityCache();
+        resetNoteCache();
+      };
       window.addEventListener("focus", handleFocus);
 
       return () => {

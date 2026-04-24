@@ -167,7 +167,7 @@ public class NoteService {
             try {
                 // Validar que a nota target existe
                 Note targetNote = noteRepo.findById(noteRef.noteId).orElse(null);
-                if (targetNote != null && targetNote.getUserId().equals(userId)) {
+                if (targetNote != null && targetNote.getUserId().equals(userId) && !targetNote.getId().equals(noteId)) {
                     // Criar NoteLink entre notas
                     NoteLink link = NoteLink.builder()
                             .sourceNoteId(noteId)
@@ -263,7 +263,7 @@ public class NoteService {
             for (TiptapParserService.NoteReference noteRef : noteReferences) {
                 try {
                     Note targetNote = noteRepo.findById(noteRef.noteId).orElse(null);
-                    if (targetNote != null && targetNote.getUserId().equals(userId)) {
+                    if (targetNote != null && targetNote.getUserId().equals(userId) && !targetNote.getId().equals(noteId)) {
                         NoteLink link = NoteLink.builder()
                                 .sourceNoteId(noteId)
                                 .targetNoteId(noteRef.noteId)

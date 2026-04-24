@@ -342,6 +342,7 @@ export default function NoteEditor() {
                 ref={editorRef}
                 content={currentJSON.current}
                 onChange={handleEditorChange}
+                currentNoteId={note?.id}
               />
             )}
           </div>

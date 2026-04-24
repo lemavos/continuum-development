@@ -1,26 +1,24 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { entitiesApi, trackingApi } from "@/lib/api";
+import { entitiesApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, CheckCircle, Loader2, Trash2, Play, Pause, Clock } from "lucide-react";
+import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, Loader2, Trash2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { EntityType } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
+import type { EntityType } from "@/types";
 
 interface Entity { id: string; title: string; type: EntityType; description?: string; createdAt: string; trackingDates?: string[]; }
 
 const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, HABIT: Flame };
 const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Habit" };
-// Timer only available for Projects
-const timerableTypes = ['PROJECT'];
 
 // Dynamic badge colors based on type
 function getEntityBadgeColor(type: EntityType): string {
@@ -36,7 +34,6 @@ function getEntityBadgeColor(type: EntityType): string {
 
 export default function Entities() {
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [todayEvents, setTodayEvents] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,35 +49,17 @@ export default function Entities() {
   const [creating, setCreating] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Time tracking
-  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimers, isTimerActive, getElapsedSeconds, isStarting, isStopping } = useTimeTracking();
-  const { data: timeSummaries } = getAllSummaries();
+  const { data: timeSummaries } = useTimeTracking().getAllSummaries();
 
   const getTimeSummaryForEntity = (entityId: string) => {
     return timeSummaries?.find(s => s.entityId === entityId);
   };
 
-  const handleStartTimer = (entityId: string) => {
-    console.log('Starting timer for entity:', entityId);
-    startTimer(entityId);
-  };
-
-  const handleStopTimer = (entityId: string) => {
-    console.log('Stopping timer for entity:', entityId);
-    const activeTimerData = activeTimers.get(entityId);
-    if (activeTimerData) {
-      stopTimer({ sessionId: activeTimerData.timerId, note: '' });
-    } else {
-      console.error('No active timer to stop');
-    }
-  };
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [eRes, tRes] = await Promise.all([entitiesApi.list(), trackingApi.today()]);
+      const eRes = await entitiesApi.list();
       setEntities(Array.isArray(eRes.data) ? eRes.data : []);
-      setTodayEvents(Array.isArray(tRes.data) ? tRes.data : []);
     } catch { toast({ title: "Error loading entities", variant: "destructive" }); }
     finally { setLoading(false); }
   };
@@ -103,33 +82,8 @@ export default function Entities() {
     } finally { setCreating(false); }
   };
 
-  const handleTrack = async (entityId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      const today = new Date().toISOString().split("T")[0];
 
-      await entitiesApi.track(entityId);
-
-      setEntities((prev) =>
-        prev.map((ent) =>
-          ent.id === entityId
-            ? {
-                ...ent,
-                trackingDates: Array.from(
-                  new Set([...(ent.trackingDates || []).map((date) => date.split("T")[0]), today])
-                ),
-              }
-            : ent
-        )
-      );
-
-      toast({ title: "Habit tracked! 🔥" });
-    } catch {
-      toast({ title: "Error registering", variant: "destructive" });
-    }
-  };
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: MouseEvent) => {
     e.stopPropagation();
     try {
       const entity = entities.find((item) => item.id === id);
@@ -140,9 +94,6 @@ export default function Entities() {
     }
     catch { toast({ title: "Error deleting", variant: "destructive" }); }
   };
-
-  const today = new Date().toISOString().split("T")[0];
-  const isTrackedToday = (entity: Entity) => entity.trackingDates?.some((date) => date.startsWith(today)) ?? false;
 
   const filtered = entities.filter((e) => {
     const matchSearch = e.title.toLowerCase().includes(search.toLowerCase());
@@ -222,7 +173,6 @@ export default function Entities() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((entity) => {
               const Icon = typeIcons[entity.type] || Network;
-              const tracked = isTrackedToday(entity);
               const streak = entity.trackingDates?.length || 0;
               
               return (
@@ -251,61 +201,24 @@ export default function Entities() {
 
                   {/* Footer - Track/Streak and Delete */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 gap-2">
-                    {(entity.type === "HABIT" || entity.type === "PROJECT") ? (
-                      <div className="flex items-center gap-1">
-                        {entity.type === "HABIT" && streak > 0 && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
-                            <Flame className="w-3.5 h-3.5 text-rose-400" />
-                            <span className="text-xs font-semibold text-rose-200">{streak}</span>
-                          </div>
-                        )}
-                        {entity.type === "PROJECT" && (() => {
-                          const summary = getTimeSummaryForEntity(entity.id);
-                          return summary ? (
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30">
-                              <Clock className="w-3.5 h-3.5 text-blue-400" />
-                              <span className="text-xs font-semibold text-blue-200">{summary.formattedTotal}</span>
-                            </div>
-                          ) : null;
-                        })()}
-                        <div className="flex items-center gap-1">
-                          {entity.type === "HABIT" && (
-                            <button
-                              onClick={(e) => handleTrack(entity.id, e)}
-                              className={cn(
-                                "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border",
-                                tracked
-                                  ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/30"
-                                  : "bg-white/10 text-white/70 border-white/20 hover:bg-white/20"
-                              )}
-                            >
-                              <CheckCircle className="w-3 h-3" /> {tracked ? "Done" : "Track"}
-                            </button>
-                          )}
-                          {entity.type === "PROJECT" && (
-                            <>
-                              {isTimerActive(entity.id) ? (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleStopTimer(entity.id); }}
-                                  disabled={isStopping}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border bg-red-500/20 text-red-200 border-red-500/30 hover:bg-red-500/30"
-                                >
-                                  <Pause className="w-3 h-3" /> {isStopping ? "..." : "Stop"}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleStartTimer(entity.id); }}
-                                  disabled={isStarting}
-                                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors border bg-green-500/20 text-green-200 border-green-500/30 hover:bg-green-500/30"
-                                >
-                                  <Play className="w-3 h-3" /> {isStarting ? "..." : "Timer"}
-                                </button>
-                              )}
-                            </>
-                          )}
+                          <div className="flex items-center gap-1">
+                      {entity.type === "HABIT" && streak > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
+                          <Flame className="w-3.5 h-3.5 text-rose-400" />
+                          <span className="text-xs font-semibold text-rose-200">{streak}</span>
                         </div>
-                      </div>
-                    ) : streak > 0 ? (
+                      )}
+                      {entity.type === "PROJECT" && (() => {
+                        const summary = getTimeSummaryForEntity(entity.id);
+                        return summary ? (
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                            <Clock className="w-3.5 h-3.5 text-blue-400" />
+                            <span className="text-xs font-semibold text-blue-200">{summary.formattedTotal}</span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : streak > 0 ? (
                       <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/30">
                         <Flame className="w-3.5 h-3.5 text-purple-400" />
                         <span className="text-xs font-semibold text-purple-200">{streak}</span>
