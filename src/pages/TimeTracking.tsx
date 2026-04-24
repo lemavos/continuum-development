@@ -1,4 +1,3 @@
-// This file has been removed - time tracking is now integrated into entities
 import AppLayout from "@/components/AppLayout";
 import { TimeTrackingList } from "@/components/TimeTrackingList";
 

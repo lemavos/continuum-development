@@ -47,7 +47,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(
       const item = items[index];
       if (item) {
         if (item.type === "NOTE") {
-          command({ id: item.id, label: item.title, type: "NOTE" });
+          (command as any)({ id: item.id, label: item.title, type: "NOTE" });
         } else {
           command({ id: item.id, label: item.title });
         }
