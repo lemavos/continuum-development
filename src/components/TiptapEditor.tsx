@@ -118,7 +118,7 @@ const NoteMention = Mention.extend({
   name: "noteMention",
   addAttributes() {
     return {
-      ...this.parent?.(),
+      ...this.parent(),
       type: {
         default: null,
         parseHTML: element => element.getAttribute('data-type'),
