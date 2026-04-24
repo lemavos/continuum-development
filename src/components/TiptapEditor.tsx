@@ -305,7 +305,7 @@ const createBracketSuggestion = (currentNoteId?: string) => ({
     let popup: TippyInstance[] | null = null;
 
     return {
-      onStart: (props: SuggestionProps<MentionItem>) => {
+      onStart: (props: SuggestionProps<any>) => {
         component = new ReactRenderer(MentionList, {
           props: { ...props, emptyMessage: "No notes found" },
           editor: props.editor,
@@ -323,7 +323,7 @@ const createBracketSuggestion = (currentNoteId?: string) => ({
           placement: "bottom-start",
         });
       },
-      onUpdate(props: SuggestionProps<MentionItem>) {
+      onUpdate(props: SuggestionProps<any>) {
         component?.updateProps(props);
         if (props.clientRect) {
           popup?.[0]?.setProps({
