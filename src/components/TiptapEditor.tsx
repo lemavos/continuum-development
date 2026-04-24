@@ -116,6 +116,23 @@ MentionList.displayName = "MentionList";
 
 const NoteMention = Mention.extend({
   name: "noteMention",
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      type: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-type'),
+        renderHTML: attributes => {
+          if (!attributes.type) {
+            return {}
+          }
+          return {
+            'data-type': attributes.type
+          }
+        }
+      }
+    }
+  }
 });
 
 /* ── Suggestion plugin config ── */
