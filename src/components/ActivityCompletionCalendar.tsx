@@ -84,10 +84,10 @@ export function ActivityCompletionCalendar({
             <div
               key={index}
               className={`
-                aspect-square rounded-md flex items-center justify-center text-xs font-medium
+                aspect-square rounded-md overflow-hidden relative text-xs font-medium
                 transition-all border
                 ${isCompleted
-                  ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                  ? 'border-emerald-500/50 text-emerald-400'
                   : isToday
                   ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
                   : 'bg-zinc-900/50 border-zinc-700 text-zinc-600'
@@ -95,8 +95,13 @@ export function ActivityCompletionCalendar({
               `}
               title={format(date, 'MMM d')}
             >
-              {isCompleted && <Check className="w-3 h-3" />}
-              {isToday && !isCompleted && <span>•</span>}
+              {isCompleted ? (
+                <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </div>
+              ) : isToday ? (
+                <span>•</span>
+              ) : null}
             </div>
           );
         })}

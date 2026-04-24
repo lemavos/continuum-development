@@ -1,40 +1,8 @@
 // This file has been removed - time tracking is now integrated into entities
-import { useState } from 'react';
 import AppLayout from "@/components/AppLayout";
 import { TimeTrackingList } from "@/components/TimeTrackingList";
-import { TimeAnalyticsCalendar } from "@/components/TimeAnalyticsCalendar";
-import { DayDetailsModal } from "@/components/DayDetailsModal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface DayData {
-  date: Date;
-  totalSeconds: number;
-  entries: Array<{
-    id: string;
-    entityId: string;
-    entityTitle?: string;
-    durationSeconds: number;
-    note?: string;
-  }>;
-}
-
-/**
- * Time Tracking Overview - Lists all projects with timer controls
- */
 export default function TimeTracking() {
-  const [selectedDayData, setSelectedDayData] = useState<DayData | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleDayClick = (dayData: DayData) => {
-    setSelectedDayData(dayData);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedDayData(null);
-  };
-
   return (
     <AppLayout>
       <div className="p-6 lg:p-8">
@@ -47,11 +15,7 @@ export default function TimeTracking() {
           </p>
         </div>
 
-        <DayDetailsModal
-          dayData={selectedDayData}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        />
+        <TimeTrackingList />
       </div>
     </AppLayout>
   );
