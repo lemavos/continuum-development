@@ -1,5 +1,6 @@
 [run]
-build = "cd frontend && npm install && npm run build"
+cwd = "frontend"
+build = "npm install && npm run build"
 
 [deploy]
-publish = "frontend/dist"
+publish = "dist"
