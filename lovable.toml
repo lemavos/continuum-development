@@ -1,8 +1,5 @@
-[project]
-root = "frontend"
-
 [run]
-build = "npm install && npm run build"
+build = "npm run build"
 
 [deploy]
 publish = "dist"
