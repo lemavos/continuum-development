@@ -1,5 +1,8 @@
+[project]
+root = "frontend"
+
 [run]
-build = "npm --prefix frontend run build-all"
+build = "npm run build-all"
 
 [deploy]
-publish = "frontend/dist"
+publish = "dist"
