@@ -1,6 +1,5 @@
 [run]
-cwd = "frontend"
-build = "npm run build-all"
+build = "./build.sh"
 
 [deploy]
-publish = "dist"
+publish = "frontend/dist"
