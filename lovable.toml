@@ -2,7 +2,7 @@
 root = "frontend"
 
 [run]
-build = "npm run build-all"
+build = "npm install && npm run build"
 
 [deploy]
 publish = "dist"
