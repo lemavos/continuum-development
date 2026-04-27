@@ -34,8 +34,8 @@ public class JwtService {
 
     private final Environment env;
 
-    // Access Token: 15 minutos (900000 ms)
-    @Value("${jwt.access-token.expiration:900000}")
+    // Access Token: 1 hora (3600000 ms) - suficiente para flowos de OAuth sem expiração imediata
+    @Value("${jwt.access-token.expiration:3600000}")
     private long accessTokenExpirationMs;
 
     // Refresh Token: 7 dias (604800000 ms)
@@ -101,7 +101,9 @@ public class JwtService {
     }
 
     /**
-     * Gera um Access Token com curta duração (15 minutos).
+     * Gera um Access Token com duração de 1 hora.
+     * Suficiente para fluxos OAuth e operações normais do aplicativo.
+     * Use refresh token para renovar quando expirado.
      */
     public String generateAccessToken(String userId, String username, String email, String vaultId) {
         return Jwts.builder()

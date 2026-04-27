@@ -45,16 +45,20 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found after OAuth2 login"));
 
-        // Gerar JWT Access Token com vaultId
-        String jwtToken = jwtService.generateAccessToken(
+        // Gerar ambos os tokens (Access e Refresh)
+        JwtService.TokenPair tokenPair = jwtService.generateTokenPair(
                 user.getId().toString(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getVaultId()
         );
 
-        // Redirecionar para o frontend com o token na URL
-        String redirectUrl = frontendUrl + "/login-success?token=" + URLEncoder.encode(jwtToken, StandardCharsets.UTF_8);
+        // Redirecionar para o frontend com ambos os tokens
+        String redirectUrl = frontendUrl + "/login-success?" +
+                "token=" + URLEncoder.encode(tokenPair.accessToken, StandardCharsets.UTF_8) +
+                "&refreshToken=" + URLEncoder.encode(tokenPair.refreshToken, StandardCharsets.UTF_8) +
+                "&vaultId=" + URLEncoder.encode(user.getVaultId(), StandardCharsets.UTF_8);
+        
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
