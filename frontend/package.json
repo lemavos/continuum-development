@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && cp dist/index.html dist/404.html",
+    "build-all": "npm install && npm run build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
