@@ -55,8 +55,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // Redirecionar para o frontend com ambos os tokens
         String redirectUrl = frontendUrl + "/login-success?" +
-                "token=" + URLEncoder.encode(tokenPair.accessToken, StandardCharsets.UTF_8) +
-                "&refreshToken=" + URLEncoder.encode(tokenPair.refreshToken, StandardCharsets.UTF_8) +
+                "token=" + URLEncoder.encode(tokenPair.accessToken(), StandardCharsets.UTF_8) +
+                "&refreshToken=" + URLEncoder.encode(tokenPair.refreshToken(), StandardCharsets.UTF_8) +
                 "&vaultId=" + URLEncoder.encode(user.getVaultId(), StandardCharsets.UTF_8);
         
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
