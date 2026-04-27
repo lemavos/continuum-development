@@ -1,5 +1,5 @@
 [run]
-build = "./build.sh"
+build = "npm --prefix frontend run build-all"
 
 [deploy]
 publish = "frontend/dist"
