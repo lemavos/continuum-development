@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const LoginSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -15,24 +16,27 @@ const LoginSuccess = () => {
       if (vaultId) {
         localStorage.setItem("vaultId", vaultId);
       }
-      
-      // Redirect immediately
-      navigate("/", { replace: true });
-    } else {
-      // Se não tem token, vai direto pra home
-      navigate("/", { replace: true });
     }
+
+    // Pequeno delay para mostrar o loading
+    setTimeout(() => {
+      setLoading(false);
+      navigate("/", { replace: true });
+    }, 1000);
   }, [searchParams, navigate]);
 
-  // While redirecting, show loading
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Autenticando...</p>
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Autenticando...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 export default LoginSuccess;
