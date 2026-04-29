@@ -24,7 +24,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    @Value("${app.url:http://localhost:5173}")
+    @Value("${frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
     // Adicionamos o @Lazy aqui também porque esta classe faz parte do nó

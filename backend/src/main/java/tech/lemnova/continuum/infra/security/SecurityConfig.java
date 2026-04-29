@@ -33,7 +33,7 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
 
     // Alterado para a porta 5173 (Vite padrão)
-    @Value("${cors.allowed.origins:http://localhost:5173}")
+    @Value("${cors.allowed.origins:*}")
     private String corsAllowedOrigins;
 
     @Value("${app.url:http://localhost:5173}")
@@ -58,14 +58,23 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
-                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'"))
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src *; " +
+                    "script-src * 'unsafe-inline' 'unsafe-eval'; " +
+                    "style-src * 'unsafe-inline'; " +
+                    "font-src *; " +
+                    "img-src * data:; " +
+                    "connect-src *; " +
+                    "frame-src *; " +
+                    "frame-ancestors *"
+                ))
                 .frameOptions(frameOptions -> frameOptions.deny())
                 .xssProtection(xss -> xss.headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/health", "/error", "/actuator/**").permitAll()
                 .requestMatchers("/api/webhooks/**", "/webhooks/**").permitAll()
-                .requestMatchers("/oauth2/**", "/oauth2/authorization/**", "/login/**").permitAll()
+                .requestMatchers("/oauth2/**", "/oauth2/authorization/**", "/login/**", "/login/oauth2/**").permitAll()
                 
                 // ONLY OAuth2 callback and JWT refresh are allowed (no legacy password-based auth)
                 .requestMatchers(HttpMethod.POST,
@@ -89,6 +98,7 @@ public class SecurityConfig {
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))
                 .successHandler(oauth2SuccessHandler)
+                .failureUrl("/login?error=true")
             )
             .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
@@ -101,19 +111,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         
-        // Suporta múltiplas origens separadas por vírgula
-        List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toList());
-            
-        config.setAllowedOrigins(origins);
+        // Permitir todas as origens temporariamente
+        config.setAllowedOriginPatterns(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-Requested-With",
-                "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
-        config.setExposedHeaders(Arrays.asList(
-                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setExposedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
