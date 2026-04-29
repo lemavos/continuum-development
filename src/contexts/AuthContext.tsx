@@ -71,9 +71,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const API_BASE_URL = getAPIBaseURL();
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
-    return Promise.resolve();
+    try {
+      const API_BASE_URL = getAPIBaseURL();
+      console.log("Testando conexão com backend...");
+      
+      // Testar se o backend está respondendo
+      const testResponse = await fetch(`${API_BASE_URL}/api/auth/test-oauth`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      console.log("Teste backend:", testResponse.status, await testResponse.text());
+      
+      // Agora tentar OAuth
+      console.log("Iniciando login OAuth2:", `${API_BASE_URL}/oauth2/authorization/google`);
+      window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+      
+    } catch (error) {
+      console.error("Erro na conexão:", error);
+      // Fallback
+      const API_BASE_URL = getAPIBaseURL();
+      window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    }
   };
 
   const register = async (username: string, email: string, password: string) => {

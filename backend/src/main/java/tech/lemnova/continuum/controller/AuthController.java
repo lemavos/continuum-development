@@ -125,15 +125,10 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Email verification not implemented"));
     }
 
-    @GetMapping("/me")
-    @Operation(summary = "Get current user context", description = "Returns authenticated user's profile and authorization details")
-    public ResponseEntity<UserContextResponse> me(@AuthenticationPrincipal CustomUserDetails user) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        try { return ResponseEntity.ok(authService.getContext(user.getUserId())); }
-        catch (Exception e) {
-            log.error("Failed to build user context for {}: {}", user.getUserId(), e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    @GetMapping("/test-oauth")
+    @Operation(summary = "Test OAuth endpoint", description = "Test if OAuth is working")
+    public ResponseEntity<String> testOAuth() {
+        return ResponseEntity.ok("OAuth endpoint is working. Redirect URI configured: https://continuum-backend.onrender.com/login/oauth2/code/google");
     }
 }
 
