@@ -11,10 +11,9 @@ const LoginSuccess = () => {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    const refreshToken = searchParams.get("refreshToken");
     const vaultId = searchParams.get("vaultId");
 
-    setDebugInfo(`Token: ${token ? 'present' : 'missing'}, RefreshToken: ${refreshToken ? 'present' : 'missing'}, VaultId: ${vaultId || 'none'}`);
+    setDebugInfo(`Token: ${token ? 'present' : 'missing'}, VaultId: ${vaultId || 'none'}`);
 
     if (!token) {
       setError("Token de autenticação não encontrado nos parâmetros da URL. Verifique se o login foi concluído corretamente.");
@@ -26,9 +25,6 @@ const LoginSuccess = () => {
 
     try {
       localStorage.setItem("access_token", token);
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken);
-      }
       if (vaultId) {
         localStorage.setItem("vaultId", vaultId);
       }
