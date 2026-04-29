@@ -11,26 +11,34 @@ import {
   Search,
   LogOut,
   User,
-  HardDrive,
-  CreditCard,
   Menu,
   X,
   Loader2,
   GitGraph,
   Settings,
   Clock,
+  HelpCircle,
+  FolderOpen,
+  Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Sidebar, SidebarItem, SidebarGroup, MobileSidebar } from "@/components/sidebar";
 
-const navItems = [
+const primaryItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/notes", icon: StickyNote, label: "Notes" },
   { to: "/entities", icon: Network, label: "Entities" },
   { to: "/tracking", icon: Clock, label: "Tracking" },
-  { to: "/graph", icon: GitGraph, label: "Graph" },
-  // { to: "/vault", icon: HardDrive, label: "Vault" },
-  // { to: "/subscription", icon: CreditCard, label: "Subscription" },
-  { to: "/profile", icon: Settings, label: "Profile" },
+];
+
+const activityItems = [
+  { to: "/", icon: LayoutDashboard, label: "Overview" },
+  { to: "/graph", icon: GitGraph, label: "Analytics" },
+  { to: "/projects", icon: FolderOpen, label: "Projects" },
+];
+
+const footerItems = [
+  { to: "/profile", icon: Settings, label: "Settings" },
 ];
 
 interface SearchResult {
@@ -45,6 +53,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -57,13 +66,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const handleSearch = async (q: string) => {
     setSearchQuery(q);
-    if (q.length < 2) { setSearchResults([]); return; }
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
     setSearching(true);
     try {
       const { data } = await searchApi.search(q);
       setSearchResults(Array.isArray(data) ? data.slice(0, 8) : []);
-    } catch { setSearchResults([]); }
-    finally { setSearching(false); }
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
   };
 
   const handleResultClick = (result: SearchResult) => {
@@ -75,130 +90,256 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     setSidebarOpen(false);
   };
 
-  const sidebar = (
-    <>
-      <div className="p-5 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold tracking-tight text-slate-50">
-          Continuum
-        </h2>
-        <button className="lg:hidden p-1 rounded hover:bg-accent" onClick={() => setSidebarOpen(false)}>
-          <X className="w-5 h-5 text-muted-foreground" />
-        </button>
-      </div>
+  const handleHelpClick = () => {
+    window.open("mailto:support@continuum.app", "_blank", "noopener noreferrer");
+  };
 
-      <div className="px-4 pb-4 relative" data-sidebar="search-container">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search... ⌘K"
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-            className="pl-9 h-8 text-xs bg-accent border-border/50"
-          />
-          {searching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-muted-foreground" />
+  const desktopSidebar = (
+    <Sidebar
+      expanded={!sidebarCollapsed}
+      onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+    >
+      <div className="space-y-4 px-2 pb-4">
+        <div className="rounded-3xl bg-white/5 p-3 shadow-[0_20px_50px_rgba(255,255,255,0.04)]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search... ⌘K"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+              className="pl-10 h-11 rounded-3xl bg-[#11151f]/90 border border-white/10 text-sm text-slate-100 placeholder:text-slate-500"
+            />
+            {searching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+            )}
+          </div>
+          {searchFocused && searchResults.length > 0 && (
+            <div className="mt-3 space-y-1 rounded-3xl border border-white/10 bg-[#0b0f17]/98 p-2 shadow-[0_30px_50px_rgba(0,0,0,0.35)]">
+              {searchResults.map((result) => (
+                <button
+                  key={`${result.type}-${result.id}`}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleResultClick(result)}
+                  className="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-200 hover:bg-white/5"
+                >
+                  {result.type === "NOTE" ? (
+                    <StickyNote className="h-4 w-4 text-sky-300" />
+                  ) : (
+                    <Network className="h-4 w-4 text-slate-400" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-slate-100">{result.title}</p>
+                    {result.snippet && <p className="mt-1 text-[11px] text-slate-500 line-clamp-1">{result.snippet}</p>}
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
-        {searchFocused && searchResults.length > 0 && (
-          <div className="absolute left-4 right-4 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-            {searchResults.map((r) => (
-              <button
-                key={`${r.type}-${r.id}`}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => handleResultClick(r)}
-                className="w-full px-3 py-2 text-left hover:bg-accent transition-colors flex items-center gap-2"
-              >
-                {r.type === "NOTE" ? (
-                  <StickyNote className="w-3.5 h-3.5 text-primary shrink-0" />
-                ) : (
-                  <Network className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm text-foreground truncate">{r.title}</p>
-                  {r.snippet && <p className="text-xs text-muted-foreground truncate">{r.snippet}</p>}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
-      <nav className="flex-1 px-3 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
-          return (
-            <Link
+        <nav className="space-y-1">
+          {primaryItems.map((item) => (
+            <SidebarItem
               key={item.to}
+              icon={item.icon}
+              label={item.label}
               to={item.to}
+              collapsed={sidebarCollapsed}
               onClick={() => setSidebarOpen(false)}
+            />
+          ))}
+        </nav>
+
+        <div className="rounded-3xl bg-white/5 p-3">
+          <SidebarGroup
+            title="Activity"
+            icon={Activity}
+            items={activityItems}
+            collapsed={sidebarCollapsed}
+            activePath={location.pathname}
+            onItemClick={() => setSidebarOpen(false)}
+          />
+        </div>
+
+        <div className="mt-auto space-y-3">
+          <div className="rounded-3xl bg-white/5 p-3 text-slate-300">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-3xl bg-white/10 text-white">
+                <User className="h-5 w-5" />
+              </div>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{user?.username || "Guest"}</p>
+                  <p className="truncate text-xs uppercase tracking-[0.24em] text-slate-500">{user?.plan || "FREE"}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {footerItems.map((item) => (
+              <SidebarItem
+                key={item.to}
+                icon={item.icon}
+                label={item.label}
+                to={item.to}
+                collapsed={sidebarCollapsed}
+                onClick={() => setSidebarOpen(false)}
+              />
+            ))}
+            <SidebarItem
+              icon={HelpCircle}
+              label="Help"
+              collapsed={sidebarCollapsed}
+              onClick={handleHelpClick}
+            />
+            <button
+              type="button"
+              onClick={handleLogout}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 border-l-2",
-                isActive
-                  ? "bg-white/5 text-white font-medium border-l-white/20 shadow-none"
-                  : "text-gray-400 hover:text-white hover:bg-white/[0.02] border-l-transparent"
+                "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all duration-200",
+                "text-slate-200 hover:text-white hover:bg-white/5",
+                sidebarCollapsed && "justify-center",
               )}
             >
-              <item.icon className={cn("w-[18px] h-[18px]", isActive ? "text-gray-200 opacity-100" : "opacity-70 text-gray-500")} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="p-4 border-t border-border/50 space-y-1">
-        <div className="flex items-center gap-3 px-3 py-2 text-sm">
-          <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
-            <User className="w-3.5 h-3.5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">{user?.username}</p>
-            <p className="truncate text-[11px] text-gray-500">{user?.plan || "FREE"}</p>
+              <LogOut className="h-5 w-5 text-slate-300" />
+              {!sidebarCollapsed && <span>Logout</span>}
+            </button>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all w-full"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
       </div>
-    </>
+    </Sidebar>
   );
 
   return (
-    <div className="flex h-screen bg-black text-white">
+    <div className="flex min-h-screen bg-[#05060a] text-white">
       <CommandPalette />
-      
-      {/* Mobile Header - Sticky */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-white/5 px-4 py-3">
+
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#05060a]/95 backdrop-blur-sm px-4 py-3">
         <button
-          className="p-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
+          type="button"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-3xl bg-white/10 text-white shadow-lg transition hover:bg-white/15"
           onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation"
         >
-          <Menu className="w-5 h-5 text-white" />
+          <Menu className="h-5 w-5" />
         </button>
       </div>
 
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setSidebarOpen(false)} />
-      )}
+      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+        <Sidebar expanded fullWidth mobileMode onToggleCollapse={() => {}}>
+          <div className="space-y-4 px-2 pb-4">
+            <div className="rounded-3xl bg-white/5 p-3 shadow-[0_20px_50px_rgba(255,255,255,0.04)]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search... ⌘K"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  className="pl-10 h-11 rounded-3xl bg-[#11151f]/90 border border-white/10 text-sm text-slate-100 placeholder:text-slate-500"
+                />
+                {searching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+                )}
+              </div>
+              {searchFocused && searchResults.length > 0 && (
+                <div className="mt-3 space-y-1 rounded-3xl border border-white/10 bg-[#0b0f17]/98 p-2 shadow-[0_30px_50px_rgba(0,0,0,0.35)]">
+                  {searchResults.map((result) => (
+                    <button
+                      key={`${result.type}-${result.id}`}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleResultClick(result)}
+                      className="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-200 hover:bg-white/5"
+                    >
+                      {result.type === "NOTE" ? (
+                        <StickyNote className="h-4 w-4 text-sky-300" />
+                      ) : (
+                        <Network className="h-4 w-4 text-slate-400" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-slate-100">{result.title}</p>
+                        {result.snippet && <p className="mt-1 text-[11px] text-slate-500 line-clamp-1">{result.snippet}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-      <aside className="hidden lg:flex w-56 border-r border-white/10 bg-black/90 backdrop-blur-xl flex-col shrink-0">
-        {sidebar}
+            <nav className="space-y-1">
+              {primaryItems.map((item) => (
+                <SidebarItem
+                  key={item.to}
+                  icon={item.icon}
+                  label={item.label}
+                  to={item.to}
+                  collapsed={false}
+                  onClick={() => setSidebarOpen(false)}
+                />
+              ))}
+            </nav>
+
+            <div className="rounded-3xl bg-white/5 p-3">
+              <SidebarGroup
+                title="Activity"
+                icon={Activity}
+                items={activityItems}
+                collapsed={false}
+                activePath={location.pathname}
+                onItemClick={() => setSidebarOpen(false)}
+              />
+            </div>
+
+            <div className="mt-auto space-y-3">
+              <div className="rounded-3xl bg-white/5 p-3 text-slate-300">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 place-items-center rounded-3xl bg-white/10 text-white">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{user?.username || "Guest"}</p>
+                    <p className="truncate text-xs uppercase tracking-[0.24em] text-slate-500">{user?.plan || "FREE"}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {footerItems.map((item) => (
+                  <SidebarItem
+                    key={item.to}
+                    icon={item.icon}
+                    label={item.label}
+                    to={item.to}
+                    collapsed={false}
+                    onClick={() => setSidebarOpen(false)}
+                  />
+                ))}
+                <SidebarItem icon={HelpCircle} label="Help" collapsed={false} onClick={handleHelpClick} />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-slate-200 transition-all duration-200 hover:text-white hover:bg-white/5"
+                >
+                  <LogOut className="h-5 w-5 text-slate-300" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Sidebar>
+      </MobileSidebar>
+
+      <aside className="hidden lg:flex shrink-0">
+        {desktopSidebar}
       </aside>
 
-      <aside className={cn(
-        "lg:hidden fixed inset-y-0 left-0 w-64 bg-black/90 backdrop-blur-xl border-r border-white/10 flex flex-col z-50 transition-transform duration-200",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        {sidebar}
-      </aside>
-
-      <main className="flex-1 overflow-auto min-w-0 bg-black">
+      <main className="flex-1 overflow-auto min-w-0 bg-[#05060a]">
         <div className="lg:hidden h-16" />
         {children}
       </main>
