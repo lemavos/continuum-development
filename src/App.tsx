@@ -29,6 +29,17 @@ const queryClient = new QueryClient();
 
 function HomeRoute() {
   const { user, loading } = useAuth();
+  
+  // Verificar se há parâmetros de login na URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const loginToken = searchParams.get("login_token");
+  const vaultId = searchParams.get("vault_id");
+  
+  if (loginToken) {
+    // Se há token de login, redirecionar para LoginSuccess
+    return <LoginSuccess />;
+  }
+  
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -69,7 +80,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<HomeRoute />} />
-    <Route path="/login-success" element={<LoginSuccess />} />
     <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
     <Route path="/auth/google/callback" element={<GoogleCallback />} />
     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />

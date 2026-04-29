@@ -10,8 +10,8 @@ const LoginSuccess = () => {
   const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const vaultId = searchParams.get("vaultId");
+    const token = searchParams.get("login_token") || searchParams.get("token");
+    const vaultId = searchParams.get("vault_id") || searchParams.get("vaultId");
 
     setDebugInfo(`Token: ${token ? 'present' : 'missing'}, VaultId: ${vaultId || 'none'}`);
 
@@ -28,6 +28,14 @@ const LoginSuccess = () => {
       if (vaultId) {
         localStorage.setItem("vaultId", vaultId);
       }
+
+      // Limpar parâmetros da URL após processar
+      const url = new URL(window.location.href);
+      url.searchParams.delete("login_token");
+      url.searchParams.delete("vault_id");
+      url.searchParams.delete("token");
+      url.searchParams.delete("vaultId");
+      window.history.replaceState({}, "", url.pathname + url.search);
 
       // Pequeno delay para mostrar o loading
       setTimeout(() => {
