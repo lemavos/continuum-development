@@ -36,7 +36,7 @@ public class SecurityConfig {
     @Value("${cors.allowed.origins:*}")
     private String corsAllowedOrigins;
 
-    @Value("${app.url:http://localhost:5173}")
+    @Value("${frontend.url:${app.url:http://localhost:5173}}")
     private String frontendUrl;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, RateLimitingFilter rateLimitingFilter, 
@@ -100,9 +100,8 @@ public class SecurityConfig {
                 .successHandler(oauth2SuccessHandler)
                 .failureHandler((request, response, exception) -> {
                     System.out.println("OAuth2 Login Failed: " + exception.getMessage());
-                    response.sendRedirect("https://continummnodes.lovable.app/?error=oauth_failed");
+                    response.sendRedirect(frontendUrl + "/#/?error=oauth_failed");
                 })
-                .failureUrl("/login?error=true")
             )
             .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)

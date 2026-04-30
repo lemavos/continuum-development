@@ -1,54 +1,51 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginSuccess = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { setTokens, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
-    const token = searchParams.get("login_token") || searchParams.get("token");
-    const vaultId = searchParams.get("vault_id") || searchParams.get("vaultId");
+    const searchParams = new URLSearchParams(window.location.search);
+    const rawHash = window.location.hash.replace(/^#/, "");
+    const hashQuery = rawHash.startsWith("/") ? rawHash.slice(1) : rawHash;
+    const hashParams = new URLSearchParams(hashQuery);
+    const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
 
-    setDebugInfo(`Token: ${token ? 'present' : 'missing'}, VaultId: ${vaultId || 'none'}`);
+    const accessToken = getValue("access_token") ?? getValue("login_token") ?? getValue("token") ?? getValue("jwt");
+    const refreshToken = getValue("refresh_token");
+    const vaultId = getValue("vault_id") ?? getValue("vaultId");
 
-    if (!token) {
+    setDebugInfo(`Token: ${accessToken ? "present" : "missing"}, VaultId: ${vaultId || "none"}`);
+
+    if (!accessToken) {
       setError("Token de autenticação não encontrado nos parâmetros da URL. Verifique se o login foi concluído corretamente.");
-      setTimeout(() => {
-        navigate("/", { replace: true });
-      }, 3000);
+      setTimeout(() => navigate("/", { replace: true }), 3000);
       return;
     }
 
     try {
-      localStorage.setItem("access_token", token);
+      setTokens(accessToken, refreshToken || "");
       if (vaultId) {
         localStorage.setItem("vaultId", vaultId);
       }
 
-      // Limpar parâmetros da URL após processar
-      const url = new URL(window.location.href);
-      url.searchParams.delete("login_token");
-      url.searchParams.delete("vault_id");
-      url.searchParams.delete("token");
-      url.searchParams.delete("vaultId");
-      window.history.replaceState({}, "", url.pathname + url.search);
+      window.history.replaceState({}, "", "/");
 
-      // Pequeno delay para mostrar o loading
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/", { replace: true });
-      }, 1000);
+      refreshUser()
+        .then(() => navigate("/", { replace: true }))
+        .catch(() => navigate("/", { replace: true }))
+        .finally(() => setLoading(false));
     } catch (err) {
       setError("Erro ao salvar dados de autenticação. Verifique as permissões do navegador.");
-      setTimeout(() => {
-        navigate("/", { replace: true });
-      }, 3000);
+      setTimeout(() => navigate("/", { replace: true }), 3000);
     }
-  }, [searchParams, navigate]);
+  }, [navigate, refreshUser, setTokens]);
 
   if (error) {
     return (

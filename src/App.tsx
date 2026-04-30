@@ -27,9 +27,28 @@ import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
+function parseAuthTokensFromUrl() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const rawHash = window.location.hash.replace(/^#/, "");
+  const hashQuery = rawHash.startsWith("/") ? rawHash.slice(1) : rawHash;
+  const hashParams = new URLSearchParams(hashQuery);
+
+  const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
+  const accessToken = getValue("access_token") ?? getValue("login_token") ?? getValue("token") ?? getValue("jwt");
+  const refreshToken = getValue("refresh_token");
+
+  if (!accessToken) return null;
+  return { accessToken, refreshToken };
+}
+
 function HomeRoute() {
   const { user, loading } = useAuth();
-  
+  const authTokens = parseAuthTokensFromUrl();
+
+  if (authTokens) {
+    return <LoginSuccess />;
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
