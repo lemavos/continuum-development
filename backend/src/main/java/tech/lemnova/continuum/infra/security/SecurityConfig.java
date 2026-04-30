@@ -74,7 +74,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/health", "/error", "/actuator/**").permitAll()
                 .requestMatchers("/api/webhooks/**", "/webhooks/**").permitAll()
-                .requestMatchers("/oauth2/**", "/oauth2/authorization/**", "/login/**", "/login/oauth2/**").permitAll()
+                .requestMatchers("/oauth2/**", "/oauth2/authorization/**", "/login/**", "/login/oauth2/**", "/login-successful", "/login-token").permitAll()
                 
                 // ONLY OAuth2 callback and JWT refresh are allowed (no legacy password-based auth)
                 .requestMatchers(HttpMethod.POST,
