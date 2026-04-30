@@ -53,9 +53,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 user.getVaultId()
         );
 
-        // Redirecionar para o frontend com os tokens
-        // Usar URL raiz com parâmetros para evitar problemas de roteamento SPA
-        String redirectUrl = frontendUrl + "/?login_token=" + URLEncoder.encode(tokenPair.accessToken(), StandardCharsets.UTF_8) +
+        // Redirecionar para o frontend com os tokens em uma rota dedicada
+        String redirectUrl = frontendUrl + "/login-successful?login_token=" + URLEncoder.encode(tokenPair.accessToken(), StandardCharsets.UTF_8) +
                 "&vault_id=" + URLEncoder.encode(user.getVaultId(), StandardCharsets.UTF_8);
         
         System.out.println("OAuth2 Success Handler: Redirecting to: " + redirectUrl);
