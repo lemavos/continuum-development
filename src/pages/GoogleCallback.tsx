@@ -21,10 +21,11 @@ export default function GoogleCallback() {
         accessToken: getValue("access_token") ?? getValue("token") ?? getValue("jwt"),
         refreshToken: getValue("refresh_token"),
         code: getValue("code"),
+        state: getValue("state"),
       };
     };
 
-    const { accessToken, refreshToken, code } = parseRedirectTokens();
+    const { accessToken, refreshToken, code, state } = parseRedirectTokens();
 
     if (accessToken) {
       setTokens(accessToken, refreshToken || "");
@@ -42,7 +43,7 @@ export default function GoogleCallback() {
     }
 
     authApi
-      .googleCallback(code)
+      .googleCallback(code, state)
       .then(async ({ data }) => {
         setTokens(data.accessToken, data.refreshToken);
         await refreshUser();

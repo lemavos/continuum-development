@@ -11,9 +11,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import tech.lemnova.continuum.application.exception.BadRequestException;
 import tech.lemnova.continuum.application.service.AuthService;
-import tech.lemnova.continuum.controller.dto.auth.*;
+import tech.lemnova.continuum.controller.dto.auth.GoogleAuthCallbackRequest;
+import tech.lemnova.continuum.controller.dto.auth.GoogleAuthUrlResponse;
+import tech.lemnova.continuum.controller.dto.auth.AuthResponse;
 import tech.lemnova.continuum.infra.google.GoogleOAuthService;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
+import tech.lemnova.continuum.infra.security.OAuthStateService;
 
 import java.util.Map;
 
@@ -26,10 +29,12 @@ public class AuthController {
 
     private final AuthService authService;
     private final GoogleOAuthService googleOAuthService;
+    private final OAuthStateService oauthStateService;
 
-    public AuthController(AuthService authService, GoogleOAuthService googleOAuthService) {
-        this.authService        = authService;
+    public AuthController(AuthService authService, GoogleOAuthService googleOAuthService, OAuthStateService oauthStateService) {
+        this.authService = authService;
         this.googleOAuthService = googleOAuthService;
+        this.oauthStateService = oauthStateService;
     }
 
     /**
@@ -58,12 +63,28 @@ public class AuthController {
         );
     }
 
+    @GetMapping("/google/url")
+    @Operation(summary = "Start Google OAuth2 login", description = "Returns a secure Google authorization URL and state token for the frontend")
+    public ResponseEntity<GoogleAuthUrlResponse> startGoogleOAuth() {
+        OAuthStateService.OAuthState state = oauthStateService.createState();
+        String authorizationUrl = googleOAuthService.buildAuthorizationUrl(
+                state.redirectUri(),
+                state.signedState(),
+                state.nonce()
+        );
+        return ResponseEntity.ok(new GoogleAuthUrlResponse(authorizationUrl));
+    }
+
     @PostMapping("/google/callback")
-    @Operation(summary = "Google OAuth callback", description = "Processes Google OAuth authentication and returns tokens")
-    public ResponseEntity<AuthResponse> googleCallback(@RequestBody Map<String, String> body) {
-        String idToken = body.get("idToken");
-        if (idToken == null || idToken.isBlank()) throw new BadRequestException("idToken is required");
-        return ResponseEntity.ok(authService.googleAuth(googleOAuthService.verify(idToken)));
+    @Operation(summary = "Google OAuth callback", description = "Processes Google authorization code and returns app tokens")
+    public ResponseEntity<AuthResponse> googleCallback(@Valid @RequestBody GoogleAuthCallbackRequest request) {
+        OAuthStateService.OAuthState state = oauthStateService.parseState(request.state());
+        GoogleOAuthService.GoogleUserInfo userInfo = googleOAuthService.exchangeCodeForUserInfo(
+                request.code(),
+                state.redirectUri(),
+                state.nonce()
+        );
+        return ResponseEntity.ok(authService.googleAuth(userInfo));
     }
 
     @GetMapping("/verify-email")

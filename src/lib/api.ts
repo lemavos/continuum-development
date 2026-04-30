@@ -143,8 +143,9 @@ export const authApi = {
     api.post("/api/auth/login", { email, password }),
   register: (username: string, email: string, password: string) =>
     api.post("/api/auth/register", { username, email, password }),
-  googleCallback: (code: string) =>
-    api.post("/api/auth/google/callback", { code }),
+  googleStart: () => api.get("/api/auth/google/url"),
+  googleCallback: (code: string, state?: string) =>
+    api.post("/api/auth/google/callback", { code, state }),
   logout: () => {
     const refreshToken = localStorage.getItem("refresh_token");
     return api.post("/api/auth/logout", { refreshToken });

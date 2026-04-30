@@ -74,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const API_BASE_URL = getAPIBaseURL();
-    window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+    const { data } = await authApi.googleStart();
+    window.location.href = data.authorizationUrl;
   };
 
   const register = async (username: string, email: string, password: string) => {

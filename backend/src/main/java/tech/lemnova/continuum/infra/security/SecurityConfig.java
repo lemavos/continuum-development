@@ -82,7 +82,8 @@ public class SecurityConfig {
                         "/auth/refresh", "/api/auth/refresh"
                 ).permitAll()
                 
-                .requestMatchers(HttpMethod.GET, 
+                .requestMatchers(HttpMethod.GET,
+                        "/api/auth/google/url",
                         "/auth/verify", "/auth/verify-email",
                         "/api/auth/verify", "/api/auth/verify-email"
                 ).permitAll()
