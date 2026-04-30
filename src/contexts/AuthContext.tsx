@@ -4,7 +4,10 @@ import type { Plan } from "@/types";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  return (
+    import.meta.env.VITE_API_BASE_URL ||
+    (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}` : "http://localhost:8080")
+  );
 };
 
 interface User {
