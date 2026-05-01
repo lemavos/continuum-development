@@ -14,6 +14,8 @@ import tech.lemnova.continuum.application.service.AuthService;
 import tech.lemnova.continuum.controller.dto.auth.GoogleAuthCallbackRequest;
 import tech.lemnova.continuum.controller.dto.auth.GoogleAuthUrlResponse;
 import tech.lemnova.continuum.controller.dto.auth.AuthResponse;
+import tech.lemnova.continuum.controller.dto.auth.RegisterRequest;
+import tech.lemnova.continuum.controller.dto.auth.LoginRequest;
 import tech.lemnova.continuum.infra.google.GoogleOAuthService;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
 import tech.lemnova.continuum.infra.security.OAuthStateService;
