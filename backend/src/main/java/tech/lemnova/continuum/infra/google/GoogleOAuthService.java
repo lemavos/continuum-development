@@ -69,8 +69,6 @@ public class GoogleOAuthService {
 
             GoogleIdToken.Payload payload = verifyIdTokenPayload(idToken, expectedNonce);
 
-            // CORREÇÃO AQUI: O método .get() aceita apenas a chave (Object). 
-            // Fazemos o cast para (String) manualmente.
             return new GoogleUserInfo(
                     payload.getSubject(),
                     payload.getEmail(),

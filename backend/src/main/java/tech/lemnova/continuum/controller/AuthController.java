@@ -39,11 +39,6 @@ public class AuthController {
         this.oauthStateService = oauthStateService;
     }
 
-    /**
-     * DEPRECATED: Password-based registration is disabled.
-     * Clients must use Google OAuth2 instead.
-     * @see <a href="/oauth2/authorization/google">Google OAuth2</a>
-     */
     @PostMapping("/register")
     @Deprecated(forRemoval = true)
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest req) {
@@ -52,11 +47,6 @@ public class AuthController {
         );
     }
 
-    /**
-     * DEPRECATED: Password-based login is disabled.
-     * Clients must use Google OAuth2 instead.
-     * @see <a href="/oauth2/authorization/google">Google OAuth2</a>
-     */
     @PostMapping("/login")
     @Deprecated(forRemoval = true)
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
@@ -81,9 +71,11 @@ public class AuthController {
     @Operation(summary = "Google OAuth callback", description = "Processes Google authorization code and returns app tokens")
     public ResponseEntity<AuthResponse> googleCallback(@Valid @RequestBody GoogleAuthCallbackRequest request) {
         OAuthStateService.OAuthState state = oauthStateService.parseState(request.state());
+        
+        // CORREÇÃO: Usando request.redirectUri() que vem do Lovable
         GoogleOAuthService.GoogleUserInfo userInfo = googleOAuthService.exchangeCodeForUserInfo(
                 request.code(),
-                state.redirectUri(),
+                request.redirectUri(), 
                 state.nonce()
         );
         return ResponseEntity.ok(authService.googleAuth(userInfo));
@@ -92,14 +84,9 @@ public class AuthController {
     @GetMapping("/verify-email")
     @Operation(summary = "Verify email address", description = "Verifies user email using the verification token sent to their inbox")
     public ResponseEntity<Map<String, String>> verifyEmail(@RequestParam String token) {
-        // authService.verifyEmail(token); // TODO: Implement email verification
         return ResponseEntity.ok(Map.of("message", "Email verification not implemented"));
     }
 
-    /**
-     * DEPRECATED: Email verification is automatic with Google OAuth2.
-     * @deprecated No longer needed - Google OAuth2 provides email verification
-     */
     @PostMapping("/resend-verification")
     @Deprecated(forRemoval = true)
     public ResponseEntity<Map<String, String>> resendVerification(@RequestBody Map<String, String> body) {
@@ -113,7 +100,6 @@ public class AuthController {
     public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> body) {
         String refreshToken = body.get("refreshToken");
         if (refreshToken == null || refreshToken.isBlank()) throw new BadRequestException("refreshToken is required");
-        // return ResponseEntity.ok(authService.refresh(refreshToken)); // TODO: Implement token refresh
         throw new BadRequestException("Token refresh not implemented");
     }
 
@@ -130,11 +116,9 @@ public class AuthController {
                 refreshToken = body.get("refreshToken");
             }
             
-            // Se tokens forem fornecidos, revogar especificamente
             if (accessToken != null || refreshToken != null) {
                 authService.logout(user.getUserId(), accessToken, refreshToken);
             } else {
-                // Caso contrário, revogar todos os tokens do usuário
                 authService.logout(user.getUserId());
             }
         }
@@ -144,15 +128,12 @@ public class AuthController {
     @GetMapping("/verify")
     @Operation(summary = "Verify email (alias)", description = "Alternative endpoint for email verification")
     public ResponseEntity<Map<String, String>> verify(@RequestParam String token) {
-        // authService.verifyEmail(token); // TODO: Implement email verification
         return ResponseEntity.ok(Map.of("message", "Email verification not implemented"));
     }
 
     @GetMapping("/test-oauth")
     @Operation(summary = "Test OAuth endpoint", description = "Test if OAuth is working")
     public ResponseEntity<String> testOAuth() {
-        return ResponseEntity.ok("OAuth endpoint is working. Redirect URI configured: https://continuum-backend.onrender.com/login/oauth2/code/google");
+        return ResponseEntity.ok("OAuth endpoint is working.");
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
