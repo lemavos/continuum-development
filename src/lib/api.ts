@@ -83,16 +83,6 @@ const normalizeSearchResults = (payload: unknown) => {
   ];
 };
 
-const buildTrackPayload = (data?: { date?: string; value?: number; decimalValue?: number; note?: string }) => {
-  if (data && Object.values(data).some((value) => value !== undefined && value !== "")) {
-    return data;
-  }
-
-  return {
-    date: new Date().toISOString().slice(0, 10),
-  };
-};
-
 // Interceptor: attach JWT (skip only login and registration endpoints)
 api.interceptors.request.use((config) => {
   const url = config.url ?? "";
@@ -137,17 +127,24 @@ api.interceptors.response.use(
   }
 );
 
-// Auth
+// --- AUTH API CORRIGIDA ---
 export const authApi = {
   login: (email: string, password: string) =>
     api.post("/api/auth/login", { email, password }),
   register: (username: string, email: string, password: string) =>
     api.post("/api/auth/register", { username, email, password }),
   googleStart: () => api.get("/api/auth/google/url"),
+  
+  // CORREÇÃO: Enviando o redirectUri para o Backend bater com o que o Google espera
   googleCallback: (code: string, state?: string) =>
-    api.post("/api/auth/google/callback", { code, state }),
+    api.post("/api/auth/google/callback", { 
+      code, 
+      state,
+      redirectUri: window.location.origin + '/auth/google/callback'
+    }),
+
   logout: () => {
-    const refreshToken = localStorage.getItem("refresh_token");
+    const refreshToken = getRefreshToken();
     return api.post("/api/auth/logout", { refreshToken });
   },
   me: () => api.get("/api/auth/me"),
@@ -165,7 +162,7 @@ export const authApi = {
   exportData: () => api.get("/api/account/export"),
 };
 
-// Notes
+// --- RESTANTE DOS ENDPOINTS (Notes, Folders, etc) ---
 export const notesApi = {
   list: () => api.get("/api/notes"),
   get: (id: string) => api.get(`/api/notes/${id}`),
@@ -178,23 +175,12 @@ export const notesApi = {
     }),
   update: (id: string, data: { title?: string; content?: unknown; folderId?: string; entityIds?: string[]; type?: string }) => {
     const payload: Record<string, unknown> = {};
-
-    if (typeof data.title === "string") {
-      payload.title = data.title;
-    }
-
-    if (typeof data.folderId === "string") {
-      payload.folderId = data.folderId;
-    }
-
-    if (typeof data.type === "string") {
-      payload.type = data.type;
-    }
-
+    if (typeof data.title === "string") payload.title = data.title;
+    if (typeof data.folderId === "string") payload.folderId = data.folderId;
+    if (typeof data.type === "string") payload.type = data.type;
     if (Object.prototype.hasOwnProperty.call(data, "content")) {
       payload.content = normalizeNoteContent(data.content);
     }
-
     return api.put(`/api/notes/${id}`, payload);
   },
   delete: (id: string) => api.delete(`/api/notes/${id}`),
@@ -202,7 +188,6 @@ export const notesApi = {
   getTypes: () => api.get("/api/notes/types"),
 };
 
-// Folders
 export const foldersApi = {
   list: () => api.get("/api/folders"),
   create: (name: string, parentId?: string) =>
@@ -212,14 +197,10 @@ export const foldersApi = {
   delete: (id: string) => api.delete(`/api/folders/${id}`),
 };
 
-// Entities
 export const entitiesApi = {
   list: (params?: { page?: number; size?: number }) =>
     api.get("/api/entities", { params }).then((response) => {
-      if (Array.isArray(response.data)) {
-        return response;
-      }
-
+      if (Array.isArray(response.data)) return response;
       const pageData = response.data as Record<string, unknown> | null;
       if (pageData && Array.isArray(pageData.content)) {
         response.data = pageData.content;
@@ -237,8 +218,7 @@ export const entitiesApi = {
   getNotes: (id: string) => api.get(`/api/entities/${id}/notes`),
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
   getContext: (id: string) => api.get(`/api/entities/${id}/context`),
-  track: (entityId: string) =>
-    api.post(`/api/entities/${entityId}/track-habit`),
+  track: (entityId: string) => api.post(`/api/entities/${entityId}/track-habit`),
   untrack: (entityId: string, date: string) =>
     api.delete(`/api/entities/${entityId}/track`, { params: { date } }),
   stats: (entityId: string) => api.get(`/api/entities/${entityId}/stats`),
@@ -246,19 +226,16 @@ export const entitiesApi = {
     api.get(`/api/entities/${entityId}/heatmap`, { params: { from, to } }),
 };
 
-// Metrics
 export const metricsApi = {
   dashboard: () => api.get("/api/metrics/dashboard"),
   timeline: (entityId: string) => api.get(`/api/metrics/entities/${entityId}/timeline`),
   usage: (month: number, year: number) => api.get("/api/metrics/usage", { params: { month, year } }),
 };
 
-// Dashboard
 export const dashboardApi = {
   summary: () => api.get("/api/dashboard/summary"),
 };
 
-// Search
 export const searchApi = {
   search: (q: string) =>
     api.get("/api/search", { params: { q } }).then((response) => {
@@ -267,45 +244,34 @@ export const searchApi = {
     }),
 };
 
-// Graph
 export const graphApi = {
   data: () => api.get("/api/graph/data"),
 };
 
-// Tracking
 export const trackingApi = {
   today: () => api.get("/api/tracking/today"),
 };
 
-// Subscription
 export const subscriptionApi = {
   me: () => api.get("/api/subscriptions/me"),
   checkout: (planId: string) => api.post("/api/subscriptions/checkout", { planId }),
   cancel: () => api.post("/api/subscriptions/cancel"),
 };
 
-// Plans
 export const plansApi = {
   list: () => api.get("/api/plans"),
 };
 
-// Vault
 export const vaultApi = {
   list: () => api.get("/api/vault/files"),
   entityIndex: () => api.get("/api/vault/entity-index"),
 };
 
-// Time Tracking
 export const timeTrackingApi = {
-  // Timer operations
   startTimer: (entityId: string) => api.post("/api/time-tracking/start", { entityId }),
   stopTimer: (sessionId: string, note?: string) => api.post("/api/time-tracking/stop", { sessionId, note: note || null }),
-  
-  // Manual time entry
   addTime: (entityId: string, date: string, durationSeconds: number, note?: string) => 
     api.post("/api/time-tracking/add", { entityId, date, durationSeconds, note }),
-  
-  // Get data
   getTotalTime: (entityId: string) => api.get(`/api/time-tracking/${entityId}/total`),
   getDailyBreakdown: (entityId: string) => api.get(`/api/time-tracking/${entityId}/daily`),
   getTimeInRange: (entityId: string, from: string, to: string) => 
@@ -313,11 +279,7 @@ export const timeTrackingApi = {
   getAllSummaries: () => api.get("/api/time-tracking/summary/all"),
   getActiveTimer: (entityId: string) => api.get(`/api/time-tracking/${entityId}/active`),
   getAllActiveTimers: () => api.get("/api/time-tracking/active/all"),
-  
-  // Delete entry
   deleteEntry: (entryId: string) => api.delete(`/api/time-tracking/${entryId}`),
-  
-  // Recover session
   recoverSession: (entityId: string) => api.post(`/api/time-tracking/${entityId}/recover`),
 };
 
