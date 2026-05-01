@@ -73,9 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("refresh_token", refreshToken);
   };
 
-  const login = async (email: string, password: string) => {
-    const { data } = await authApi.googleStart();
-    window.location.href = data.authorizationUrl;
+  const login = async (_email?: string, _password?: string) => {
+    // Inicia o fluxo Google OAuth diretamente pelo backend (Spring Security).
+    // O backend redireciona ao Google e, ao retornar, cai no
+    // OAuth2AuthenticationSuccessHandler que redireciona para
+    // `${frontendUrl}/#/?access_token=...&refresh_token=...&vault_id=...`,
+    // que é tratado pelo HomeRoute -> LoginSuccess.
+    const base = getAPIBaseURL().replace(/\/$/, "");
+    window.location.href = `${base}/oauth2/authorization/google`;
   };
 
   const register = async (username: string, email: string, password: string) => {
