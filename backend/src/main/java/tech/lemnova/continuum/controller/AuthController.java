@@ -3,19 +3,11 @@ package tech.lemnova.continuum.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import tech.lemnova.continuum.application.exception.BadRequestException;
 import tech.lemnova.continuum.application.service.AuthService;
-import tech.lemnova.continuum.controller.dto.auth.GoogleAuthCallbackRequest;
-import tech.lemnova.continuum.controller.dto.auth.GoogleAuthUrlResponse;
-import tech.lemnova.continuum.controller.dto.auth.AuthResponse;
-import tech.lemnova.continuum.controller.dto.auth.RegisterRequest;
-import tech.lemnova.continuum.controller.dto.auth.LoginRequest;
+import tech.lemnova.continuum.controller.dto.auth.*;
 import tech.lemnova.continuum.infra.google.GoogleOAuthService;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
 import tech.lemnova.continuum.infra.security.OAuthStateService;
@@ -24,10 +16,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication", description = "Endpoints for user authentication and authorization")
+@Tag(name = "Authentication")
 public class AuthController {
-
-    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
     private final GoogleOAuthService googleOAuthService;
@@ -39,24 +29,7 @@ public class AuthController {
         this.oauthStateService = oauthStateService;
     }
 
-    @PostMapping("/register")
-    @Deprecated(forRemoval = true)
-    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest req) {
-        throw new BadRequestException(
-            "Password-based registration is disabled. Please use Google OAuth2 login: POST /oauth2/authorization/google"
-        );
-    }
-
-    @PostMapping("/login")
-    @Deprecated(forRemoval = true)
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
-        throw new BadRequestException(
-            "Password-based login is disabled. Please use Google OAuth2 login: POST /oauth2/authorization/google"
-        );
-    }
-
     @GetMapping("/google/url")
-    @Operation(summary = "Start Google OAuth2 login", description = "Returns a secure Google authorization URL and state token for the frontend")
     public ResponseEntity<GoogleAuthUrlResponse> startGoogleOAuth() {
         OAuthStateService.OAuthState state = oauthStateService.createState();
         String authorizationUrl = googleOAuthService.buildAuthorizationUrl(
@@ -68,72 +41,29 @@ public class AuthController {
     }
 
     @PostMapping("/google/callback")
-    @Operation(summary = "Google OAuth callback", description = "Processes Google authorization code and returns app tokens")
     public ResponseEntity<AuthResponse> googleCallback(@Valid @RequestBody GoogleAuthCallbackRequest request) {
         OAuthStateService.OAuthState state = oauthStateService.parseState(request.state());
         
-        // CORREÇÃO: Usando request.redirectUri() que vem do Lovable
         GoogleOAuthService.GoogleUserInfo userInfo = googleOAuthService.exchangeCodeForUserInfo(
                 request.code(),
-                request.redirectUri(), 
+                request.redirectUri(), // Crucial: Deve ser o mesmo enviado pelo Front
                 state.nonce()
         );
         return ResponseEntity.ok(authService.googleAuth(userInfo));
     }
 
-    @GetMapping("/verify-email")
-    @Operation(summary = "Verify email address", description = "Verifies user email using the verification token sent to their inbox")
-    public ResponseEntity<Map<String, String>> verifyEmail(@RequestParam String token) {
-        return ResponseEntity.ok(Map.of("message", "Email verification not implemented"));
-    }
-
-    @PostMapping("/resend-verification")
-    @Deprecated(forRemoval = true)
-    public ResponseEntity<Map<String, String>> resendVerification(@RequestBody Map<String, String> body) {
-        throw new BadRequestException(
-            "Email verification is automatic with Google OAuth2. No manual verification needed."
-        );
-    }
-
-    @PostMapping("/refresh")
-    @Operation(summary = "Refresh access token", description = "Uses refresh token to obtain a new access token (implements token rotation)")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
-        if (refreshToken == null || refreshToken.isBlank()) throw new BadRequestException("refreshToken is required");
-        throw new BadRequestException("Token refresh not implemented");
+    @GetMapping("/me")
+    @Operation(summary = "Get current user info")
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal CustomUserDetails user) {
+        if (user == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(user.getUser());
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Logout user", description = "Revokes the user's access and refresh tokens, invalidating all sessions")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal CustomUserDetails user,
-                                      @RequestBody(required = false) Map<String, String> body) {
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal CustomUserDetails user) {
         if (user != null) {
-            String accessToken = null;
-            String refreshToken = null;
-            
-            if (body != null) {
-                accessToken = body.get("accessToken");
-                refreshToken = body.get("refreshToken");
-            }
-            
-            if (accessToken != null || refreshToken != null) {
-                authService.logout(user.getUserId(), accessToken, refreshToken);
-            } else {
-                authService.logout(user.getUserId());
-            }
+            authService.logout(user.getUserId());
         }
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/verify")
-    @Operation(summary = "Verify email (alias)", description = "Alternative endpoint for email verification")
-    public ResponseEntity<Map<String, String>> verify(@RequestParam String token) {
-        return ResponseEntity.ok(Map.of("message", "Email verification not implemented"));
-    }
-
-    @GetMapping("/test-oauth")
-    @Operation(summary = "Test OAuth endpoint", description = "Test if OAuth is working")
-    public ResponseEntity<String> testOAuth() {
-        return ResponseEntity.ok("OAuth endpoint is working.");
     }
 }

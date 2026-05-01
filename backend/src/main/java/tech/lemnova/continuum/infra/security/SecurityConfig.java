@@ -1,5 +1,6 @@
 package tech.lemnova.continuum.infra.security;
 
+import jakarta.servlet.http.HttpServletResponse; // Import necessário para o EntryPoint
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +31,6 @@ public class SecurityConfig {
     private final CustomOidcUserService oidcUserService;
     private final OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
 
-    // Alterado para a porta 5173 (Vite padrão)
     @Value("${cors.allowed.origins:*}")
     private String corsAllowedOrigins;
 
@@ -43,7 +41,7 @@ public class SecurityConfig {
                          SecurityHeadersFilter securityHeadersFilter,
                          CustomOidcUserService oidcUserService,
                          OAuth2AuthenticationSuccessHandler oauth2SuccessHandler) {
-        this.jwtAuthFilter      = jwtAuthFilter;
+        this.jwtAuthFilter = jwtAuthFilter;
         this.rateLimitingFilter = rateLimitingFilter;
         this.securityHeadersFilter = securityHeadersFilter;
         this.oidcUserService = oidcUserService;
@@ -55,55 +53,29 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
+            // Desativa login por formulário padrão do Spring
             .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(headers -> headers
-                .contentSecurityPolicy(csp -> csp.policyDirectives(
-                    "default-src *; " +
-                    "script-src * 'unsafe-inline' 'unsafe-eval'; " +
-                    "style-src * 'unsafe-inline'; " +
-                    "font-src *; " +
-                    "img-src * data:; " +
-                    "connect-src *; " +
-                    "frame-src *; " +
-                    "frame-ancestors *"
-                ))
-                .frameOptions(frameOptions -> frameOptions.deny())
-                .xssProtection(xss -> xss.headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+            .exceptionHandling(ex -> ex
+                // Crucial: Retorna JSON em vez de tentar redirecionar para login HTML
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                })
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/health", "/error", "/actuator/**").permitAll()
-                .requestMatchers("/api/webhooks/**", "/webhooks/**").permitAll()
-                .requestMatchers("/oauth2/**", "/oauth2/authorization/**", "/login/**", "/login/oauth2/**", "/login-successful", "/login-token").permitAll()
-                
-                // ONLY OAuth2 callback and JWT refresh are allowed (no legacy password-based auth)
-                .requestMatchers(HttpMethod.POST,
-                        "/auth/google/callback", "/api/auth/google/callback",
-                        "/auth/refresh", "/api/auth/refresh"
-                ).permitAll()
-                
-                .requestMatchers(HttpMethod.GET,
-                        "/api/auth/google/url",
-                        "/auth/verify", "/auth/verify-email",
-                        "/api/auth/verify", "/api/auth/verify-email"
-                ).permitAll()
-                
-                // DEPRECATED: /api/auth/register and /api/auth/login are DISABLED to prevent brute force
-                // Clients must use Google OAuth2 instead (POST /oauth2/authorization/google)
-                
-                .requestMatchers(
-                    "/swagger-ui/**", "/swagger-ui.html",
-                    "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                // Endpoints públicos de Auth (Google Callback e URL)
+                .requestMatchers(HttpMethod.POST, "/api/auth/google/callback").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/google/url").permitAll()
+                // Swagger / Docs
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                // Qualquer outra requisição precisa de JWT
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService))
-                .successHandler(oauth2SuccessHandler)
-                .failureHandler((request, response, exception) -> {
-                    System.out.println("OAuth2 Login Failed: " + exception.getMessage());
-                    response.sendRedirect(frontendUrl + "/#/?error=oauth_failed");
-                })
-            )
+            // Filtros na ordem correta
             .addFilterBefore(securityHeadersFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -115,7 +87,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         
-        // Permitir todas as origens temporariamente
+        // Em produção, substitua pelo domínio real do Lovable para maior segurança
         config.setAllowedOriginPatterns(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
@@ -127,7 +99,6 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() { 
