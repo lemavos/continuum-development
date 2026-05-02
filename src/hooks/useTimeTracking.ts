@@ -423,11 +423,13 @@ export const useTimeTracking = () => {
 
     const savedTimerId = localStorage.getItem('activeTimerId');
     const savedEntityId = localStorage.getItem('activeEntityId');
-    const savedElapsed = localStorage.getItem('timerElapsed');
-    const savedStartTime = localStorage.getItem('timerStarted');
+    const savedStartTime = localStorage.getItem('timerStartTime');
+    const savedInitialElapsed = localStorage.getItem('timerInitialElapsed');
 
     if (savedTimerId && savedEntityId && savedStartTime) {
-      const initialElapsed = parseInt(savedElapsed || '0', 10);
+      // Recompute elapsed = time since saved start + initial elapsed at start
+      const elapsedSinceStart = Math.floor((Date.now() - parseInt(savedStartTime, 10)) / 1000);
+      const initialElapsed = elapsedSinceStart + parseInt(savedInitialElapsed || '0', 10);
 
       // Resume timer with TimerManager
       timerManager.startTimer(savedTimerId, savedEntityId, initialElapsed);

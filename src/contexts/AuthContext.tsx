@@ -32,26 +32,38 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const cached = localStorage.getItem("auth_user");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
     try {
       const { data } = await authApi.me();
       if (data) {
-        setUser({
+        // Derive a sensible username fallback from the email if backend didn't return one
+        const emailLocal = typeof data.email === "string" ? data.email.split("@")[0] : "";
+        const next: User = {
           id: data.id ?? data.userId,
-          username: data.username ?? data.name ?? "",
+          username: data.username ?? data.name ?? data.displayName ?? emailLocal ?? "",
           email: data.email ?? "",
           plan: data.plan ?? data.effectivePlan ?? "FREE",
           emailVerified: data.emailVerified ?? true,
-          createdAt: data.createdAt,
-        });
+          createdAt: data.createdAt ?? data.created_at ?? data.memberSince,
+        };
+        setUser(next);
+        try { localStorage.setItem("auth_user", JSON.stringify(next)); } catch {}
       }
     } catch (error: unknown) {
       if ([401, 403].includes((error as any)?.response?.status)) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem("auth_user");
         setUser(null);
       }
     } finally {
@@ -90,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("auth_user");
     setUser(null);
   };
 
