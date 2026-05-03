@@ -221,7 +221,7 @@ export default function Notes() {
                         onClick={(e) => toggleFavorite(note.id, e)}
                         className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
                       >
-                        <Heart className={cn("w-4 h-4", favorites.has(note.id) ? "fill-rose-400 text-rose-400" : "text-white/40 hover:text-white/60")} />
+                        <Heart className={cn("w-4 h-4", note.favorite ? "fill-rose-400 text-rose-400" : "text-white/40 hover:text-white/60")} />
                       </button>
                     </div>
 
