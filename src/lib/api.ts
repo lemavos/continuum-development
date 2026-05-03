@@ -184,6 +184,7 @@ export const notesApi = {
     return api.put(`/api/notes/${id}`, payload);
   },
   delete: (id: string) => api.delete(`/api/notes/${id}`),
+  toggleFavorite: (id: string) => api.patch(`/api/notes/${id}/favorite`),
   getBacklinks: (id: string) => api.get(`/api/notes/${id}/backlinks`),
   getTypes: () => api.get("/api/notes/types"),
 };
