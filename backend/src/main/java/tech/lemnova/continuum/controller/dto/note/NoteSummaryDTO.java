@@ -11,6 +11,7 @@ public record NoteSummaryDTO(
     String title,
     String type,
     List<String> entityIds,
+    boolean favorite,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -21,6 +22,7 @@ public record NoteSummaryDTO(
             note.getTitle(),
             note.getType(),
             note.getEntityIds() != null ? note.getEntityIds() : Collections.emptyList(),
+            note.isFavorite(),
             note.getCreatedAt(),
             note.getUpdatedAt()
         );
