@@ -83,7 +83,7 @@ export default function Entities() {
   };
 
 
-  const handleDelete = async (id: string, e: MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       const entity = entities.find((item) => item.id === id);
