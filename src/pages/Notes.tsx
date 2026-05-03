@@ -50,15 +50,19 @@ export default function Notes() {
   const { loading: authLoading } = useRequireAuth();
   const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
 
-  // Persist favorites to localStorage
-  const toggleFavorite = (noteId: string, e: React.MouseEvent) => {
+  // Toggle favorite — persisted on backend
+  const toggleFavorite = async (noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavorites((prev) => {
-      const updated = new Set(prev);
-      updated.has(noteId) ? updated.delete(noteId) : updated.add(noteId);
-      localStorage.setItem("noteFavorites", JSON.stringify(Array.from(updated)));
-      return updated;
-    });
+    // Optimistic update
+    setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+    try {
+      const { data } = await notesApi.toggleFavorite(noteId);
+      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !!data.favorite } : n));
+    } catch {
+      // Rollback
+      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+      toast({ title: "Could not update favorite", variant: "destructive" });
+    }
   };
 
   const fetchData = async () => {
