@@ -117,8 +117,8 @@ export default function Notes() {
   const filtered = notes
     .sort((a, b) => {
       // Favorites first
-      const aFav = favorites.has(a.id);
-      const bFav = favorites.has(b.id);
+      const aFav = !!a.favorite;
+      const bFav = !!b.favorite;
       if (aFav !== bFav) return bFav ? 1 : -1;
       // Then by date
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
