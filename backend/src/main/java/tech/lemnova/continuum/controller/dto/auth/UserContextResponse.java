@@ -14,7 +14,8 @@ public record UserContextResponse(
     PlanType plan, SubscriptionStatus subscriptionStatus,
     int maxEntities, int maxNotes, int maxHabits, int historyDays,
     boolean advancedMetrics, boolean dataExport, boolean calendarSync,
-    Instant subscriptionEndsAt, Boolean cancelAtPeriodEnd
+    Instant subscriptionEndsAt, Boolean cancelAtPeriodEnd,
+    Instant createdAt
 ) {
     public static UserContextResponse from(User user, Subscription sub, PlanLimits limits) {
         SubscriptionStatus status = sub != null ? sub.getStatus() : SubscriptionStatus.ACTIVE;
@@ -25,7 +26,8 @@ public record UserContextResponse(
             limits.maxEntities(), limits.maxNotes(), limits.maxHabits(), limits.maxHistoryDays(),
             limits.advancedMetrics(), limits.dataExport(), limits.calendarSync(),
             sub != null ? sub.getCurrentPeriodEnd() : null,
-            sub != null ? sub.getCancelAtPeriodEnd() : false);
+            sub != null ? sub.getCancelAtPeriodEnd() : false,
+            user.getCreatedAt());
     }
 }
 

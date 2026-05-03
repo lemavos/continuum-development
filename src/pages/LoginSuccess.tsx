@@ -45,7 +45,8 @@ const LoginSuccess = () => {
       setError("Erro ao salvar dados de autenticação. Verifique as permissões do navegador.");
       setTimeout(() => navigate("/", { replace: true }), 3000);
     }
-  }, [navigate, refreshUser, setTokens]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (error) {
     return (
