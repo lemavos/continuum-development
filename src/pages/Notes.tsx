@@ -44,7 +44,6 @@ export default function Notes() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(JSON.parse(localStorage.getItem("noteFavorites") || "[]")));
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading: authLoading } = useRequireAuth();
