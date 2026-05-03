@@ -11,7 +11,7 @@ import { Plus, Search, StickyNote, Folder, Trash2, Loader2, Heart, MessageSquare
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; }
+interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; favorite?: boolean; }
 interface FolderItem { id: string; name: string; parentId?: string; }
 
 // Helper to get type badge colors
