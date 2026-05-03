@@ -11,7 +11,7 @@ import { Plus, Search, StickyNote, Folder, Trash2, Loader2, Heart, MessageSquare
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; }
+interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; favorite?: boolean; }
 interface FolderItem { id: string; name: string; parentId?: string; }
 
 // Helper to get type badge colors
@@ -44,21 +44,24 @@ export default function Notes() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(JSON.parse(localStorage.getItem("noteFavorites") || "[]")));
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading: authLoading } = useRequireAuth();
   const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
 
-  // Persist favorites to localStorage
-  const toggleFavorite = (noteId: string, e: React.MouseEvent) => {
+  // Toggle favorite — persisted on backend
+  const toggleFavorite = async (noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavorites((prev) => {
-      const updated = new Set(prev);
-      updated.has(noteId) ? updated.delete(noteId) : updated.add(noteId);
-      localStorage.setItem("noteFavorites", JSON.stringify(Array.from(updated)));
-      return updated;
-    });
+    // Optimistic update
+    setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+    try {
+      const { data } = await notesApi.toggleFavorite(noteId);
+      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !!data.favorite } : n));
+    } catch {
+      // Rollback
+      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+      toast({ title: "Could not update favorite", variant: "destructive" });
+    }
   };
 
   const fetchData = async () => {
@@ -114,8 +117,8 @@ export default function Notes() {
   const filtered = notes
     .sort((a, b) => {
       // Favorites first
-      const aFav = favorites.has(a.id);
-      const bFav = favorites.has(b.id);
+      const aFav = !!a.favorite;
+      const bFav = !!b.favorite;
       if (aFav !== bFav) return bFav ? 1 : -1;
       // Then by date
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -218,7 +221,7 @@ export default function Notes() {
                         onClick={(e) => toggleFavorite(note.id, e)}
                         className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
                       >
-                        <Heart className={cn("w-4 h-4", favorites.has(note.id) ? "fill-rose-400 text-rose-400" : "text-white/40 hover:text-white/60")} />
+                        <Heart className={cn("w-4 h-4", note.favorite ? "fill-rose-400 text-rose-400" : "text-white/40 hover:text-white/60")} />
                       </button>
                     </div>
 

@@ -66,7 +66,14 @@ public class NoteController {
         noteService.deleteNote(id);
         return ResponseEntity.noContent().build();
     }
-    
+
+    @PatchMapping("/{id}/favorite")
+    @Operation(summary = "Toggle favorite status", description = "Toggles the favorite (starred) flag for a note and persists it")
+    public ResponseEntity<NoteResponse> toggleFavorite(@AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable String id) {
+        return ResponseEntity.ok(noteService.toggleFavorite(id));
+    }
+
     // ============================================================================
     // BACKLINKS ENDPOINTS - Links Bidirecionais no Grafo
     // ============================================================================

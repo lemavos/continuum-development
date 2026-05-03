@@ -394,6 +394,26 @@ public class NoteService {
         userService.decrementNoteCount(userId);
     }
 
+    /**
+     * Alterna o status de favorito de uma nota. Persiste no MongoDB.
+     */
+    @CacheEvict(
+        value = "note-content",
+        key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getPrincipal().getVaultId() + ':' + #noteId"
+    )
+    public NoteResponse toggleFavorite(String noteId) {
+        String userId = getCurrentUserId();
+        String vaultId = getCurrentVaultId();
+        Note note = noteRepo.findById(noteId)
+            .filter(n -> n.getUserId().equals(userId))
+            .orElseThrow(() -> new NotFoundException("Note not found: " + noteId));
+        note.setFavorite(!note.isFavorite());
+        note.setUpdatedAt(Instant.now());
+        note = noteRepo.save(note);
+        String content = storageService.loadNoteContent(vaultId, noteId).orElse("");
+        return NoteResponse.from(note, content);
+    }
+
     private List<String> findMatchingEntityIds(String userId, String content) {
         List<Entity> userEntities = entityRepo.findByUserId(userId);
         return extractionService.extractEntityIds(content, userEntities);
