@@ -25,6 +25,8 @@ public class Note {
     private String vaultId;
     @Indexed
     private String type;
+    @Indexed
+    private boolean favorite = false;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -43,6 +45,9 @@ public class Note {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
+
+    public boolean isFavorite() { return favorite; }
+    public void setFavorite(boolean favorite) { this.favorite = favorite; }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
