@@ -265,6 +265,7 @@ export const plansApi = {
 
 export const vaultApi = {
   list: () => api.get("/api/vault/files"),
+  upload: (form: FormData) => api.post("/api/vault/files", form),
   entityIndex: () => api.get("/api/vault/entity-index"),
 };
 

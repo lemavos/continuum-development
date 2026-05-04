@@ -15,9 +15,13 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -84,6 +88,7 @@ public class BackblazeVaultStorage implements VaultStorageService {
         put(key(vaultId, "_folders/folders.json"),         "[]",              "application/json");
         put(key(vaultId, "_tracking/events.json"),         "[]",              "application/json");
         put(key(vaultId, "_refs/refs.json"),               "[]",              "application/json");
+        put(key(vaultId, "_files/.keep"),                  "",                "text/plain");
         log.info("Vault {} initialized", vaultId);
     }
 
@@ -139,6 +144,78 @@ public class BackblazeVaultStorage implements VaultStorageService {
     public Optional<String> loadNoteIndex(String vaultId) {
         if (!configured) return Optional.of("[]");
         return get(key(vaultId, "_notes/index.json"));
+    }
+
+    @Override
+    public void saveFile(String vaultId, String fileId, byte[] content, String contentType) {
+        if (!configured) return;
+        String objectKey = key(vaultId, "files/" + fileId);
+        s3.putObject(PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(objectKey)
+                .contentType(contentType)
+                .build(), RequestBody.fromBytes(content));
+        log.info("Successfully uploaded file to B2: {}", objectKey);
+    }
+
+    @Override
+    public Optional<byte[]> loadFile(String vaultId, String fileId) {
+        if (!configured) return Optional.empty();
+        String objectKey = key(vaultId, "files/" + fileId);
+        try {
+            return Optional.of(s3.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(objectKey).build()).asByteArray());
+        } catch (NoSuchKeyException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public void deleteFile(String vaultId, String fileId) {
+        if (!configured) return;
+        try {
+            s3.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key(vaultId, "files/" + fileId))
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to delete vault file {} from vault {}: {}", fileId, vaultId, e.getMessage());
+        }
+    }
+
+    @Override
+    public List<VaultStorageService.VaultFileDescriptor> listFiles(String vaultId) {
+        if (!configured) return List.of();
+
+        String prefix = key(vaultId, "files/");
+        String continuationToken = null;
+        List<VaultStorageService.VaultFileDescriptor> files = new ArrayList<>();
+
+        do {
+            ListObjectsV2Request.Builder request = ListObjectsV2Request.builder()
+                    .bucket(bucket)
+                    .prefix(prefix)
+                    .maxKeys(1000);
+            if (continuationToken != null) {
+                request.continuationToken(continuationToken);
+            }
+            ListObjectsV2Response response = s3.listObjectsV2(request.build());
+            for (S3Object objectSummary : response.contents()) {
+                if (objectSummary.key().endsWith("/")) continue;
+                String fileId = objectSummary.key().substring(prefix.length());
+                if (fileId.equals(".keep")) continue;
+                String fileName = decodeFileName(fileId);
+                String contentType = determineContentType(fileName);
+                files.add(new VaultStorageService.VaultFileDescriptor(
+                        fileId,
+                        fileName,
+                        contentType,
+                        objectSummary.size(),
+                        objectSummary.lastModified()));
+            }
+            continuationToken = response.nextContinuationToken();
+        } while (continuationToken != null);
+
+        return files;
     }
 
     // ── Entities ─────────────────────────────────────────────────────────────
@@ -210,6 +287,27 @@ public class BackblazeVaultStorage implements VaultStorageService {
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private String decodeFileName(String fileId) {
+        try {
+            int separator = fileId.indexOf('_');
+            if (separator <= 0) {
+                return URLDecoder.decode(fileId, StandardCharsets.UTF_8);
+            }
+            String encodedName = fileId.substring(separator + 1);
+            return URLDecoder.decode(encodedName, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return fileId;
+        }
+    }
+
+    private String determineContentType(String fileName) {
+        try {
+            return java.nio.file.Files.probeContentType(java.nio.file.Path.of(fileName));
+        } catch (Exception e) {
+            return "application/octet-stream";
+        }
+    }
 
     private String key(String vaultId, String rel) {
         return "vaults/" + vaultId + "/" + rel;

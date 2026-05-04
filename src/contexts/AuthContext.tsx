@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authApi } from "@/lib/api";
-import type { Plan } from "@/types";
+import type { Plan, User as AppUser } from "@/types";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
@@ -10,17 +10,8 @@ const getAPIBaseURL = () => {
   );
 };
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  plan: Plan;
-  emailVerified: boolean;
-  createdAt?: string;
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
@@ -32,7 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
+  const [user, setUser] = useState<AppUser | null>(() => {
     try {
       const cached = localStorage.getItem("auth_user");
       return cached ? JSON.parse(cached) : null;
@@ -48,13 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data) {
         // Derive a sensible username fallback from the email if backend didn't return one
         const emailLocal = typeof data.email === "string" ? data.email.split("@")[0] : "";
-        const next: User = {
+        const next: AppUser = {
           id: data.id ?? data.userId,
           username: data.username ?? data.name ?? data.displayName ?? emailLocal ?? "",
           email: data.email ?? "",
           plan: data.plan ?? data.effectivePlan ?? "FREE",
           emailVerified: data.emailVerified ?? true,
           createdAt: data.createdAt ?? data.created_at ?? data.memberSince,
+          maxEntities: typeof data.maxEntities === "number" ? data.maxEntities : Number(data.maxEntities ?? -1),
+          maxNotes: typeof data.maxNotes === "number" ? data.maxNotes : Number(data.maxNotes ?? -1),
+          historyDays: typeof data.historyDays === "number" ? data.historyDays : Number(data.historyDays ?? -1),
+          maxVaultSizeMB: typeof data.maxVaultSizeMB === "number" ? data.maxVaultSizeMB : Number(data.maxVaultSizeMB ?? -1),
+          advancedMetrics: Boolean(data.advancedMetrics),
+          dataExport: Boolean(data.dataExport),
+          calendarSync: Boolean(data.calendarSync),
         };
         setUser(next);
         try { localStorage.setItem("auth_user", JSON.stringify(next)); } catch {}

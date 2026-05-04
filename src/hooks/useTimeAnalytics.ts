@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { metricsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { PLAN_LIMITS } from '@/types';
 
 interface DayData {
   date: Date;
@@ -34,7 +33,7 @@ export function useTimeAnalytics({ initialDate = new Date(), projectId }: UseTim
   const year = currentDate.getFullYear();
 
   // Check if user can access analytics (premium feature)
-  const plan = (user?.plan as keyof typeof PLAN_LIMITS) || 'FREE';
+  const plan = user?.plan || 'FREE';
   const canAccessAnalytics = plan !== 'FREE';
 
   // Fetch usage data for current month

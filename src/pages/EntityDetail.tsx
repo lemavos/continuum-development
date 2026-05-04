@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
-import { PLAN_LIMITS, type Plan } from "@/types";
+import { getPlanLimits } from "@/lib/plan";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
 
@@ -40,8 +40,7 @@ export default function EntityDetail() {
 
   // Plan limits for heatmap
   const { user } = useAuth();
-  const plan: Plan = (user?.plan as Plan) || "FREE";
-  const limits = PLAN_LIMITS[plan];
+  const limits = getPlanLimits(user);
   const historyDays = limits.historyDays === -1 ? 365 : limits.historyDays;
 
   const handleStartTimer = async () => {

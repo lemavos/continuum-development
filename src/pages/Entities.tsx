@@ -40,7 +40,7 @@ export default function Entities() {
   const typeFilter = searchParams.get("type");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { canCreateEntity, canCreateHabit, getLimitMessage, refresh: refreshUsage, applyUsageDelta } = usePlanGate();
+  const { canCreateEntity, getLimitMessage, refresh: refreshUsage, applyUsageDelta } = usePlanGate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -67,14 +67,13 @@ export default function Entities() {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async () => {
-    if (newType === "HABIT" && !canCreateHabit) { setCreateOpen(false); setUpgradeOpen(true); return; }
     if (!canCreateEntity) { setCreateOpen(false); setUpgradeOpen(true); return; }
     setCreating(true);
     try {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
       setEntities((prev) => [...prev, data]);
       setCreateOpen(false); setNewTitle(""); setNewDesc("");
-      applyUsageDelta({ entitiesCount: newType === "HABIT" ? 0 : 1, habitsCount: newType === "HABIT" ? 1 : 0 });
+      applyUsageDelta({ entitiesCount: 1, habitsCount: newType === "HABIT" ? 1 : 0 });
       void refreshUsage();
     } catch (err: any) {
       if (err.response?.status === 403) { setCreateOpen(false); setUpgradeOpen(true); }
@@ -89,7 +88,7 @@ export default function Entities() {
       const entity = entities.find((item) => item.id === id);
       await entitiesApi.delete(id);
       setEntities((prev) => prev.filter((en) => en.id !== id));
-      applyUsageDelta({ entitiesCount: entity?.type === "HABIT" ? 0 : -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
+      applyUsageDelta({ entitiesCount: -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
       void refreshUsage();
     }
     catch { toast({ title: "Error deleting", variant: "destructive" }); }
@@ -102,8 +101,6 @@ export default function Entities() {
   });
 
   const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "HABIT"];
-  const entitiesLimit = getLimitMessage("entities");
-  const habitsLimit = getLimitMessage("habits");
 
   return (
     <AppLayout>
@@ -232,7 +229,7 @@ export default function Entities() {
           </div>
         )}
       </div>
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason={typeFilter === "HABIT" ? "You've reached the habits limit for your plan." : "You've reached the entities limit for your plan."} />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the entities limit for your plan." />
     </AppLayout>
   );
 }

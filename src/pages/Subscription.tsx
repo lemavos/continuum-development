@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
-import { subscriptionApi } from "@/lib/api";
+import { plansApi, subscriptionApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { PLAN_LIMITS, type Plan } from "@/types";
+import { type Plan, type PlanLimits } from "@/types";
 import { Loader2, Crown, Zap, Rocket, Gem, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadStripe } from "@stripe/stripe-js";
 
-const planMeta: Record<string, { icon: any; color: string }> = {
+const planMeta: Record<Plan, { icon: any; color: string }> = {
   FREE: { icon: Crown, color: "text-muted-foreground" },
   PLUS: { icon: Zap, color: "text-primary" },
   PRO: { icon: Rocket, color: "text-warning" },
   VISION: { icon: Gem, color: "text-warning" },
-  GOLD: { icon: Gem, color: "text-warning" },
 };
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -29,6 +28,15 @@ export default function Subscription() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   useEffect(() => { subscriptionApi.me().then(({ data }) => setSub(data)).catch(() => {}).finally(() => setLoading(false)); }, []);
+
+  useEffect(() => {
+    let active = true;
+    plansApi.list()
+      .then(({ data }) => { if (active) setPlans(data); })
+      .catch(() => {})
+      .finally(() => { if (active) setPlanLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const handleCheckout = async (planId: string) => {
     setCheckoutLoading(planId);
@@ -50,7 +58,8 @@ export default function Subscription() {
   };
 
   const currentPlan = ((sub?.effectivePlan || user?.plan) as Plan) || "FREE";
-  const allPlans: Plan[] = ["FREE", "PLUS", "PRO", "VISION"];
+  const [plans, setPlans] = useState<Array<{ plan: Plan; limits: PlanLimits; priceId?: string }>>([]);
+  const [planLoading, setPlanLoading] = useState(true);
   const formatLimit = (val: number, suffix = "") => val === -1 ? "Unlimited" : `${val}${suffix}`;
 
   return (
@@ -80,16 +89,17 @@ export default function Subscription() {
           </div>
         )}
 
-        {loading ? (
+        {loading || planLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {allPlans.map((plan) => {
-              const limits = PLAN_LIMITS[plan];
+            {plans.map((planInfo) => {
+              const plan = planInfo.plan;
+              const limits = planInfo.limits;
               const meta = planMeta[plan];
               const Icon = meta.icon;
               const isCurrent = plan === currentPlan;
-              const prices: Record<Plan, string> = { FREE: "Free", PLUS: "$19.90/month", PRO: "$39.90/month", VISION: "$79.90/month", GOLD: "$79.90/month" };
+              const prices: Record<Plan, string> = { FREE: "Free", PLUS: "$19.90/month", PRO: "$39.90/month", VISION: "$79.90/month" };
               return (
                 <div key={plan} className={cn("bento-card p-5 space-y-4", isCurrent && "border-primary/30")}>
                   <div className="flex items-center gap-2">
@@ -101,7 +111,6 @@ export default function Subscription() {
                     {[
                       `${formatLimit(limits.maxEntities)} entities`,
                       `${formatLimit(limits.maxNotes)} notes`,
-                      `${formatLimit(limits.maxHabits)} activities`,
                       `${formatLimit(limits.historyDays, " days")} history`,
                       `${formatLimit(limits.maxVaultSizeMB, "MB")} Vault`,
                     ].map((f) => (

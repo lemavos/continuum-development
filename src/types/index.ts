@@ -1,6 +1,6 @@
 // Types matching Java backend POJOs exactly
 
-export type Plan = "FREE" | "PLUS" | "PRO" | "VISION" | "GOLD";
+export type Plan = "FREE" | "PLUS" | "PRO" | "VISION";
 
 export interface User {
   id: string;
@@ -9,23 +9,25 @@ export interface User {
   plan: Plan;
   emailVerified: boolean;
   createdAt: string;
+  maxEntities?: number;
+  maxNotes?: number;
+  historyDays?: number;
+  maxVaultSizeMB?: number;
+  advancedMetrics?: boolean;
+  dataExport?: boolean;
+  calendarSync?: boolean;
 }
 
 export interface PlanLimits {
   maxEntities: number;
   maxNotes: number;
-  maxHabits: number;
   historyDays: number;
+  maxMetadataSizeKb?: number;
   maxVaultSizeMB: number;
+  advancedMetrics?: boolean;
+  dataExport?: boolean;
+  calendarSync?: boolean;
 }
-
-export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  FREE: { maxEntities: 20, maxNotes: 50, maxHabits: 3, historyDays: 30, maxVaultSizeMB: 100 },
-  PLUS: { maxEntities: 100, maxNotes: 500, maxHabits: 10, historyDays: 180, maxVaultSizeMB: 1024 },
-  PRO: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: 730, maxVaultSizeMB: 2048 },
-  VISION: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: -1, maxVaultSizeMB: 4096 },
-  GOLD: { maxEntities: -1, maxNotes: -1, maxHabits: -1, historyDays: -1, maxVaultSizeMB: 4096 },
-};
 
 export interface Note {
   id: string;
@@ -90,7 +92,6 @@ export interface Subscription {
   stripeCustomerId?: string;
   maxEntities?: number;
   maxNotes?: number;
-  maxHabits?: number;
   cancelAtPeriodEnd?: boolean;
   inGracePeriod?: boolean;
 }

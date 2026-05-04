@@ -5,12 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { dashboardApi, entitiesApi, trackingApi, graphApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
+import { getPlanLimits } from "@/lib/plan";
 import { Progress } from "@/components/ui/progress";
 import { 
   Flame, HardDrive, FileText, Plus, Share2, Activity, FolderOpen, CheckCircle2
 } from "lucide-react";
-import type { Plan, DashboardSummaryDTO, Entity } from "@/types";
-import { PLAN_LIMITS } from "@/types";
+import type { DashboardSummaryDTO, Entity } from "@/types";
 
 // ==========================================
 // SKELETON
@@ -42,8 +42,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   const { usage, applyUsageDelta } = usePlanGate();
-  const plan: Plan = (user?.plan as Plan) || "FREE";
-  const limits = PLAN_LIMITS[plan];
+  const limits = getPlanLimits(user);
 
   // Fetch summary
   useEffect(() => {
@@ -244,13 +243,6 @@ export default function Dashboard() {
                       <span className="text-zinc-200">{usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}</span>
                     </div>
                     <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1.5 bg-zinc-800" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-zinc-400">
-                      <span>Habits</span>
-                      <span className="text-zinc-200">{usage.habitsCount} / {limits.maxHabits === -1 ? "∞" : limits.maxHabits}</span>
-                    </div>
-                    <Progress value={limits.maxHabits === -1 ? 0 : Math.min((usage.habitsCount / limits.maxHabits) * 100, 100)} className="h-1.5 bg-zinc-800" />
                   </div>
                 </div>
               ) : (

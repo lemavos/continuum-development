@@ -53,8 +53,6 @@ public class AccountController {
         return ResponseEntity.ok(new UserLimitsResponse(
                 u.getEntityCount(),
                 planConfig.getLimits(u.getPlan()).maxEntities(),
-                u.getHabitCount(),
-                planConfig.getLimits(u.getPlan()).maxHabits(),
                 planConfig.getHistoryDays(u.getPlan())
         ));
     }

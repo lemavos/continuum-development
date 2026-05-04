@@ -5,7 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
-import { PLAN_LIMITS, type Plan } from "@/types";
+import { getCurrentPlan, getPlanLimits } from "@/lib/plan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,13 +37,12 @@ export default function Profile() {
     setEmail(user?.email ?? "");
   }, [user]);
 
-  const currentPlan: Plan = (user?.plan as Plan) || "FREE";
-  const limits = PLAN_LIMITS[currentPlan];
+  const currentPlan = getCurrentPlan(user);
+  const limits = getPlanLimits(user);
 
   const resources = useMemo(() => ([
     { label: "Notes", current: usage?.notesCount ?? 0, max: limits.maxNotes, suffix: "" },
     { label: "Entities", current: usage?.entitiesCount ?? 0, max: limits.maxEntities, suffix: "" },
-    { label: "Activities", current: usage?.habitsCount ?? 0, max: limits.maxHabits, suffix: "" },
   ]), [usage, limits]);
 
   const handleSave = async () => {

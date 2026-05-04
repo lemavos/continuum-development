@@ -1,5 +1,7 @@
 package tech.lemnova.continuum.infra.vault;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -13,6 +15,7 @@ import java.util.Optional;
  *   vaults/{vaultId}/_folders/folders.json       ← Folder[] (estrutura)
  *   vaults/{vaultId}/_tracking/events.json       ← TrackingEvent[]
  *   vaults/{vaultId}/_refs/refs.json             ← NoteReference[]
+ *   vaults/{vaultId}/files/{fileId}              ← user-uploaded files
  */
 public interface VaultStorageService {
 
@@ -49,6 +52,14 @@ public interface VaultStorageService {
     // ── Note references ───────────────────────────────────────────────────────
     void saveRefs(String vaultId, String refsJson);
     Optional<String> loadRefs(String vaultId);
+
+    // ── Files ─────────────────────────────────────────────────────────────────
+    void saveFile(String vaultId, String fileId, byte[] content, String contentType);
+    Optional<byte[]> loadFile(String vaultId, String fileId);
+    void deleteFile(String vaultId, String fileId);
+    List<VaultFileDescriptor> listFiles(String vaultId);
+
+    public record VaultFileDescriptor(String fileId, String fileName, String contentType, long size, Instant createdAt) {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

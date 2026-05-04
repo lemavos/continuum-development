@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { PLAN_LIMITS, type Plan, type UserUsage } from "@/types";
+import { type UserUsage } from "@/types";
+import { getPlanLimits, isUnlimited } from "@/lib/plan";
 import { useUsage, type UsageDelta } from "@/contexts/UsageContext";
 
 interface PlanGateResult {
@@ -18,8 +19,7 @@ interface PlanGateResult {
 export function usePlanGate(): PlanGateResult {
   const { user } = useAuth();
   const { usage, loading, refresh, applyUsageDelta } = useUsage();
-  const plan: Plan = (user?.plan as Plan) || "FREE";
-  const limits = PLAN_LIMITS[plan];
+  const limits = getPlanLimits(user);
 
   const isUnlimited = (limit: number) => limit === -1;
 
@@ -27,10 +27,9 @@ export function usePlanGate(): PlanGateResult {
     isUnlimited(limits.maxNotes) || usage.notesCount < limits.maxNotes;
 
   const canCreateEntity = !usage ? true :
-    isUnlimited(limits.maxEntities) || (usage.entitiesCount - usage.habitsCount) < limits.maxEntities;
+    isUnlimited(limits.maxEntities) || usage.entitiesCount < limits.maxEntities;
 
-  const canCreateHabit = !usage ? true :
-    isUnlimited(limits.maxHabits) || usage.habitsCount < limits.maxHabits;
+  const canCreateHabit = canCreateEntity;
 
   const canUploadVault = (fileSizeMB: number) => {
     if (!usage) return true;
@@ -41,8 +40,8 @@ export function usePlanGate(): PlanGateResult {
   const getLimitMessage = (resource: "notes" | "entities" | "habits" | "vault") => {
     const map = {
       notes: { current: usage?.notesCount ?? 0, max: limits.maxNotes, label: "notas" },
-      entities: { current: (usage?.entitiesCount ?? 0) - (usage?.habitsCount ?? 0), max: limits.maxEntities, label: "entidades" },
-      habits: { current: usage?.habitsCount ?? 0, max: limits.maxHabits, label: "hábitos" },
+      entities: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "entidades" },
+      habits: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "entidades" },
       vault: { current: usage?.vaultSizeMB ?? 0, max: limits.maxVaultSizeMB, label: "MB de armazenamento" },
     };
     const r = map[resource];

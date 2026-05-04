@@ -12,7 +12,7 @@ public record UserContextResponse(
     String id, String username, String email, String role, Boolean active,
     String vaultId, String avatarUrl,
     PlanType plan, SubscriptionStatus subscriptionStatus,
-    int maxEntities, int maxNotes, int maxHabits, int historyDays,
+    int maxEntities, int maxNotes, int historyDays, int maxVaultSizeMB,
     boolean advancedMetrics, boolean dataExport, boolean calendarSync,
     Instant subscriptionEndsAt, Boolean cancelAtPeriodEnd,
     Instant createdAt
@@ -23,7 +23,7 @@ public record UserContextResponse(
             user.getId(), user.getUsername(), user.getEmail(), user.getRole(), user.getActive(),
             user.getVaultId(), user.getAvatarUrl(),
             user.getPlan(), status,
-            limits.maxEntities(), limits.maxNotes(), limits.maxHabits(), limits.maxHistoryDays(),
+            limits.maxEntities(), limits.maxNotes(), limits.maxHistoryDays(), limits.maxVaultSizeMB(),
             limits.advancedMetrics(), limits.dataExport(), limits.calendarSync(),
             sub != null ? sub.getCurrentPeriodEnd() : null,
             sub != null ? sub.getCancelAtPeriodEnd() : false,
