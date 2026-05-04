@@ -23,6 +23,7 @@
 
 ### V5
 - started: 27-04-2026
-- ended:
-- updates:
+- ended: 01-05-2026
+- updates: 35
+
 ---
