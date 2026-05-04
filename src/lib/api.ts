@@ -219,7 +219,7 @@ export const entitiesApi = {
   getNotes: (id: string) => api.get(`/api/entities/${id}/notes`),
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
   getContext: (id: string) => api.get(`/api/entities/${id}/context`),
-  track: (entityId: string) => api.post(`/api/entities/${entityId}/track-habit`),
+  track: (entityId: string) => api.post(`/api/entities/${entityId}/track-activity`),
   untrack: (entityId: string, date: string) =>
     api.delete(`/api/entities/${entityId}/track`, { params: { date } }),
   stats: (entityId: string) => api.get(`/api/entities/${entityId}/stats`),

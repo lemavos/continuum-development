@@ -21,7 +21,7 @@ public class DashboardController {
     }
 
     @GetMapping("/summary")
-    @Operation(summary = "Get dashboard summary", description = "Retrieves comprehensive dashboard data including stats, storage usage, recent notes, and habit activity")
+    @Operation(summary = "Get dashboard summary", description = "Retrieves comprehensive dashboard data including stats, storage usage, recent notes, and activity stats")
     public ResponseEntity<DashboardSummaryDTO> getSummary(@AuthenticationPrincipal CustomUserDetails user) {
         DashboardSummaryDTO summary = dashboardService.getSummary(user.getUserId());
         return ResponseEntity.ok(summary);

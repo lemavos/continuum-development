@@ -116,12 +116,12 @@ public class EntityController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/track-habit")
-    @Operation(summary = "Track habit occurrence", description = "Records a tracking event for a habit entity on the current date")
-    public ResponseEntity<EntityResponse> trackHabit(
+    @PostMapping("/{id}/track-activity")
+    @Operation(summary = "Track activity occurrence", description = "Records a tracking event for an activity entity on the current date")
+    public ResponseEntity<EntityResponse> trackActivity(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String id) {
-        Entity entity = entityService.trackHabit(user.getUserId(), id);
+        Entity entity = entityService.trackActivity(user.getUserId(), id);
         return ResponseEntity.ok(EntityResponse.from(entity));
     }
 }

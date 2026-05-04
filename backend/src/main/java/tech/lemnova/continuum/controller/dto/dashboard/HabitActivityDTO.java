@@ -11,11 +11,11 @@ import java.util.Map;
  *   "2024-04-14": 0,      // Nenhum hábito concluído
  * }
  */
-public record HabitActivityDTO(
+public record ActivityStatsDTO(
     Map<String, Integer> dailyCompletions,  // Data (YYYY-MM-DD) → número de completações
-    int totalDays,                          // Dias com pelo menos 1 hábito
+    int totalDays,                          // Dias com pelo menos 1 atividade
     int maxStreak,                          // Maior sequência contínua
     int currentStreak,                      // Sequência atual
-    int longestInactive                     // Maior gap de dias sem hábitos
+    int longestInactive                     // Maior gap de dias sem atividades
 ) {
 }

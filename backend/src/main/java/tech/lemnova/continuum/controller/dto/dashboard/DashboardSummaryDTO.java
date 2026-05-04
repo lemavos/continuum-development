@@ -9,6 +9,6 @@ public record DashboardSummaryDTO(
     DashboardStatsDTO stats,
     StorageUsageDTO storageUsage,
     List<RecentNoteDTO> recentNotes,
-    HabitActivityDTO habitActivity
+    ActivityStatsDTO activityStats
 ) {
 }

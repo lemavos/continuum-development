@@ -153,9 +153,9 @@ public class TrackingService {
     }
 
     /**
-     * Conta hábitos ativos (que tiveram pelo menos um evento de tracking desde a data especificada)
+     * Conta activities ativas (que tiveram pelo menos um evento de tracking desde a data especificada)
      */
-    public long countActiveHabits(String userId, LocalDate since) {
+    public long countActiveActivities(String userId, LocalDate since) {
         List<TrackingEvent> events = trackingRepo.findByUserId(userId);
         Set<String> activeEntityIds = events.stream()
                 .filter(e -> !e.getDate().isBefore(since))
@@ -165,9 +165,9 @@ public class TrackingService {
     }
 
     /**
-     * Retorna dados de atividade de hábitos para heatmap (últimos 30 dias)
+     * Retorna dados de atividade para heatmap (últimos 30 dias)
      */
-    public Map<String, Integer> getHabitActivityData(String userId, int days) {
+    public Map<String, Integer> getActivityData(String userId, int days) {
         List<TrackingEvent> events = trackingRepo.findByUserId(userId);
         LocalDate end = LocalDate.now();
         LocalDate start = end.minusDays(days - 1);

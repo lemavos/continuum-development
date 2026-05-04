@@ -17,7 +17,7 @@ const UsageContext = createContext<UsageContextValue | null>(null);
 const EMPTY_USAGE: UserUsage = {
   notesCount: 0,
   entitiesCount: 0,
-  habitsCount: 0,
+  activitiesCount: 0,
   vaultSizeMB: 0,
 };
 
@@ -32,7 +32,7 @@ const normalizeUsage = (value: unknown): UserUsage => {
   return {
     notesCount: toSafeNumber(raw.notesCount),
     entitiesCount: toSafeNumber(raw.entitiesCount),
-    habitsCount: toSafeNumber(raw.habitsCount),
+    activitiesCount: toSafeNumber(raw.activitiesCount),
     vaultSizeMB: toSafeNumber(raw.vaultSizeMB),
   };
 };
@@ -56,13 +56,13 @@ async function buildFallbackUsage(): Promise<UserUsage> {
     ? vaultRes.value.data
     : [];
 
-  const habitsCount = entities.filter((entity: { type?: EntityType }) => entity.type === "HABIT").length;
+  const activitiesCount = entities.filter((entity: { type?: EntityType }) => entity.type === "HABIT").length;
   const vaultSizeMB = files.reduce((total: number, file: { size?: number }) => total + toSafeNumber(file.size), 0) / (1024 * 1024);
 
   return {
     notesCount: notes.length,
     entitiesCount: entities.length,
-    habitsCount,
+    activitiesCount,
     vaultSizeMB: Number(vaultSizeMB.toFixed(2)),
   };
 }
@@ -98,7 +98,7 @@ export function UsageProvider({ children }: { children: ReactNode }) {
       return {
         notesCount: Math.max(0, base.notesCount + toSafeNumber(delta.notesCount)),
         entitiesCount: Math.max(0, base.entitiesCount + toSafeNumber(delta.entitiesCount)),
-        habitsCount: Math.max(0, base.habitsCount + toSafeNumber(delta.habitsCount)),
+        activitiesCount: Math.max(0, base.activitiesCount + toSafeNumber(delta.activitiesCount)),
         vaultSizeMB: Math.max(0, Number((base.vaultSizeMB + toSafeNumber(delta.vaultSizeMB)).toFixed(2))),
       };
     });

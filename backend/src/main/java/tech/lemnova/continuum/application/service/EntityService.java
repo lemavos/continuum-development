@@ -294,7 +294,7 @@ public class EntityService {
         return EntityContextResponse.from(entity, summaries);
     }
 
-    public Entity trackHabit(String userId, String entityId) {
+    public Entity trackActivity(String userId, String entityId) {
         User user = getUser(userId);
         
         // Validação centralizada de posse
@@ -302,7 +302,7 @@ public class EntityService {
         
         // Validar se é do tipo HABIT
         if (entity.getType() != EntityType.HABIT) {
-            throw new BadRequestException("Entidade não é um hábito. Tipo: " + entity.getType());
+            throw new BadRequestException("Entidade não é uma atividade. Tipo: " + entity.getType());
         }
         
         // Adicionar a data atual se ainda não existir (evita duplicata)

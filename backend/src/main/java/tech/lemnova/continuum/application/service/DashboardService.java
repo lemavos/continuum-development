@@ -54,21 +54,21 @@ public class DashboardService {
         // Recent notes
         List<RecentNoteDTO> recentNotes = getRecentNotes(userId, vaultId);
 
-        // Habit activity
-        HabitActivityDTO habitActivity = getHabitActivity(userId, vaultId);
+        // Activity stats
+        ActivityStatsDTO activityStats = getActivityStats(userId, vaultId);
 
-        return new DashboardSummaryDTO(stats, storageUsage, recentNotes, habitActivity);
+        return new DashboardSummaryDTO(stats, storageUsage, recentNotes, activityStats);
     }
 
     private DashboardStatsDTO getStats(String userId, String vaultId) {
         long totalNotes = noteRepo.countByUserIdAndVaultId(userId, vaultId);
         long totalEntities = entityRepo.countByUserIdAndVaultId(userId, vaultId);
-        long totalHabits = entityRepo.countByUserIdAndVaultIdAndType(userId, vaultId, "HABIT");
-        long activeHabits = trackingService.countActiveHabits(userId, LocalDate.now().minusDays(7));
+        long totalActivities = entityRepo.countByUserIdAndVaultIdAndType(userId, vaultId, "HABIT");
+        long activeActivities = trackingService.countActiveActivities(userId, LocalDate.now().minusDays(7));
         Long distinctTypesCount = noteRepo.countDistinctTypes(userId, vaultId);
         long totalTypes = distinctTypesCount != null ? distinctTypesCount : 0;
 
-        return new DashboardStatsDTO(totalNotes, totalEntities, totalHabits, activeHabits, totalTypes);
+        return new DashboardStatsDTO(totalNotes, totalEntities, totalActivities, activeActivities, totalTypes);
     }
 
     private StorageUsageDTO getStorageUsage(String userId, String vaultId) {
@@ -106,14 +106,14 @@ public class DashboardService {
         return plain.length() > 150 ? plain.substring(0, 150) + "..." : plain;
     }
 
-    private HabitActivityDTO getHabitActivity(String userId, String vaultId) {
-        Map<String, Integer> dailyCompletions = trackingService.getHabitActivityData(userId, 30);
+    private ActivityStatsDTO getActivityStats(String userId, String vaultId) {
+        Map<String, Integer> dailyCompletions = trackingService.getActivityData(userId, 30);
         int totalDays = (int) dailyCompletions.values().stream().filter(v -> v > 0).count();
         // For simplicity, calculate streaks from the data
         int maxStreak = calculateMaxStreak(dailyCompletions);
         int currentStreak = calculateCurrentStreak(dailyCompletions);
         int longestInactive = calculateLongestInactive(dailyCompletions);
-        return new HabitActivityDTO(dailyCompletions, totalDays, maxStreak, currentStreak, longestInactive);
+        return new ActivityStatsDTO(dailyCompletions, totalDays, maxStreak, currentStreak, longestInactive);
     }
 
     private int calculateMaxStreak(Map<String, Integer> data) {

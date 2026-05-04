@@ -18,7 +18,7 @@ import type { EntityType } from "@/types";
 interface Entity { id: string; title: string; type: EntityType; description?: string; createdAt: string; trackingDates?: string[]; }
 
 const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, HABIT: Flame };
-const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Habit" };
+const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Activity" };
 
 // Dynamic badge colors based on type
 function getEntityBadgeColor(type: EntityType): string {
@@ -73,7 +73,7 @@ export default function Entities() {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
       setEntities((prev) => [...prev, data]);
       setCreateOpen(false); setNewTitle(""); setNewDesc("");
-      applyUsageDelta({ entitiesCount: 1, habitsCount: newType === "HABIT" ? 1 : 0 });
+      applyUsageDelta({ entitiesCount: 1, activitiesCount: newType === "HABIT" ? 1 : 0 });
       void refreshUsage();
     } catch (err: any) {
       if (err.response?.status === 403) { setCreateOpen(false); setUpgradeOpen(true); }
@@ -88,7 +88,7 @@ export default function Entities() {
       const entity = entities.find((item) => item.id === id);
       await entitiesApi.delete(id);
       setEntities((prev) => prev.filter((en) => en.id !== id));
-      applyUsageDelta({ entitiesCount: -1, habitsCount: entity?.type === "HABIT" ? -1 : 0 });
+      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity?.type === "HABIT" ? -1 : 0 });
       void refreshUsage();
     }
     catch { toast({ title: "Error deleting", variant: "destructive" }); }

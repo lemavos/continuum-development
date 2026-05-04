@@ -52,8 +52,8 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Fetch habits
-  const { data: habits } = useQuery({
+  // Fetch activities
+  const { data: activities } = useQuery({
     queryKey: ["entities", "HABIT"],
     queryFn: async () => {
       const response = await entitiesApi.list();
@@ -79,17 +79,17 @@ export default function Dashboard() {
     applyUsageDelta({ vaultSizeMB: storageMB - usage.vaultSizeMB });
   }, [summary?.storageUsage, usage, applyUsageDelta]);
 
-  // Get pending habits today
-  const getPendingHabits = () => {
-    if (!habits || !todayTracking) return [];
+  // Get pending activities today
+  const getPendingActivities = () => {
+    if (!activities || !todayTracking) return [];
     const today = new Date().toISOString().split('T')[0];
-    return habits.filter((habit: Entity) => {
-      const tracked = todayTracking.find((t: any) => t.entityId === habit.id && t.date === today);
+    return activities.filter((activity: Entity) => {
+      const tracked = todayTracking.find((t: any) => t.entityId === activity.id && t.date === today);
       return !tracked;
     });
   };
 
-  const pendingHabits = getPendingHabits();
+  const pendingActivities = getPendingActivities();
 
   // Process graph data for ForceGraph2D
   const getGraphPreviewData = () => {
@@ -274,23 +274,23 @@ export default function Dashboard() {
                 <Flame className="w-4 h-4 text-orange-500" />
                 <h2 className="text-white font-sans font-medium">For Today</h2>
               </div>
-              {pendingHabits.length > 0 && (
+              {pendingActivities.length > 0 && (
                 <span className="text-[10px] font-bold px-2 py-1 bg-orange-500/10 text-orange-500 rounded uppercase tracking-widest">
-                  {pendingHabits.length} Pending
+                  {pendingActivities.length} Pending
                 </span>
               )}
             </div>
             
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
-              {pendingHabits.length > 0 ? (
-                pendingHabits.map((habit: Entity) => (
+              {pendingActivities.length > 0 ? (
+                pendingActivities.map((activity: Entity) => (
                   <div 
                     key={habit.id} 
                     className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/5 transition-all group"
                   >
-                    <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{habit.title}</span>
+                    <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{activity.title}</span>
                     <button 
-                      onClick={() => navigate(`/entities/${habit.id}`)}
+                      onClick={() => navigate(`/entities/${activity.id}`)}
                       className="w-5 h-5 rounded-full border border-zinc-600 flex items-center justify-center group-hover:border-orange-500 transition-colors"
                       title="Check in"
                     >
@@ -302,7 +302,7 @@ export default function Dashboard() {
                 <div className="flex-1 flex flex-col items-center justify-center py-6">
                   <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-3 opacity-80" />
                   <p className="text-sm text-zinc-300 font-sans font-medium">All clear for today!</p>
-                  <p className="text-xs text-zinc-500 mt-1">No pending habits.</p>
+                  <p className="text-xs text-zinc-500 mt-1">No pending activities.</p>
                 </div>
               )}
             </div>

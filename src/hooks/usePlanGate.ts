@@ -9,11 +9,11 @@ interface PlanGateResult {
   loading: boolean;
   canCreateNote: boolean;
   canCreateEntity: boolean;
-  canCreateHabit: boolean;
+  canCreateActivity: boolean;
   canUploadVault: (fileSizeMB: number) => boolean;
   refresh: () => Promise<void>;
   applyUsageDelta: (delta: UsageDelta) => void;
-  getLimitMessage: (resource: "notes" | "entities" | "habits" | "vault") => string;
+  getLimitMessage: (resource: "notes" | "entities" | "activities" | "vault") => string;
 }
 
 export function usePlanGate(): PlanGateResult {
@@ -29,7 +29,7 @@ export function usePlanGate(): PlanGateResult {
   const canCreateEntity = !usage ? true :
     isUnlimited(limits.maxEntities) || usage.entitiesCount < limits.maxEntities;
 
-  const canCreateHabit = canCreateEntity;
+  const canCreateActivity = canCreateEntity;
 
   const canUploadVault = (fileSizeMB: number) => {
     if (!usage) return true;
@@ -37,11 +37,11 @@ export function usePlanGate(): PlanGateResult {
     return (usage.vaultSizeMB + fileSizeMB) <= limits.maxVaultSizeMB;
   };
 
-  const getLimitMessage = (resource: "notes" | "entities" | "habits" | "vault") => {
+  const getLimitMessage = (resource: "notes" | "entities" | "activities" | "vault") => {
     const map = {
       notes: { current: usage?.notesCount ?? 0, max: limits.maxNotes, label: "notas" },
       entities: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "entidades" },
-      habits: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "entidades" },
+      activities: { current: usage?.entitiesCount ?? 0, max: limits.maxEntities, label: "atividades" },
       vault: { current: usage?.vaultSizeMB ?? 0, max: limits.maxVaultSizeMB, label: "MB de armazenamento" },
     };
     const r = map[resource];
@@ -49,5 +49,5 @@ export function usePlanGate(): PlanGateResult {
     return `${r.current}/${r.max} ${r.label} utilizados`;
   };
 
-  return { usage, loading, canCreateNote, canCreateEntity, canCreateHabit, canUploadVault, refresh, applyUsageDelta, getLimitMessage };
+  return { usage, loading, canCreateNote, canCreateEntity, canCreateActivity, canUploadVault, refresh, applyUsageDelta, getLimitMessage };
 }

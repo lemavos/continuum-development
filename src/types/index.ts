@@ -114,7 +114,7 @@ export interface VaultFile {
 export interface UserUsage {
   notesCount: number;
   entitiesCount: number;
-  habitsCount: number;
+  activitiesCount: number;
   vaultSizeMB: number;
 }
 
@@ -122,8 +122,8 @@ export interface UserUsage {
 export interface DashboardStatsDTO {
   totalNotes: number;
   totalEntities: number;
-  totalHabits: number;
-  activeHabits: number;
+  totalActivities: number;
+  activeActivities: number;
   totalTypes: number;
 }
 
@@ -146,7 +146,7 @@ export interface RecentNoteDTO {
   entityIds: string[];
 }
 
-export interface HabitActivityDTO {
+export interface ActivityStatsDTO {
   dailyCompletions: Record<string, number>;
   totalDays: number;
   maxStreak: number;
@@ -158,5 +158,5 @@ export interface DashboardSummaryDTO {
   stats: DashboardStatsDTO;
   storageUsage: StorageUsageDTO;
   recentNotes: RecentNoteDTO[];
-  habitActivity: HabitActivityDTO;
+  activityStats: ActivityStatsDTO;
 }
