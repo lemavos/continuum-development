@@ -424,9 +424,13 @@ export default function KnowledgeGraph() {
   const loadGraph = useCallback(async () => {
     setLoading(true);
     try {
+      console.log('Loading graph data...');
       const [graphRes, entitiesRes] = await Promise.all([graphApi.data(), entitiesApi.list()]);
+      console.log('Graph response:', graphRes);
+      console.log('Entities response:', entitiesRes);
       const data = graphRes.data;
       const entities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
+      console.log('Entities data:', entities);
       setAllEntities(entities);
 
       const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];

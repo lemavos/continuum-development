@@ -58,9 +58,15 @@ export default function Entities() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching entities...');
       const eRes = await entitiesApi.list();
+      console.log('Entities response:', eRes);
       setEntities(Array.isArray(eRes.data) ? eRes.data : []);
-    } catch { toast({ title: "Error loading entities", variant: "destructive" }); }
+      console.log('Entities set:', Array.isArray(eRes.data) ? eRes.data : []);
+    } catch (error) {
+      console.error('Error loading entities:', error);
+      toast({ title: "Error loading entities", variant: "destructive" });
+    }
     finally { setLoading(false); }
   };
 
