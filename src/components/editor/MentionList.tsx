@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import type { SuggestionKeyDownProps } from "@tiptap/suggestion";
-import { Hash, AtSign, Plus, FileText, User, Folder, Building2, Tag, CircleDot } from "lucide-react";
+import { Hash, AtSign, Plus, FileText, User, Folder, Building2, Tag, CircleDot, ChevronDown } from "lucide-react";
 
 export interface MentionItem {
   id: string;
@@ -41,11 +41,29 @@ const iconFor = (type: string) => {
 export const MentionList = forwardRef<MentionListRef, MentionListProps>(
   ({ items, command, query, variant }, ref) => {
     const [selected, setSelected] = useState(0);
+    const [entityType, setEntityType] = useState("TOPIC");
+    const [showTypeSelector, setShowTypeSelector] = useState(false);
     useEffect(() => setSelected(0), [items]);
+
+    const entityTypes = [
+      { value: "PERSON", label: "Person", icon: User },
+      { value: "PROJECT", label: "Project", icon: Folder },
+      { value: "TOPIC", label: "Topic", icon: Tag },
+      { value: "ORGANIZATION", label: "Organization", icon: Building2 },
+      { value: "ACTIVITY", label: "Activity", icon: CircleDot },
+    ];
 
     const select = (i: number) => {
       const item = items[i];
-      if (item) command(item);
+      if (item) {
+        if (item.isCreate && item.createKind === "entity") {
+          // Override the type with selected entity type
+          const itemWithType = { ...item, type: entityType };
+          command(itemWithType);
+        } else {
+          command(item);
+        }
+      }
     };
 
     useImperativeHandle(ref, () => ({
@@ -76,6 +94,52 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             {query ? `Searching "${query}"` : variant === "note" ? "Link a note" : "Mention an entity"}
           </span>
         </div>
+
+        {/* Entity type selector for entity creation */}
+        {variant === "entity" && items.some(item => item.isCreate && item.createKind === "entity") && (
+          <div className="px-3 py-2 border-b border-border/40">
+            <div className="text-xs text-muted-foreground mb-2">Entity type:</div>
+            <div className="relative">
+              <button
+                onClick={() => setShowTypeSelector(!showTypeSelector)}
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-sm bg-accent/50 hover:bg-accent rounded-md transition-colors"
+              >
+                {(() => {
+                  const selectedType = entityTypes.find(t => t.value === entityType);
+                  const Icon = selectedType?.icon || Tag;
+                  return (
+                    <>
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="flex-1 text-left">{selectedType?.label}</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  );
+                })()}
+              </button>
+              {showTypeSelector && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                  {entityTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <button
+                        key={type.value}
+                        onClick={() => {
+                          setEntityType(type.value);
+                          setShowTypeSelector(false);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors"
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{type.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="max-h-72 overflow-y-auto py-1">
           {items.length === 0 ? (
             <div className="px-3 py-4 text-xs text-muted-foreground text-center">No results</div>

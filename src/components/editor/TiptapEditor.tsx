@@ -87,7 +87,7 @@ const loadNotes = async () => {
 /* ── Suggestion factory ── */
 const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => ({
   char: variant === "entity" ? "@" : "#",
-  allowSpaces: false,
+  allowSpaces: variant === "note", // Allow spaces for notes, not for entities
   startOfLine: false,
   items: async ({ query }: { query: string }): Promise<MentionItem[]> => {
     const q = query.toLowerCase().trim();
@@ -132,7 +132,8 @@ const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => 
       const title = item.title.trim();
       if (!title) return;
       if (item.createKind === "entity") {
-        entitiesApi.create(title, "TOPIC").then((res) => {
+        const entityType = item.type || "TOPIC"; // Use the selected type from MentionList
+        entitiesApi.create(title, entityType).then((res) => {
           const created = res.data as Entity;
           entityCache.data = [created, ...entityCache.data];
           finalize(created.id, created.title);
