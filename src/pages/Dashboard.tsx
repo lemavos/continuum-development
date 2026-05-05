@@ -224,7 +224,7 @@ export default function Dashboard() {
                   <Activity className="w-4 h-4 text-zinc-400" /> System Usage
                 </h2>
                 <span className="text-[10px] font-bold px-2 py-1 rounded bg-purple-500/10 text-purple-400 tracking-widest uppercase">
-                  {plan}
+                  {user?.plan || "FREE"}
                 </span>
               </div>
 
@@ -285,7 +285,7 @@ export default function Dashboard() {
               {pendingActivities.length > 0 ? (
                 pendingActivities.map((activity: Entity) => (
                   <div 
-                    key={habit.id} 
+                    key={activity.id} 
                     className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/5 transition-all group"
                   >
                     <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{activity.title}</span>
