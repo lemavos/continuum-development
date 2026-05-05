@@ -285,7 +285,7 @@ export default function Dashboard() {
               {pendingActivities.length > 0 ? (
                 pendingActivities.map((activity: Entity) => (
                   <div 
-                    key={habit.id} 
+                    key={activity.id} 
                     className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/5 transition-all group"
                   >
                     <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{activity.title}</span>
