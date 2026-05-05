@@ -66,7 +66,7 @@ public class User {
     private int noteCount = 0;
 
     @Builder.Default
-    private int habitCount = 0;
+    private int activityCount = 0;
 
     @Builder.Default
     private Instant createdAt = Instant.now();
@@ -142,7 +142,7 @@ public class User {
     }
 
     public int getHabitCount() {
-        return habitCount;
+        return activityCount;
     }
 
     public Instant getCreatedAt() {
@@ -222,8 +222,8 @@ public class User {
         this.noteCount = noteCount;
     }
 
-    public void setHabitCount(int habitCount) {
-        this.habitCount = habitCount;
+    public void setHabitCount(int activityCount) {
+        this.activityCount = activityCount;
     }
 
     public void setCreatedAt(Instant createdAt) {
@@ -264,12 +264,12 @@ public class User {
     }
 
     public void incrementHabitCount() {
-        this.habitCount++;
+        this.activityCount++;
         this.updatedAt = Instant.now();
     }
 
     public void decrementHabitCount() {
-        this.habitCount = Math.max(0, this.habitCount - 1);
+        this.activityCount = Math.max(0, this.activityCount - 1);
         this.updatedAt = Instant.now();
     }
 

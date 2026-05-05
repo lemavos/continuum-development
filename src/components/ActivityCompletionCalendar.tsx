@@ -18,7 +18,7 @@ interface ActivityCompletionCalendarProps {
 }
 
 /**
- * Mini completion calendar for activities/habits
+ * Mini completion calendar for activities/activities
  * Shows a 4-week view of completions
  */
 export function ActivityCompletionCalendar({

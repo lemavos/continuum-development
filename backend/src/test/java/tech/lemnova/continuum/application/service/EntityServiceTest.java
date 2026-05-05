@@ -159,24 +159,24 @@ class EntityServiceTest {
     }
 
     @Test
-    @DisplayName("trackHabit: adds today to tracking dates for existing habit")
+    @DisplayName("trackHabit: adds today to tracking dates for existing activity")
     void trackHabit_addsTodayToTrackingDates() {
         String userId = "user1";
         String entityId = "e1";
 
-        Entity habit = new Entity();
-        habit.setId(entityId);
-        habit.setUserId(userId);
-        habit.setVaultId("vault1");
-        habit.setType(EntityType.HABIT);
+        Entity activity = new Entity();
+        activity.setId(entityId);
+        activity.setUserId(userId);
+        activity.setVaultId("vault1");
+        activity.setType(EntityType.ACTIVITY);
 
-        when(entityRepo.findById(entityId)).thenReturn(Optional.of(habit));
+        when(entityRepo.findById(entityId)).thenReturn(Optional.of(activity));
         when(entityRepo.save(any(Entity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Entity result = entityService.trackHabit(userId, entityId);
 
         assertThat(result.getTrackingDates()).contains(java.time.LocalDate.now());
-        verify(entityRepo, times(1)).save(habit);
+        verify(entityRepo, times(1)).save(activity);
     }
 
     @Test

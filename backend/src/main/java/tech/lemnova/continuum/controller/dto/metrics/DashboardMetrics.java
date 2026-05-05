@@ -15,7 +15,7 @@ public record DashboardMetrics(
     List<TopEntity> topPeople,
     List<TopEntity> topProjects,
     List<TopEntity> topHabits,
-    List<String> habitsCompletedToday,
+    List<String> activitiesCompletedToday,
     double weeklyAverageCompletionRate,
     Map<LocalDate, Long> globalHeatmap
 ) {}

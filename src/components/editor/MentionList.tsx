@@ -31,7 +31,7 @@ const iconFor = (type: string) => {
       return Folder;
     case "ORGANIZATION":
       return Building2;
-    case "HABIT":
+    case "ACTIVITY":
       return CircleDot;
     default:
       return Tag;

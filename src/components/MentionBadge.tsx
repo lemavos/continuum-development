@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import type { EntityType } from '@/types';
 
 const ENTITY_TYPE_CONFIG: Record<EntityType, { color: string; bgColor: string; textColor: string; borderColor: string }> = {
-  HABIT: {
+  ACTIVITY: {
     color: '#10b981',
     bgColor: 'rgba(16, 185, 129, 0.1)',
     textColor: '#059669',

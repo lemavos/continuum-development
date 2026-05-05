@@ -40,7 +40,7 @@ public class GraphController {
      * Retorna o grafo de conhecimento completo do usuário.
      * 
      * Estrutura:
-     * - Nodes: Notas (type="NOTE") + Entidades (type="HABIT", "PERSON", etc)
+     * - Nodes: Notas (type="NOTE") + Entidades (type="ACTIVITY", "PERSON", etc)
      * - Links: Conexões derivadas de note.entityIds
      */
     @GetMapping("/data")

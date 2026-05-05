@@ -72,7 +72,7 @@ export default function EntityDetail() {
 
         setEntity(data);
 
-        if (data?.type === "HABIT") {
+        if (data?.type === "ACTIVITY") {
           const [hRes, sRes] = await Promise.all([entitiesApi.heatmap(id), entitiesApi.stats(id)]);
 
           if (cancelled) {
@@ -227,7 +227,7 @@ export default function EntityDetail() {
   if (loading) return <AppLayout><div className="flex justify-center items-center h-full"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div></AppLayout>;
   if (!entity) return null;
 
-  const isHabit = entity.type === "HABIT";
+  const isHabit = entity.type === "ACTIVITY";
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.some((date) => date.startsWith(today));
   const streak = stats?.currentStreak ?? 0;
@@ -324,7 +324,7 @@ export default function EntityDetail() {
           </>
         )}
 
-        {entity?.type === "HABIT" && (
+        {entity?.type === "ACTIVITY" && (
           <>
             <ActivityAnalyticsCalendar 
               trackingDates={entity.trackingDates}

@@ -37,7 +37,7 @@ public class TrackingEvent {
     @Indexed
     private LocalDate date;
 
-    private Integer value;  // 1=done for habits
+    private Integer value;  // 1=done for activities
     @JsonAlias("numericValue")
     private Double decimalValue;
     private String note;

@@ -139,11 +139,11 @@ public class MetricsService {
 
         List<NoteReference> people   = byType.getOrDefault("person",  List.of());
         List<NoteReference> projects = byType.getOrDefault("project", List.of());
-        List<NoteReference> habitsRefs   = byType.getOrDefault("habit",   List.of());
+        List<NoteReference> activitiesRefs   = byType.getOrDefault("activity",   List.of());
 
         long uniquePeople   = people.stream().map(NoteReference::getEntityId).distinct().count();
         long uniqueProjects = projects.stream().map(NoteReference::getEntityId).distinct().count();
-        long uniqueHabits   = habitsRefs.stream().map(NoteReference::getEntityId).distinct().count();
+        long uniqueHabits   = activitiesRefs.stream().map(NoteReference::getEntityId).distinct().count();
 
         // global heatmap
         Map<LocalDate, Long> globalHeatmap = all.stream()
@@ -159,9 +159,9 @@ public class MetricsService {
                 .map(TrackingEvent::getEntityId)
                 .collect(Collectors.toSet());
 
-        // active habits from entityService
-        List<Entity> habits = entityService.listByType(userId, EntityType.HABIT);
-        List<String> habitsCompletedToday = habits.stream()
+        // active activities from entityService
+        List<Entity> activities = entityService.listByType(userId, EntityType.ACTIVITY);
+        List<String> activitiesCompletedToday = activities.stream()
                 .map(Entity::getId)
                 .filter(completedToday::contains)
                 .collect(Collectors.toList());
@@ -175,21 +175,21 @@ public class MetricsService {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> (long) e.getValue().size()));
 
         double weeklyAverage = 0.0;
-        if (!habits.isEmpty()) {
+        if (!activities.isEmpty()) {
             double sum = 0.0;
-            for (Entity h : habits) {
+            for (Entity h : activities) {
                 long days = daysThisWeek.getOrDefault(h.getId(), 0L);
                 sum += days / 7.0;
             }
-            weeklyAverage = sum / habits.size();
+            weeklyAverage = sum / activities.size();
         }
 
         return new DashboardMetrics(
                 uniquePeople, uniqueProjects, uniqueHabits,
                 totalMentions,
                 totalNotes, totalEntities, topMentions,
-                topEntities(people, 5), topEntities(projects, 5), topEntities(habitsRefs, 5),
-                habitsCompletedToday, weeklyAverage, globalHeatmap);
+                topEntities(people, 5), topEntities(projects, 5), topEntities(activitiesRefs, 5),
+                activitiesCompletedToday, weeklyAverage, globalHeatmap);
     }
 
     // ── private ───────────────────────────────────────────────────────────────

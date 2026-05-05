@@ -48,6 +48,6 @@ public class Entity {
      * Método solicitado pelo TrackingService
      */
     public boolean isTrackable() {
-        return type == EntityType.HABIT || type == EntityType.PROJECT;
+        return type == EntityType.ACTIVITY || type == EntityType.PROJECT;
     }
 }

@@ -63,7 +63,7 @@ public class DashboardService {
     private DashboardStatsDTO getStats(String userId, String vaultId) {
         long totalNotes = noteRepo.countByUserIdAndVaultId(userId, vaultId);
         long totalEntities = entityRepo.countByUserIdAndVaultId(userId, vaultId);
-        long totalActivities = entityRepo.countByUserIdAndVaultIdAndType(userId, vaultId, "HABIT");
+        long totalActivities = entityRepo.countByUserIdAndVaultIdAndType(userId, vaultId, "ACTIVITY");
         long activeActivities = trackingService.countActiveActivities(userId, LocalDate.now().minusDays(7));
         Long distinctTypesCount = noteRepo.countDistinctTypes(userId, vaultId);
         long totalTypes = distinctTypesCount != null ? distinctTypesCount : 0;

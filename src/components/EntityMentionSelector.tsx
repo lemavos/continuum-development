@@ -7,7 +7,7 @@ import type { Entity, EntityType } from '@/types';
 import { useEntityStore } from '@/contexts/EntityContext';
 
 const ENTITY_TYPE_CONFIG: Record<EntityType, { label: string; icon: string; hoverBg: string; hoverBorder: string }> = {
-  HABIT: { label: 'Activity', icon: '🟢', hoverBg: 'rgba(16,185,129,0.08)', hoverBorder: 'rgba(16,185,129,0.3)' },
+  ACTIVITY: { label: 'Activity', icon: '🟢', hoverBg: 'rgba(16,185,129,0.08)', hoverBorder: 'rgba(16,185,129,0.3)' },
   PROJECT: { label: 'Project', icon: '🔵', hoverBg: 'rgba(59,130,246,0.08)', hoverBorder: 'rgba(59,130,246,0.3)' },
   PERSON: { label: 'Person', icon: '🟡', hoverBg: 'rgba(245,158,11,0.08)', hoverBorder: 'rgba(245,158,11,0.3)' },
   TOPIC: { label: 'Topic', icon: '🟣', hoverBg: 'rgba(139,92,246,0.08)', hoverBorder: 'rgba(139,92,246,0.3)' },
@@ -15,7 +15,7 @@ const ENTITY_TYPE_CONFIG: Record<EntityType, { label: string; icon: string; hove
 };
 
 const BADGE_COLORS: Record<EntityType, string> = {
-  HABIT: '#10b981',
+  ACTIVITY: '#10b981',
   PROJECT: '#3b82f6',
   PERSON: '#f59e0b',
   TOPIC: '#8b5cf6',

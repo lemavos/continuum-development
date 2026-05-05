@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum EntityType {
-    PERSON, PROJECT, TOPIC, ORGANIZATION, HABIT;
+    PERSON, PROJECT, TOPIC, ORGANIZATION, ACTIVITY;
 
     @JsonValue
     @Override
@@ -20,7 +20,7 @@ public enum EntityType {
         try {
             return EntityType.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid EntityType: '" + value + "'. Valid values are: PERSON, PROJECT, TOPIC, ORGANIZATION, HABIT");
+            throw new IllegalArgumentException("Invalid EntityType: '" + value + "'. Valid values are: PERSON, PROJECT, TOPIC, ORGANIZATION, ACTIVITY");
         }
     }
 }

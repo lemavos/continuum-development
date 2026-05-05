@@ -56,7 +56,7 @@ async function buildFallbackUsage(): Promise<UserUsage> {
     ? vaultRes.value.data
     : [];
 
-  const activitiesCount = entities.filter((entity: { type?: EntityType }) => entity.type === "HABIT").length;
+  const activitiesCount = entities.filter((entity: { type?: EntityType }) => entity.type === "ACTIVITY").length;
   const vaultSizeMB = files.reduce((total: number, file: { size?: number }) => total + toSafeNumber(file.size), 0) / (1024 * 1024);
 
   return {

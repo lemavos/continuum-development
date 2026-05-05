@@ -27,7 +27,7 @@ export function TimeTrackingList() {
     queryFn: async () => {
       const response = await entitiesApi.list();
       // Return Projects and Activities
-      return (response.data as Entity[]).filter(e => e.type === 'PROJECT' || e.type === 'HABIT');
+      return (response.data as Entity[]).filter(e => e.type === 'PROJECT' || e.type === 'ACTIVITY');
     },
   });
 
@@ -56,9 +56,9 @@ export function TimeTrackingList() {
 
   const filteredEntities = trackableEntities?.filter(e => selectedType ? e.type === selectedType : true) || [];
 
-  const types = ['PROJECT', 'HABIT'];
-  const typeIcons: Record<string, any> = { PROJECT: Briefcase, HABIT: Flame };
-  const typeLabels: Record<string, string> = { PROJECT: 'Project', HABIT: 'Activity' };
+  const types = ['PROJECT', 'ACTIVITY'];
+  const typeIcons: Record<string, any> = { PROJECT: Briefcase, ACTIVITY: Flame };
+  const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity' };
 
   return (
     <div className="space-y-6">

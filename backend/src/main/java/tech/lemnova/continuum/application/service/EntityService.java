@@ -300,8 +300,8 @@ public class EntityService {
         // Validação centralizada de posse
         Entity entity = validateOwnership(userId, user.getVaultId(), entityId);
         
-        // Validar se é do tipo HABIT
-        if (entity.getType() != EntityType.HABIT) {
+        // Validar se é do tipo ACTIVITY
+        if (entity.getType() != EntityType.ACTIVITY) {
             throw new BadRequestException("Entidade não é uma atividade. Tipo: " + entity.getType());
         }
         

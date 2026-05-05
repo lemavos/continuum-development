@@ -17,8 +17,8 @@ import type { EntityType } from "@/types";
 
 interface Entity { id: string; title: string; type: EntityType; description?: string; createdAt: string; trackingDates?: string[]; }
 
-const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, HABIT: Flame };
-const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", HABIT: "Activity" };
+const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, ACTIVITY: Flame };
+const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", ACTIVITY: "Activity" };
 
 // Dynamic badge colors based on type
 function getEntityBadgeColor(type: EntityType): string {
@@ -27,7 +27,7 @@ function getEntityBadgeColor(type: EntityType): string {
     PROJECT: "bg-purple-500/20 text-purple-200 border border-purple-500/30",
     TOPIC: "bg-amber-500/20 text-amber-200 border border-amber-500/30",
     ORGANIZATION: "bg-teal-500/20 text-teal-200 border border-teal-500/30",
-    HABIT: "bg-rose-500/20 text-rose-200 border border-rose-500/30",
+    ACTIVITY: "bg-rose-500/20 text-rose-200 border border-rose-500/30",
   };
   return colors[type] || "";
 }
@@ -73,7 +73,7 @@ export default function Entities() {
       const { data } = await entitiesApi.create(newTitle, newType, newDesc || undefined);
       setEntities((prev) => [...prev, data]);
       setCreateOpen(false); setNewTitle(""); setNewDesc("");
-      applyUsageDelta({ entitiesCount: 1, activitiesCount: newType === "HABIT" ? 1 : 0 });
+      applyUsageDelta({ entitiesCount: 1, activitiesCount: newType === "ACTIVITY" ? 1 : 0 });
       void refreshUsage();
     } catch (err: any) {
       if (err.response?.status === 403) { setCreateOpen(false); setUpgradeOpen(true); }
@@ -88,7 +88,7 @@ export default function Entities() {
       const entity = entities.find((item) => item.id === id);
       await entitiesApi.delete(id);
       setEntities((prev) => prev.filter((en) => en.id !== id));
-      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity?.type === "HABIT" ? -1 : 0 });
+      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity?.type === "ACTIVITY" ? -1 : 0 });
       void refreshUsage();
     }
     catch { toast({ title: "Error deleting", variant: "destructive" }); }
@@ -100,7 +100,7 @@ export default function Entities() {
     return matchSearch && matchType;
   });
 
-  const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "HABIT"];
+  const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "ACTIVITY"];
 
   return (
     <AppLayout>
@@ -199,7 +199,7 @@ export default function Entities() {
                   {/* Footer - Track/Streak and Delete */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 gap-2">
                           <div className="flex items-center gap-1">
-                      {entity.type === "HABIT" && streak > 0 && (
+                      {entity.type === "ACTIVITY" && streak > 0 && (
                         <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30">
                           <Flame className="w-3.5 h-3.5 text-rose-400" />
                           <span className="text-xs font-semibold text-rose-200">{streak}</span>

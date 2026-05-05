@@ -54,10 +54,10 @@ export default function Dashboard() {
 
   // Fetch activities
   const { data: activities } = useQuery({
-    queryKey: ["entities", "HABIT"],
+    queryKey: ["entities", "ACTIVITY"],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      return response.data.filter((entity: Entity) => entity.type === "HABIT");
+      return response.data.filter((entity: Entity) => entity.type === "ACTIVITY");
     },
   });
 
@@ -168,7 +168,7 @@ export default function Dashboard() {
                           backgroundColor: (() => {
                             const colors: Record<string, string> = {
                               NOTE: "#ffffff",
-                              HABIT: "#22c55e",
+                              ACTIVITY: "#22c55e",
                               PERSON: "#eab308",
                               PROJECT: "#3b82f6",
                               TOPIC: "#a855f7",

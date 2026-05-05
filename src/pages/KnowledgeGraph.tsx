@@ -42,7 +42,7 @@ interface GraphEdge {
 // Resolved via CSS variables to follow design tokens
 const TYPE_COLORS: Record<string, string> = {
   NOTE: "hsl(0, 0%, 92%)",
-  HABIT: "hsl(142, 71%, 45%)",
+  ACTIVITY: "hsl(142, 71%, 45%)",
   PERSON: "hsl(45, 93%, 58%)",
   PROJECT: "hsl(217, 91%, 60%)",
   TOPIC: "hsl(270, 70%, 65%)",
@@ -51,7 +51,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   NOTE: "Note",
-  HABIT: "Activity",
+  ACTIVITY: "Activity",
   PERSON: "Person",
   PROJECT: "Project",
   TOPIC: "Topic",
@@ -59,7 +59,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const BASE_RADIUS: Record<string, number> = {
-  NOTE: 4, HABIT: 5, PERSON: 5, PROJECT: 6, TOPIC: 5, ORGANIZATION: 6,
+  NOTE: 4, ACTIVITY: 5, PERSON: 5, PROJECT: 6, TOPIC: 5, ORGANIZATION: 6,
 };
 
 // ── Barnes-Hut quadtree (mutable for perf) ──────────────────────────────

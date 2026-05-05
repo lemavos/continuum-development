@@ -13,7 +13,7 @@ import type { Entity, EntityStats, Note } from "@/types";
 
 const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   NOTE: { label: "Note", icon: "📝" },
-  HABIT: { label: "Activity", icon: "🟢" },
+  ACTIVITY: { label: "Activity", icon: "🟢" },
   PROJECT: { label: "Project", icon: "🔵" },
   PERSON: { label: "Person", icon: "🟡" },
   TOPIC: { label: "Topic", icon: "🟣" },
@@ -106,7 +106,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
           entitiesApi.get(entity.id),
           entitiesApi.getNotes(entity.id),
           entitiesApi.getConnections(entity.id),
-          entity.type === "HABIT" ? entitiesApi.stats(entity.id) : Promise.resolve(null),
+          entity.type === "ACTIVITY" ? entitiesApi.stats(entity.id) : Promise.resolve(null),
         ]);
 
         if (cancelled) {
@@ -149,7 +149,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const displayEntity = resolvedEntity || entity;
   const config = ENTITY_TYPE_CONFIG[displayEntity.type] || ENTITY_TYPE_CONFIG.TOPIC;
   const isNote = displayEntity.type === "NOTE";
-  const habitTotalCompletions = Array.isArray((displayEntity as Entity).trackingDates)
+  const activityTotalCompletions = Array.isArray((displayEntity as Entity).trackingDates)
     ? (displayEntity as Entity).trackingDates?.length ?? 0
     : stats?.totalCompletions ?? 0;
   const weeklyCompletionRate = (() => {
@@ -325,7 +325,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                         </CardContent>
                       </Card>
 
-                      {displayEntity.type === "HABIT" && stats && (
+                      {displayEntity.type === "ACTIVITY" && stats && (
                         <Card>
                           <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-semibold">Activity Metrics</CardTitle>
@@ -346,7 +346,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                           </CardContent>
                           <CardContent className="pt-0 text-center text-xs text-muted-foreground">
                             <span>Total tracked: </span>
-                            <span className="font-medium text-foreground">{habitTotalCompletions}</span>
+                            <span className="font-medium text-foreground">{activityTotalCompletions}</span>
                           </CardContent>
                         </Card>
                       )}
