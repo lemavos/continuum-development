@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
+import { TimerWidget } from "@/components/TimerWidget";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { getPlanLimits } from "@/lib/plan";
@@ -34,27 +35,9 @@ export default function EntityDetail() {
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   // Time tracking
-  const { getTotalTime, getActiveTimer, startTimer, stopTimer, formatSeconds, activeTimers, isTimerActive, getElapsedSeconds, isStarting, isStopping } = useTimeTracking();
+  const { getTotalTime, getActiveTimer, formatSeconds } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
   const { data: activeTimer } = getActiveTimer(id!);
-
-  // Plan limits for heatmap
-  const { user } = useAuth();
-  const limits = getPlanLimits(user);
-  const historyDays = limits.historyDays === -1 ? 365 : limits.historyDays;
-
-  const handleStartTimer = async () => {
-    if (!id) return;
-    await startTimer(id);
-  };
-
-  const handleStopTimer = async () => {
-    if (!id) return;
-    const activeTimerData = activeTimers.get(id);
-    if (activeTimerData) {
-      await stopTimer({ sessionId: activeTimerData.timerId });
-    }
-  };
 
   useEffect(() => {
     if (!id) return;
@@ -288,19 +271,16 @@ export default function EntityDetail() {
 
         {entity?.type === "PROJECT" && (
           <>
-            <div className="flex items-center gap-3">
-              {isTimerActive(id) ? (
-                <Button onClick={handleStopTimer} disabled={isStopping} className="bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30">
-                  <Pause className="w-4 h-4 mr-2" />
-                  {isStopping ? "Stopping..." : `Stop Timer (${formatSeconds(getElapsedSeconds(id))})`}
-                </Button>
-              ) : (
-                <Button onClick={handleStartTimer} disabled={isStarting} className="bg-green-500/20 text-green-200 border border-green-500/30 hover:bg-green-500/30">
-                  <Play className="w-4 h-4 mr-2" />
-                  {isStarting ? "Starting..." : "Start Timer"}
-                </Button>
-              )}
-            </div>
+            <TimerWidget
+              entityId={id!}
+              entityName={entity.title}
+              onTimerStart={(sessionId) => {
+                toast({ title: "Timer started! ⏱️" });
+              }}
+              onTimerStop={(duration) => {
+                toast({ title: `Timer stopped! ${formatSeconds(duration)} recorded` });
+              }}
+            />
 
             {/* Time Summary */}
             {timeSummary && (

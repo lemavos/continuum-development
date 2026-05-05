@@ -1,7 +1,8 @@
 import { Play, Pause, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
+import './FlipClock.css';
 
 interface TimerWidgetProps {
   entityId: string;
@@ -13,9 +14,10 @@ interface TimerWidgetProps {
 
 interface FlipDigitProps {
   value: string;
+  isColon?: boolean;
 }
 
-function FlipDigit({ value }: FlipDigitProps) {
+function FlipDigit({ value, isColon = false }: FlipDigitProps) {
   const [previous, setPrevious] = useState(value);
   const [flipping, setFlipping] = useState(false);
 
@@ -25,77 +27,67 @@ function FlipDigit({ value }: FlipDigitProps) {
       const timeout = window.setTimeout(() => {
         setFlipping(false);
         setPrevious(value);
-      }, 450);
+      }, 600);
       return () => window.clearTimeout(timeout);
     }
   }, [value, previous]);
 
-  return (
-    <div className="flip-digit relative w-[4.5rem] sm:w-[5.5rem] h-[5.5rem] sm:h-[6.5rem] perspective">
-      <div className="absolute inset-0 rounded-2xl bg-zinc-950 border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.4)] overflow-hidden">
-        <div className="flip-face flip-top bg-zinc-950 text-white font-mono font-black text-4xl sm:text-5xl leading-tight">
-          <span>{flipping ? previous : value}</span>
-        </div>
-        <div className="flip-face flip-bottom bg-zinc-950 text-white font-mono font-black text-4xl sm:text-5xl leading-tight">
-          <span>{value}</span>
-        </div>
-        <div className={`flip-animation ${flipping ? 'animate-flip' : ''}`}>
-          <div className="flip-panel flip-panel-top">{previous}</div>
-          <div className="flip-panel flip-panel-bottom">{value}</div>
-        </div>
+  if (isColon) {
+    return (
+      <div className="flex items-center justify-center w-8 h-16 text-4xl sm:text-5xl font-mono font-black text-white">
+        :
       </div>
+    );
+  }
+
+  return (
+    <div className={`flip-digit ${flipping ? 'flipping' : ''}`}>
+      <div className="flip-top">{flipping ? previous : value}</div>
+      <div className="flip-bottom">{value}</div>
     </div>
   );
 }
 
 function FlipClockOverlay({ timeString, onClose }: { timeString: string; onClose: () => void }) {
-  const digits = useMemo(() => timeString.replace(/:/g, '').split(''), [timeString]);
+  // Parse time string "HH:MM:SS" into individual digits
+  const timeParts = timeString.split(':');
+  const hours = timeParts[0].padStart(2, '0').split('');
+  const minutes = timeParts[1].padStart(2, '0').split('');
+  const seconds = timeParts[2].padStart(2, '0').split('');
 
   return (
-    <div className="flip-clock-fullscreen fixed inset-0 z-50 flex items-center justify-center bg-black text-white px-4 py-6">
-      <div className="relative w-full max-w-[1300px]">
+    <div className="flip-clock-fullscreen fixed inset-0 z-50 flex items-center justify-center bg-black text-white">
+      <div className="relative w-full max-w-6xl px-4">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-50 rounded-full border border-white/15 bg-black/70 p-3 text-white transition hover:bg-white/10"
+          className="absolute right-4 top-4 z-50 rounded-full border border-white/20 bg-black/80 p-3 text-white transition-all hover:bg-white/10 hover:scale-105"
           aria-label="Close flip clock"
         >
-          <X className="h-5 w-5" />
+          <X className="h-6 w-6" />
         </button>
 
-        <div className="flex flex-col items-center gap-8 rounded-3xl border border-white/10 bg-black/95 p-6 shadow-[0_0_120px_rgba(0,0,0,0.6)]">
-          <div className="min-h-[220px] w-full overflow-hidden rounded-3xl bg-black px-4 py-6 sm:px-6 sm:py-8">
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-              {digits.map((digit, index) => (
-                <FlipDigit key={`${digit}-${index}`} value={digit} />
-              ))}
-            </div>
+        <div className="flex flex-col items-center gap-12">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 p-8 rounded-3xl border border-white/10 bg-black/90 shadow-2xl">
+            {/* Hours */}
+            <FlipDigit value={hours[0]} />
+            <FlipDigit value={hours[1]} />
+            <FlipDigit value=":" isColon />
+
+            {/* Minutes */}
+            <FlipDigit value={minutes[0]} />
+            <FlipDigit value={minutes[1]} />
+            <FlipDigit value=":" isColon />
+
+            {/* Seconds */}
+            <FlipDigit value={seconds[0]} />
+            <FlipDigit value={seconds[1]} />
           </div>
-          <div className="text-center text-sm text-zinc-400">
-            Pressione <span className="font-semibold text-white">Esc</span> ou clique em fechar para sair do modo Flip Clock.
+
+          <div className="text-center text-sm text-zinc-400 max-w-md">
+            Pressione <span className="font-semibold text-white">Esc</span> ou clique no botão fechar para sair do modo Flip Clock
           </div>
         </div>
       </div>
-      <style>{`
-        .perspective { perspective: 900px; }
-        .flip-face { position: absolute; left: 0; right: 0; width: 100%; display: flex; align-items: center; justify-content: center; height: 50%; overflow: hidden; }
-        .flip-top { top: 0; border-bottom: 1px solid rgba(255,255,255,0.12); transform-origin: bottom; }
-        .flip-bottom { bottom: 0; border-top: 1px solid rgba(255,255,255,0.12); transform-origin: top; }
-        .flip-animation { position: absolute; inset: 0; pointer-events: none; }
-        .flip-panel { position: absolute; left: 0; right: 0; width: 100%; display: flex; align-items: center; justify-content: center; height: 50%; overflow: hidden; backface-visibility: hidden; }
-        .flip-panel-top { top: 0; transform-origin: bottom; transform: rotateX(0deg); }
-        .flip-panel-bottom { bottom: 0; transform-origin: top; transform: rotateX(90deg); }
-        .animate-flip .flip-panel-top { animation: flip-top 0.45s ease-in forwards; }
-        .animate-flip .flip-panel-bottom { animation: flip-bottom 0.45s ease-out 0.2s forwards; }
-
-        @keyframes flip-top {
-          0% { transform: rotateX(0deg); }
-          100% { transform: rotateX(-90deg); }
-        }
-        @keyframes flip-bottom {
-          0% { transform: rotateX(90deg); }
-          100% { transform: rotateX(0deg); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -112,7 +104,7 @@ export function TimerWidget({
 }: TimerWidgetProps) {
   const { activeTimers, isTimerActive, getElapsedSeconds, startTimer, stopTimer, isStarting, isStopping, getActiveTimer, formatSeconds } = useTimeTracking();
   const [isFlipOpen, setIsFlipOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [flipTime, setFlipTime] = useState(0);
   const fullscreenRef = useRef<HTMLDivElement | null>(null);
 
   const { data: activeTimer, isLoading: timerLoading } = getActiveTimer(entityId);
@@ -121,6 +113,21 @@ export function TimerWidget({
   // Get the current timer value from the hook's shared state
   const currentElapsed = isRunning ? getElapsedSeconds(entityId) : (activeTimer?.elapsedSeconds || 0);
   const timeString = formatSeconds(currentElapsed);
+
+  // Update flip time when Flip Clock is open
+  useEffect(() => {
+    if (!isFlipOpen) return;
+
+    const updateFlipTime = () => {
+      const elapsed = isRunning ? getElapsedSeconds(entityId) : (activeTimer?.elapsedSeconds || 0);
+      setFlipTime(elapsed);
+    };
+
+    updateFlipTime(); // Initial update
+    const interval = setInterval(updateFlipTime, 100); // Update every 100ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [isFlipOpen, isRunning, getElapsedSeconds, entityId, activeTimer?.elapsedSeconds]);
 
   const handleStart = async () => {
     try {
@@ -145,13 +152,16 @@ export function TimerWidget({
 
   const openFlipClock = async () => {
     setIsFlipOpen(true);
-    if (fullscreenRef.current?.requestFullscreen) {
-      try {
-        await fullscreenRef.current.requestFullscreen();
-      } catch (error) {
-        console.warn('Fullscreen request failed:', error);
+    setFlipTime(currentElapsed);
+
+    // Request fullscreen after a small delay to ensure the element is rendered
+    setTimeout(() => {
+      if (fullscreenRef.current?.requestFullscreen) {
+        fullscreenRef.current.requestFullscreen().catch((error) => {
+          console.warn('Fullscreen request failed:', error);
+        });
       }
-    }
+    }, 100);
   };
 
   const closeFlipClock = async () => {
@@ -167,7 +177,6 @@ export function TimerWidget({
 
   useEffect(() => {
     const onFullScreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
       if (!document.fullscreenElement) {
         setIsFlipOpen(false);
       }
@@ -181,6 +190,7 @@ export function TimerWidget({
 
     document.addEventListener('fullscreenchange', onFullScreenChange);
     document.addEventListener('keydown', onEscape);
+
     return () => {
       document.removeEventListener('fullscreenchange', onFullScreenChange);
       document.removeEventListener('keydown', onEscape);
@@ -223,7 +233,7 @@ export function TimerWidget({
   return (
     <div className="relative flex flex-col items-center gap-4 p-4 bg-zinc-900/50 rounded-lg border border-white/5">
       <h3 className="text-lg font-medium text-white">{entityName}</h3>
-      
+
       <div className="text-4xl font-mono font-bold text-cyan-400">
         {timeString}
       </div>
@@ -265,8 +275,8 @@ export function TimerWidget({
       )}
 
       {isFlipOpen && (
-        <div ref={fullscreenRef} className="fixed inset-0 z-50 bg-black/95 p-4 sm:p-8">
-          <FlipClockOverlay timeString={timeString} onClose={closeFlipClock} />
+        <div ref={fullscreenRef} className="fixed inset-0 z-50 bg-black">
+          <FlipClockOverlay timeString={formatSeconds(flipTime)} onClose={closeFlipClock} />
         </div>
       )}
     </div>
