@@ -149,25 +149,22 @@ export default function Vault() {
           </div>
           <div className="flex items-center gap-2">
             <input
-              id="vault-file-input"
               ref={fileInputRef}
               type="file"
               className="hidden"
               accept="image/jpeg,image/png,image/webp,application/pdf,audio/mpeg,audio/mp4,audio/x-m4a,audio/m4a"
               onChange={handleFileSelected}
             />
-            <label htmlFor="vault-file-input" className="inline-flex">
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleUploadClick}
-                disabled={uploading || !canUploadVault(0)}
-                className="inline-flex items-center gap-2"
-              >
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {canUploadVault(0) ? "Upload file" : "Storage full"}
-              </Button>
-            </label>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleUploadClick}
+              disabled={uploading || !canUploadVault(0)}
+              className="inline-flex items-center gap-2"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {canUploadVault(0) ? "Upload file" : "Storage full"}
+            </Button>
           </div>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
