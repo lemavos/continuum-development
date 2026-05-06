@@ -132,8 +132,15 @@ public class VaultController {
                     fileSizeBytes,
                     java.time.Instant.now());
             return ResponseEntity.ok(toDto(saved));
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
+            org.slf4j.LoggerFactory.getLogger(VaultController.class)
+                    .error("Failed to read uploaded file bytes for vault {}: {}", user.getVaultId(), e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(VaultController.class)
+                    .error("Vault upload failed for vault {} (file: {}, size: {} bytes): {}",
+                            user.getVaultId(), originalFilename, fileSizeBytes, e.getMessage(), e);
+            throw e;
         }
     }
 
