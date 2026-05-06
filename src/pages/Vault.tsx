@@ -23,6 +23,7 @@ export default function Vault() {
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,11 +47,29 @@ export default function Vault() {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    event.target.value = "";
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
 
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles && droppedFiles.length > 0) {
+      const file = droppedFiles[0];
+      await uploadFile(file);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
     const fileSizeMB = file.size / (1024 * 1024);
     if (!canUploadVault(fileSizeMB)) {
       toast({ title: "Upload blocked", description: "You have reached your vault storage limit.", variant: "destructive" });
@@ -87,6 +106,13 @@ export default function Vault() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+    await uploadFile(file);
   };
 
   useEffect(() => {
@@ -165,31 +191,55 @@ export default function Vault() {
           <div className="flex justify-center py-16">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
-        ) : files.length === 0 ? (
-          <div className="text-center py-16 space-y-2">
-            <HardDrive className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-muted-foreground text-sm">No files in Vault</p>
-            <p className="text-xs text-muted-foreground">Use the upload button to add files to your secure vault.</p>
-          </div>
         ) : (
-          <div className="space-y-1">
-            {files.map((file) => {
-              const Icon = getFileIcon(file.contentType);
-              return (
-                <div key={file.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border/50 hover:bg-accent/50 hover:border-white/20 transition-colors">
-                  <div className="bento-icon-box shrink-0">
-                    <Icon className="w-4 h-4 text-gray-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">{file.fileName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatSize(file.size)} · {new Date(file.createdAt).toLocaleDateString("en-US")}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`rounded-xl border-2 border-dashed transition-all ${
+                dragActive
+                  ? "border-primary bg-primary/5 scale-[1.02]"
+                  : "border-border/50 bg-transparent hover:border-primary/50"
+              } p-8 text-center cursor-pointer`}
+            >
+              <div className="space-y-2">
+                <Upload className={`w-8 h-8 mx-auto transition-colors ${dragActive ? "text-primary" : "text-muted-foreground/50"}`} />
+                <p className={`font-medium transition-colors ${dragActive ? "text-primary" : "text-foreground"}`}>
+                  {dragActive ? "Drop your files here" : "Drag files here to upload"}
+                </p>
+                <p className="text-xs text-muted-foreground">or click the upload button above</p>
+              </div>
+            </div>
+
+            {files.length === 0 ? (
+              <div className="text-center py-8 space-y-2">
+                <HardDrive className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+                <p className="text-muted-foreground text-sm">No files in Vault</p>
+                <p className="text-xs text-muted-foreground">Files will appear here once you upload them.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {files.map((file) => {
+                  const Icon = getFileIcon(file.contentType);
+                  return (
+                    <div key={file.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border/50 hover:bg-accent/50 hover:border-white/20 transition-colors">
+                      <div className="bento-icon-box shrink-0">
+                        <Icon className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{file.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatSize(file.size)} · {new Date(file.createdAt).toLocaleDateString("en-US")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </AppLayout>

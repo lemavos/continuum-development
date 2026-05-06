@@ -280,6 +280,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
     });
 
     const [isUploading, setIsUploading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const { toast } = useToast();
 
@@ -287,11 +288,24 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       fileInputRef.current?.click();
     };
 
-    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      event.target.value = "";
+    const handleDragEnter = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
 
+    const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const uploadFileToVault = async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
 
@@ -322,6 +336,25 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       } finally {
         setIsUploading(false);
       }
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles && droppedFiles.length > 0) {
+        const file = droppedFiles[0];
+        await uploadFileToVault(file);
+      }
+    };
+
+    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      event.target.value = "";
+      await uploadFileToVault(file);
     };
 
     useImperativeHandle(ref, () => ({
@@ -392,7 +425,23 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
             />
           </BubbleMenu>
         )}
-        <EditorContent editor={editor} />
+        <div
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className="relative"
+        >
+          {isDragging && (
+            <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg z-10 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
+                <p className="text-primary font-medium text-sm">Drop files to insert into note</p>
+              </div>
+            </div>
+          )}
+          <EditorContent editor={editor} />
+        </div>
       </>
     );
   }
