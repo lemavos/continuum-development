@@ -34,6 +34,12 @@ const ENTITY_TYPE_CONFIG: Record<EntityType, { color: string; bgColor: string; t
     textColor: '#ea580c',
     borderColor: '#f97316',
   },
+  ACCURRENCY: {
+    color: '#ec4899',
+    bgColor: 'rgba(236, 72, 153, 0.1)',
+    textColor: '#db2777',
+    borderColor: '#ec4899',
+  },
 };
 
 interface MentionBadgeProps {

@@ -28,6 +28,7 @@ function getEntityBadgeColor(type: EntityType): string {
     TOPIC: "bg-amber-500/20 text-amber-200 border border-amber-500/30",
     ORGANIZATION: "bg-teal-500/20 text-teal-200 border border-teal-500/30",
     ACTIVITY: "bg-rose-500/20 text-rose-200 border border-rose-500/30",
+    ACCURRENCY: "bg-pink-500/20 text-pink-200 border border-pink-500/30",
   };
   return colors[type] || "";
 }
