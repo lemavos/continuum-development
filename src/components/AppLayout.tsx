@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Timer,
   Activity,
+  HardDrive,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +46,7 @@ const mainItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
   { to: "/notes", icon: StickyNote, label: "Notes" },
   { to: "/entities", icon: Network, label: "Entities" },
+  { to: "/vault", icon: HardDrive, label: "Vault" },
 ];
 
 const trackingChildren = [

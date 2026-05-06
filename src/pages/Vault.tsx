@@ -99,16 +99,17 @@ export default function Vault() {
   return (
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">Vault</h1>
-            <p className="text-sm text-muted-foreground mt-1">Secure file storage (view-only)</p>
+            <p className="text-sm text-muted-foreground mt-1">Secure file storage for images, PDFs, and audio.</p>
           </div>
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
               className="hidden"
+              accept="image/jpeg,image/png,image/webp,application/pdf,audio/mpeg,audio/mp4,audio/x-m4a,audio/m4a"
               onChange={handleFileSelected}
             />
             <Button
@@ -121,6 +122,9 @@ export default function Vault() {
               {canUploadVault(0) ? "Upload file" : "Storage full"}
             </Button>
           </div>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+          Allowed file types: JPG, JPEG, PNG, WEBP, PDF, MP3, M4A.
         </div>
 
         <div className="bento-card p-4 space-y-2">
