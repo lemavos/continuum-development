@@ -1,77 +1,116 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { dashboardApi, entitiesApi, trackingApi, graphApi } from "@/lib/api";
+import { dashboardApi, entitiesApi, graphApi, notesApi, trackingApi, timeTrackingApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { getPlanLimits } from "@/lib/plan";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Flame, HardDrive, FileText, Plus, Share2, Activity, FolderOpen, CheckCircle2
+import { ChartContainer } from "@/components/ui/chart";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
+import {
+  Plus,
+  Share2,
+  Activity,
+  FolderOpen,
+  ArrowRight,
+  HardDrive,
 } from "lucide-react";
 import type { DashboardSummaryDTO, Entity } from "@/types";
 
-// ==========================================
-// SKELETON
-// ==========================================
+const formatNoteDate = (timestamp?: number) => {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const formatTime = (seconds: number) => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return [hrs, mins, secs].map((value) => String(value).padStart(2, "0")).join(":");
+};
+
 const DashboardSkeleton = () => (
   <AppLayout>
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex justify-between items-center mb-8">
-        <div className="h-8 w-64 bg-zinc-900 rounded-md animate-pulse"></div>
-        <div className="h-10 w-32 bg-zinc-900 rounded-md animate-pulse"></div>
-      </div>
+      <div className="h-11 rounded-3xl bg-zinc-900 animate-pulse" />
       <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 h-[380px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
-        <div className="col-span-12 lg:col-span-4 h-[380px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
-        <div className="col-span-12 lg:col-span-7 h-[280px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
-        <div className="col-span-12 lg:col-span-5 h-[280px] bg-zinc-900/50 border border-white/5 rounded-2xl animate-pulse"></div>
+        <div className="col-span-12 xl:col-span-7 h-[420px] rounded-3xl bg-zinc-900 animate-pulse" />
+        <div className="col-span-12 xl:col-span-5 h-[420px] rounded-3xl bg-zinc-900 animate-pulse" />
+        <div className="col-span-12 xl:col-span-7 h-[320px] rounded-3xl bg-zinc-900 animate-pulse" />
+        <div className="col-span-12 xl:col-span-5 space-y-6">
+          <div className="h-[160px] rounded-3xl bg-zinc-900 animate-pulse" />
+          <div className="h-[260px] rounded-3xl bg-zinc-900 animate-pulse" />
+        </div>
       </div>
     </div>
   </AppLayout>
 );
 
-// ==========================================
-// DASHBOARD PRINCIPAL
-// ==========================================
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<DashboardSummaryDTO | null>(null);
-  const [loading, setLoading] = useState(true);
-  
+
   const { usage, applyUsageDelta } = usePlanGate();
   const limits = getPlanLimits(user);
 
-  // Fetch summary
-  useEffect(() => {
-    dashboardApi.summary()
-      .then((r) => setSummary(r.data))
-      .catch((err) => console.error("Error fetching summary:", err))
-      .finally(() => setLoading(false));
-  }, []);
+  const [selectedTimer, setSelectedTimer] = useState<string | null>(null);
 
-  // Fetch activities
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ["dashboard", "summary"],
+    queryFn: () => dashboardApi.summary().then((r) => r.data),
+  });
+
+  const { data: notes } = useQuery({
+    queryKey: ["notes", "list"],
+    queryFn: () => notesApi.list().then((r) => r.data),
+  });
+
+  const { data: graphData } = useQuery({
+    queryKey: ["graph", "data"],
+    queryFn: () => graphApi.data().then((r) => r.data),
+  });
+
   const { data: activities } = useQuery({
-    queryKey: ["entities", "ACTIVITY"],
+    queryKey: ["entities", "activities"],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      return response.data.filter((entity: Entity) => entity.type === "ACTIVITY");
+      return (response.data as Entity[]).filter((entity) => entity.type === "ACTIVITY");
     },
   });
 
-  // Fetch today's tracking
   const { data: todayTracking } = useQuery({
     queryKey: ["tracking", "today"],
-    queryFn: () => trackingApi.today().then(r => r.data),
+    queryFn: () => trackingApi.today().then((r) => r.data),
   });
 
-  // Fetch graph data for preview
-  const { data: graphData } = useQuery({
-    queryKey: ["graph", "data"],
-    queryFn: () => graphApi.data().then(r => r.data),
+  const { data: timerSummaries } = useQuery({
+    queryKey: ["timeTracking", "summaries"],
+    queryFn: () => timeTrackingApi.getAllSummaries().then((r) => r.data),
   });
+
+  const { data: selectedTimerBreakdown } = useQuery({
+    queryKey: ["timeTracking", "breakdown", selectedTimer],
+    queryFn: () => selectedTimer ? timeTrackingApi.getDailyBreakdown(selectedTimer).then((r) => r.data) : Promise.resolve([]),
+    enabled: Boolean(selectedTimer),
+  });
+
+  useEffect(() => {
+    if (!selectedTimer && Array.isArray(timerSummaries) && timerSummaries.length > 0) {
+      setSelectedTimer(timerSummaries[0].entityId);
+    }
+  }, [selectedTimer, timerSummaries]);
 
   useEffect(() => {
     if (!summary?.storageUsage || usage == null) return;
@@ -79,276 +118,296 @@ export default function Dashboard() {
     applyUsageDelta({ vaultSizeMB: storageMB - usage.vaultSizeMB });
   }, [summary?.storageUsage, usage, applyUsageDelta]);
 
-  // Get pending activities today
-  const getPendingActivities = () => {
-    if (!activities || !todayTracking) return [];
-    const today = new Date().toISOString().split('T')[0];
-    return activities.filter((activity: Entity) => {
-      const tracked = todayTracking.find((t: any) => t.entityId === activity.id && t.date === today);
-      return !tracked;
+  const noteTimeline = useMemo(() => {
+    if (!Array.isArray(notes)) return [];
+    const counts: Record<string, number> = {};
+    notes.forEach((note: any) => {
+      if (!note.createdAt) return;
+      const date = note.createdAt.split("T")[0];
+      counts[date] = (counts[date] || 0) + 1;
     });
-  };
 
-  const pendingActivities = getPendingActivities();
+    return Array.from({ length: 14 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (13 - index));
+      const iso = date.toISOString().split("T")[0];
+      return {
+        date: iso,
+        label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        count: counts[iso] || 0,
+      };
+    });
+  }, [notes]);
 
-  // Process graph data for ForceGraph2D
-  const getGraphPreviewData = () => {
-    if (!graphData?.nodes || !graphData?.links) return null;
-    
-    // Limit to first 50 nodes for preview performance
-    const limitedNodes = graphData.nodes.slice(0, 50);
-    const nodeIds = new Set(limitedNodes.map(n => n.id));
-    
-    // Filter links to only include those between limited nodes
-    const limitedLinks = (graphData.links || graphData.edges || []).filter(
-      (link: any) => nodeIds.has(link.source) && nodeIds.has(link.target)
-    );
+  const recentNotes = useMemo(() => {
+    if (summary?.recentNotes && summary.recentNotes.length > 0) {
+      return summary.recentNotes.slice(0, 6);
+    }
+    if (!Array.isArray(notes)) return [];
+    return [...notes]
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 6)
+      .map((note: any) => ({
+        id: note.id,
+        title: note.title,
+        createdAtTimestamp: new Date(note.createdAt).getTime(),
+      }));
+  }, [summary?.recentNotes, notes]);
 
-    return {
-      nodes: limitedNodes.map((node: any) => ({
-        id: node.id,
-        name: node.label || node.id,
-        type: node.type,
-        val: 1 // Size for ForceGraph2D
-      })),
-      links: limitedLinks.map((link: any) => ({
-        source: link.source,
-        target: link.target
-      }))
-    };
-  };
+  const todayActivities = useMemo(() => {
+    if (!Array.isArray(activities) || !Array.isArray(todayTracking)) return [];
+    return todayTracking
+      .map((entry: any) => {
+        const entity = activities.find((activity) => activity.id === entry.entityId);
+        return {
+          id: entry.entityId,
+          title: entity?.title ?? entry.entityId,
+          time: entry.durationSeconds ? formatTime(entry.durationSeconds) : entry.duration || "00:00",
+        };
+      })
+      .slice(0, 6);
+  }, [activities, todayTracking]);
 
-  const graphPreviewData = getGraphPreviewData();
+  const timerChartData = useMemo(() => {
+    if (!Array.isArray(selectedTimerBreakdown)) return [];
+    return selectedTimerBreakdown.map((point: any) => ({
+      name: point.date ? point.date.slice(5) : "",
+      value: point.durationSeconds ?? point.duration ?? 0,
+    }));
+  }, [selectedTimerBreakdown]);
 
-  if (loading) return <DashboardSkeleton />;
+  const graphNodeCount = graphData?.nodes?.length ?? 0;
+  const totalNotes = summary?.stats?.totalNotes ?? 0;
+  const totalEntities = summary?.stats?.totalEntities ?? 0;
+
+  if (summaryLoading) return <DashboardSkeleton />;
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-        
-        {/* HEADER */}
-        <header className="flex justify-between items-center mb-4">
+      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-display font-semibold text-white tracking-tight">
-              Dashboard
-            </h1>
-            <p className="text-sm font-sans text-zinc-500">Overview of your vault.</p>
+            <h1 className="text-3xl font-display font-semibold text-white tracking-tight">Dashboard</h1>
+            <p className="text-sm text-zinc-500 mt-1">A fixed sidebar with quick insights and live summaries.</p>
           </div>
-          <button 
+          <button
             onClick={() => navigate("/notes")}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-sans font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
           >
-            <Plus className="w-4 h-4" /> New Note
+            <Plus className="h-4 w-4" /> New Note
           </button>
-        </header>
+        </div>
 
-        {/* GRID PRINCIPAL */}
-        <div className="grid grid-cols-12 gap-6">
-
-          {/* 1. PREVIEW DO GRAFO */}
-          <div className="col-span-12 lg:col-span-8 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col relative overflow-hidden">
-            <div className="flex justify-between items-center mb-4 z-10">
-              <h2 className="text-white font-sans font-medium flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-zinc-400" /> Knowledge Graph
-              </h2>
-              <span className="text-xs text-zinc-500">{graphData?.nodes?.length || summary?.stats?.totalNotes || 0} active nodes</span>
+        <div className="grid gap-6 xl:grid-cols-12">
+          <section className="xl:col-span-7 rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                <Share2 className="h-4 w-4 text-accent" /> Notes Over Time
+              </div>
+              <span className="text-xs text-zinc-500">Click the graph area to explore</span>
             </div>
-            
-            {/* Graph Preview Placeholder */}
-            <div className="flex-1 min-h-[280px] bg-zinc-950/50 rounded-xl border border-white/5 overflow-hidden cursor-pointer relative" onClick={() => navigate("/graph")}>
-              {graphPreviewData && graphPreviewData.nodes.length > 0 ? (
-                <div className="w-full h-full flex items-center justify-center relative">
-                  {/* Animated nodes simulation */}
-                  <div className="absolute inset-0">
-                    {graphPreviewData.nodes.slice(0, 8).map((node: any, index: number) => (
-                      <div
-                        key={node.id}
-                        className="absolute w-3 h-3 rounded-full animate-pulse"
-                        style={{
-                          backgroundColor: (() => {
-                            const colors: Record<string, string> = {
-                              NOTE: "#ffffff",
-                              ACTIVITY: "#22c55e",
-                              PERSON: "#eab308",
-                              PROJECT: "#3b82f6",
-                              TOPIC: "#a855f7",
-                              ORGANIZATION: "#f97316"
-                            };
-                            return colors[node.type] || "#64748b";
-                          })(),
-                          left: `${20 + (index % 4) * 20}%`,
-                          top: `${20 + Math.floor(index / 4) * 30}%`,
-                          animationDelay: `${index * 0.2}s`,
-                          animationDuration: '2s'
-                        }}
-                      />
-                    ))}
-                    {/* Animated connections */}
-                    <svg className="absolute inset-0 w-full h-full opacity-20">
-                      <defs>
-                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
-                          <stop offset="100%" stopColor="rgba(255,255,255,0.3)" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="25%" y1="25%" x2="45%" y2="25%" stroke="url(#lineGradient)" strokeWidth="1" />
-                      <line x1="45%" y1="25%" x2="65%" y2="25%" stroke="url(#lineGradient)" strokeWidth="1" />
-                      <line x1="25%" y1="55%" x2="45%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
-                      <line x1="45%" y1="55%" x2="65%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
-                      <line x1="35%" y1="25%" x2="35%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
-                      <line x1="55%" y1="25%" x2="55%" y2="55%" stroke="url(#lineGradient)" strokeWidth="1" />
-                    </svg>
-                  </div>
-                  <div className="text-center z-10">
-                    <Share2 className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
-                    <p className="text-sm text-zinc-500">Interactive knowledge graph</p>
-                    <p className="text-xs text-zinc-600 mt-1">Click to explore</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Share2 className="w-8 h-8 text-zinc-700 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm text-zinc-500">Click to explore the knowledge graph</p>
-                  </div>
-                </div>
-              )}
+            <div
+              onClick={() => navigate("/graph")}
+              className="h-[320px] rounded-3xl bg-slate-900/70 p-4 cursor-pointer transition hover:bg-slate-900"
+            >
+              <ChartContainer className="h-full">
+                <LineChart data={noteTimeline} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="#324152" strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "rgb(15, 23, 42)", borderColor: "#374151" }} />
+                  <Line type="monotone" dataKey="count" stroke="#60a5fa" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ChartContainer>
             </div>
-          </div>
+          </section>
 
-          {/* 2. LIMITES DO PLANO E STORAGE */}
-          <div className="col-span-12 lg:col-span-4 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-white font-sans font-medium flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-zinc-400" /> System Usage
-                </h2>
-                <span className="text-[10px] font-bold px-2 py-1 rounded bg-purple-500/10 text-purple-400 tracking-widest uppercase">
+          <aside className="xl:col-span-5 grid gap-6">
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <Activity className="h-4 w-4 text-emerald-400" /> System Usage
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-purple-400">
                   {user?.plan || "FREE"}
                 </span>
               </div>
 
               {usage ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-zinc-400">
+                <div className="space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs text-zinc-400">
                       <span>Notes</span>
                       <span className="text-zinc-200">{usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}</span>
                     </div>
-                    <Progress value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1.5 bg-zinc-800" />
+                    <Progress value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-2 rounded-full bg-zinc-800" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-zinc-400">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs text-zinc-400">
                       <span>Entities</span>
                       <span className="text-zinc-200">{usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}</span>
                     </div>
-                    <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1.5 bg-zinc-800" />
+                    <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-2 rounded-full bg-zinc-800" />
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-zinc-500">Loading limits...</div>
+                <div className="text-sm text-zinc-500">Loading usage...</div>
               )}
-            </div>
 
-            <div className="mt-8 pt-6 border-t border-white/5">
-              <div className="flex justify-between items-end">
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1">
-                    <HardDrive className="w-3 h-3" /> Storage Vault
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1">
+                      <HardDrive className="h-3 w-3" /> Storage Vault
+                    </div>
+                    <p className="text-2xl font-semibold text-white">{summary?.storageUsage?.formattedUsed ?? "0 MB"}</p>
                   </div>
-                  <span className="text-2xl font-bold text-white tracking-tight">
-                    {summary?.storageUsage?.formattedUsed || "0 MB"}
-                  </span>
+                  <span className="text-xs text-zinc-500">/ {summary?.storageUsage?.formattedLimit ?? "∞"}</span>
                 </div>
-                <span className="text-xs text-zinc-500">
-                  / {summary?.storageUsage?.formattedLimit || "∞"}
-                </span>
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* 3. HÁBITOS PENDENTES */}
-          <div className="col-span-12 lg:col-span-7 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <h2 className="text-white font-sans font-medium">For Today</h2>
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                  <FolderOpen className="h-4 w-4 text-sky-400" /> Recent Notes
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/notes")}
+                  className="text-xs uppercase text-zinc-500 hover:text-white"
+                >
+                  View All
+                </button>
               </div>
-              {pendingActivities.length > 0 && (
-                <span className="text-[10px] font-bold px-2 py-1 bg-orange-500/10 text-orange-500 rounded uppercase tracking-widest">
-                  {pendingActivities.length} Pending
-                </span>
-              )}
-            </div>
-            
-            <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
-              {pendingActivities.length > 0 ? (
-                pendingActivities.map((activity: Entity) => (
-                  <div 
-                    key={activity.id} 
-                    className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/5 transition-all group"
-                  >
-                    <span className="text-sm text-zinc-200 group-hover:text-white transition-colors">{activity.title}</span>
-                    <button 
-                      onClick={() => navigate(`/entities/${activity.id}`)}
-                      className="w-5 h-5 rounded-full border border-zinc-600 flex items-center justify-center group-hover:border-orange-500 transition-colors"
-                      title="Check in"
+              <div className="space-y-2">
+                {recentNotes.length > 0 ? (
+                  recentNotes.map((note, index) => (
+                    <button
+                      key={note.id}
+                      type="button"
+                      onClick={() => navigate(`/notes/${note.id}`)}
+                      className={`w-full rounded-3xl border px-4 py-4 text-left transition-colors ${index % 2 === 0 ? "bg-slate-950/70" : "bg-slate-950/60"} hover:border-white/10 hover:bg-white/5`}
                     >
-                      <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-orange-500 transition-colors" />
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-white truncate">{note.title}</p>
+                        <ArrowRight className="h-4 w-4 text-zinc-500" />
+                      </div>
+                      <p className="mt-2 text-xs text-zinc-500">{formatNoteDate(note.createdAtTimestamp)}</p>
                     </button>
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-8 text-center text-sm text-zinc-500">
+                    No recent notes available.
                   </div>
-                ))
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center py-6">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-3 opacity-80" />
-                  <p className="text-sm text-zinc-300 font-sans font-medium">All clear for today!</p>
-                  <p className="text-xs text-zinc-500 mt-1">No pending activities.</p>
-                </div>
-              )}
-            </div>
-          </div>
+                )}
+              </div>
+            </section>
+          </aside>
 
-          {/* 4. NOTAS RECENTES */}
-          <div className="col-span-12 lg:col-span-5 bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-white font-sans font-medium flex items-center gap-2">
-                <FolderOpen className="w-4 h-4 text-zinc-400" /> Recent Notes
-              </h2>
-              <button onClick={() => navigate("/notes")} className="text-[10px] uppercase font-bold text-zinc-500 hover:text-white transition-colors">
-                View All
+          <section className="xl:col-span-7 rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                <Activity className="h-4 w-4 text-emerald-400" /> Today's Activities
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/activities")}
+                className="text-xs uppercase text-zinc-500 hover:text-white"
+              >
+                Open
               </button>
             </div>
-
-            <div className="flex-1 flex flex-col gap-3">
-              {summary?.recentNotes && summary.recentNotes.length > 0 ? (
-                summary.recentNotes.slice(0, 4).map((note: any) => (
-                  <div
-                    key={note.id}
-                    onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group flex flex-col p-3 bg-zinc-950/50 rounded-lg border border-transparent hover:border-white/10 cursor-pointer transition-all"
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-sm font-medium text-zinc-200 truncate pr-4 group-hover:text-purple-400 transition-colors">
-                        {note.title}
-                      </span>
-                      <span className="text-[10px] text-zinc-600 whitespace-nowrap">
-                        {new Date(note.updatedAtTimestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
+            <div className="space-y-3">
+              {todayActivities.length > 0 ? (
+                todayActivities.map((item) => (
+                  <div key={item.id} className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-white truncate">{item.title}</p>
+                        <p className="text-xs text-zinc-500">Tracked today</p>
+                      </div>
+                      <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-zinc-300">{item.time}</span>
                     </div>
-                    {note.preview && (
-                      <span className="text-xs text-zinc-500 truncate">{note.preview}</span>
-                    )}
                   </div>
                 ))
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center py-6">
-                  <FileText className="w-6 h-6 text-zinc-800 mb-2" />
-                  <p className="text-xs text-zinc-500">No recent notes.</p>
+                <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-8 text-center text-sm text-zinc-500">
+                  No activities tracked for today.
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
+          <aside className="xl:col-span-5 grid gap-6">
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+              <h2 className="text-sm font-semibold text-white mb-4">Summary Counters</h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="rounded-3xl bg-slate-950/70 p-4 text-center">
+                  <p className="text-3xl font-semibold text-accent">{graphNodeCount}</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-zinc-500">Total Nodes</p>
+                </div>
+                <div className="rounded-3xl bg-slate-950/70 p-4 text-center">
+                  <p className="text-3xl font-semibold text-sky-400">{totalNotes}</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-zinc-500">Total Notas</p>
+                </div>
+                <div className="rounded-3xl bg-slate-950/70 p-4 text-center">
+                  <p className="text-3xl font-semibold text-emerald-400">{totalEntities}</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-zinc-500">Total Entidades</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div>
+                  <h2 className="text-sm font-semibold text-white">Timers</h2>
+                  <p className="text-xs text-zinc-500">Select a timer to inspect trends.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/activities")}
+                  className="text-xs uppercase text-zinc-500 hover:text-white"
+                >
+                  Open
+                </button>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-4">
+                {Array.isArray(timerSummaries) && timerSummaries.length > 0 ? (
+                  timerSummaries.slice(0, 5).map((timer: any) => (
+                    <button
+                      key={timer.entityId}
+                      type="button"
+                      onClick={() => setSelectedTimer(timer.entityId)}
+                      className={`min-w-[120px] rounded-3xl border px-4 py-3 text-left transition ${selectedTimer === timer.entityId ? "border-accent bg-accent/10 text-white" : "border-white/10 bg-slate-950/70 text-zinc-300 hover:border-white/20"}`}
+                    >
+                      <p className="text-sm font-medium truncate">{timer.entityTitle}</p>
+                      <p className="mt-2 text-xs text-zinc-500">{timer.formattedTotal ?? formatTime(timer.totalSeconds ?? 0)}</p>
+                    </button>
+                  ))
+                ) : (
+                  <div className="min-w-full rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-6 text-center text-sm text-zinc-500">
+                    No timers found.
+                  </div>
+                )}
+              </div>
+              <div className="h-[260px] rounded-3xl border border-white/10 bg-slate-950/70 p-4">
+                {selectedTimer && timerChartData.length > 0 ? (
+                  <ChartContainer className="h-full">
+                    <LineChart data={timerChartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke="#324152" strokeDasharray="3 3" />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ background: "rgb(15, 23, 42)", borderColor: "#374151" }} />
+                      <Line type="monotone" dataKey="value" stroke="#34d399" strokeWidth={3} dot={false} />
+                    </LineChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-zinc-500">Select a timer to view its 7-day activity.</div>
+                )}
+              </div>
+            </section>
+          </aside>
         </div>
       </div>
     </AppLayout>
