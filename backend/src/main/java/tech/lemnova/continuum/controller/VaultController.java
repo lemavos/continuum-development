@@ -123,8 +123,12 @@ public class VaultController {
         }
 
         String fileId = buildFileId(originalFilename);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(VaultController.class);
         try {
-            vaultStorageService.saveFile(user.getVaultId(), fileId, file.getBytes(), contentType != null ? contentType : "application/octet-stream");
+            byte[] bytes = file.getBytes();
+            logger.info("Vault upload start: vault={}, file={}, size={}, contentType={}",
+                    user.getVaultId(), originalFilename, fileSizeBytes, contentType);
+            vaultStorageService.saveFile(user.getVaultId(), fileId, bytes, contentType != null ? contentType : "application/octet-stream");
             VaultStorageService.VaultFileDescriptor saved = new VaultStorageService.VaultFileDescriptor(
                     fileId,
                     originalFilename != null ? originalFilename : fileId,
@@ -133,14 +137,22 @@ public class VaultController {
                     java.time.Instant.now());
             return ResponseEntity.ok(toDto(saved));
         } catch (java.io.IOException e) {
-            org.slf4j.LoggerFactory.getLogger(VaultController.class)
-                    .error("Failed to read uploaded file bytes for vault {}: {}", user.getVaultId(), e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            logger.error("Failed to read uploaded file bytes for vault {}: {}", user.getVaultId(), e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(null);
+        } catch (software.amazon.awssdk.services.s3.model.S3Exception e) {
+            logger.error("B2/S3 upload error for vault {} (file: {}, size: {}): code={}, status={}, msg={}",
+                    user.getVaultId(), originalFilename, fileSizeBytes,
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : "?",
+                    e.statusCode(),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(), e);
+            throw new tech.lemnova.continuum.application.exception.BadRequestException(
+                    "Storage upload failed: " + (e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage()));
         } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(VaultController.class)
-                    .error("Vault upload failed for vault {} (file: {}, size: {} bytes): {}",
-                            user.getVaultId(), originalFilename, fileSizeBytes, e.getMessage(), e);
-            throw e;
+            logger.error("Vault upload failed for vault {} (file: {}, size: {} bytes): {} - {}",
+                    user.getVaultId(), originalFilename, fileSizeBytes, e.getClass().getSimpleName(), e.getMessage(), e);
+            throw new tech.lemnova.continuum.application.exception.BadRequestException(
+                    "Upload failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
