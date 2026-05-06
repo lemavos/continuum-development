@@ -61,12 +61,29 @@ export default function Vault() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const { data } = await vaultApi.upload(form);
-      setFiles((current) => [...current, data]);
+      
+      console.log("Uploading file:", file.name, "Size:", fileSizeMB.toFixed(2), "MB", "Type:", file.type);
+      
+      const response = await vaultApi.upload(form);
+      
+      console.log("Upload response:", response.data);
+      
+      setFiles((current) => [...current, response.data]);
       applyUsageDelta({ vaultSizeMB: Number(fileSizeMB.toFixed(2)) });
-      toast({ title: "Upload complete" });
-    } catch {
-      toast({ title: "Upload failed", variant: "destructive" });
+      toast({ title: "Upload complete", description: `${file.name} has been added to your vault.` });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      
+      let errorMessage = "Upload failed";
+      if (error?.response?.status === 415) {
+        errorMessage = "File type not supported. Please upload: JPG, PNG, WEBP, PDF, or MP3.";
+      } else if (error?.response?.status === 400) {
+        errorMessage = "Upload failed: File size exceeds limit or vault is full.";
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast({ title: "Upload failed", description: errorMessage, variant: "destructive" });
     } finally {
       setUploading(false);
     }
