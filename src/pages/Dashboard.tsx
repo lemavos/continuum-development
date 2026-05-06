@@ -210,7 +210,7 @@ export default function Dashboard() {
               onClick={() => navigate("/graph")}
               className="h-[320px] rounded-3xl bg-slate-900/70 p-4 cursor-pointer transition hover:bg-slate-900"
             >
-              <ChartContainer className="h-full">
+              <ChartContainer config={{}} className="h-full">
                 <LineChart data={noteTimeline} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke="#324152" strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
@@ -393,7 +393,7 @@ export default function Dashboard() {
               </div>
               <div className="h-[260px] rounded-3xl border border-white/10 bg-slate-950/70 p-4">
                 {selectedTimer && timerChartData.length > 0 ? (
-                  <ChartContainer className="h-full">
+                  <ChartContainer config={{}} className="h-full">
                     <LineChart data={timerChartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                       <CartesianGrid stroke="#324152" strokeDasharray="3 3" />
                       <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
