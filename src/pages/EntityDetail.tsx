@@ -308,7 +308,10 @@ export default function EntityDetail() {
           <>
             <ActivityAnalyticsCalendar 
               trackingDates={entity.trackingDates}
-              historyDays={historyDays}
+            />
+          </>
+        )}
+        {false && (
             />
           </>
         )}
