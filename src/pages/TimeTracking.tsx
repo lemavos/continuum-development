@@ -11,17 +11,17 @@ export default function TimeTracking() {
       <div className="p-6 lg:p-8">
         <div className="mb-6">
           <h1 className="text-3xl font-display font-semibold text-white">
-            {isProjectsPage ? 'Projects' : 'Accurrency'}
+            {isProjectsPage ? 'Projects' : 'Activities'}
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
             {isProjectsPage
               ? 'Track your project activities'
-              : 'Track your Accurrency entities'
+              : 'Track your activities'
             }
           </p>
         </div>
 
-        <TimeTrackingList filterType={isProjectsPage ? 'PROJECT' : 'ACCURRENCY'} />
+        <TimeTrackingList filterType={isProjectsPage ? 'PROJECT' : 'ACTIVITY'} />
       </div>
     </AppLayout>
   );
