@@ -48,8 +48,8 @@ const mainItems = [
 ];
 
 const trackingChildren = [
-  { to: "/tracking", icon: Timer, label: "Time", color: "bg-violet-400" },
-  { to: "/projects", icon: Activity, label: "Activity", color: "bg-pink-400" },
+  { to: "/projects", icon: Timer, label: "Projects", color: "bg-violet-400", filter: "PROJECT" },
+  { to: "/tracking", icon: Activity, label: "Activity", color: "bg-pink-400", filter: "ACTIVITY" },
 ];
 
 function NavItem({
@@ -185,6 +185,31 @@ function TrackingGroup({
           ))}
         </div>
       )}
+
+      {/* Show tracking dots only when the sidebar is collapsed, not when the group is simply closed */}
+      {collapsed && (
+        <div className="flex items-center gap-1 mt-1 pl-3">
+          {trackingChildren.map((c) => (
+            <Tooltip key={c.to} delayDuration={100}>
+              <TooltipTrigger asChild>
+                <NavLink
+                  to={c.to}
+                  onClick={onItemClick}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full transition-colors",
+                      isActive ? "bg-white/20" : "hover:bg-white/10",
+                    )
+                  }
+                >
+                  <span className={cn("h-2 w-2 rounded-full", c.color)} />
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent side="right">{c.label}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -296,7 +321,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = false; // Always expanded
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -352,23 +377,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           Continuum
         </span>
       )}
-      {!mobile && (
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          className={cn(
-            "ml-auto grid h-7 w-7 place-items-center rounded-md text-zinc-500 hover:bg-white/5 hover:text-white",
-            collapsed && "ml-0 mt-1",
-          )}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </button>
-      )}
+      {!mobile && null}
     </div>
   );
 
@@ -407,6 +416,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <DropdownMenuLabel className="text-xs text-zinc-500">
               {user?.email}
             </DropdownMenuLabel>
+            {user?.createdAt && (
+              <div className="px-2 py-1.5 text-xs text-zinc-500">
+                Member since {new Date(user.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric"
+                })}
+              </div>
+            )}
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem
               onClick={() => {
@@ -442,8 +459,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const desktopSidebar = (
     <aside
       className={cn(
-        "hidden h-screen shrink-0 flex-col border-r border-white/5 bg-[#0a0a0d] transition-[width] duration-200 lg:flex",
-        collapsed ? "w-[72px]" : "w-64",
+        "hidden h-screen shrink-0 flex-col border-r border-white/5 bg-[#0a0a0d] lg:flex",
+        "w-64", // Always expanded
       )}
     >
       {sidebarHeader(false)}

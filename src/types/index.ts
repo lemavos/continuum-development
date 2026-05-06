@@ -48,7 +48,7 @@ export interface Folder {
   parentId?: string;
 }
 
-export type EntityType = "PERSON" | "PROJECT" | "TOPIC" | "ORGANIZATION" | "ACTIVITY";
+export type EntityType = "PERSON" | "PROJECT" | "TOPIC" | "ORGANIZATION" | "ACTIVITY" | "ACCURRENCY";
 
 export interface Entity {
   id: string;

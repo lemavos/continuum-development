@@ -6,7 +6,7 @@ import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, MoreVertical, FolderOpen, Briefcase } from 'lucide-react';
+import { Play, Pause, MoreVertical, FolderOpen, Briefcase, Activity } from 'lucide-react';
 import { Flame } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -16,18 +16,20 @@ import type { Entity } from '@/types';
 /**
  * List of all trackable entities with time summaries
  */
-export function TimeTrackingList() {
+export function TimeTrackingList({ filterType }: { filterType?: string }) {
   const navigate = useNavigate();
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
   const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimers, isTimerActive, getElapsedSeconds, isStarting, isStopping } = useTimeTracking();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
-    queryKey: ['entities', 'trackable'],
+    queryKey: ['entities', 'trackable', filterType],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      // Return Projects and Activities
-      return (response.data as Entity[]).filter(e => e.type === 'PROJECT' || e.type === 'ACTIVITY');
+      const entities = response.data as Entity[];
+      if (filterType) {
+        return entities.filter(e => e.type === filterType);
+      }
+      return entities.filter(e => e.type === 'PROJECT' || e.type === 'ACTIVITY');
     },
   });
 
@@ -54,59 +56,21 @@ export function TimeTrackingList() {
 
   const isLoading = entitiesLoading || summariesLoading;
 
-  const filteredEntities = trackableEntities?.filter(e => selectedType ? e.type === selectedType : true) || [];
+  const filteredEntities = trackableEntities || [];
 
-  const types = ['PROJECT', 'ACTIVITY'];
-  const typeIcons: Record<string, any> = { PROJECT: Briefcase, ACTIVITY: Flame };
-  const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity' };
+  const types = filterType ? [filterType] : ['PROJECT', 'ACTIVITY', 'ACCURRENCY'];
+  const typeIcons: Record<string, any> = { PROJECT: Briefcase, ACTIVITY: Flame, ACCURRENCY: Activity };
+  const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity', ACCURRENCY: 'Accurrency' };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => navigate('/entities/new')} className="gap-2">
           <FolderOpen className="w-4 h-4" />
-          New Project
+          New {filterType ? typeLabels[filterType] : 'Project'}
         </Button>
       </div>
-
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="lg:w-44 lg:shrink-0 space-y-4">
-          {/* Types section */}
-          <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-3">Types</h3>
-            <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-              <button
-                onClick={() => setSelectedType(null)}
-                className={cn(
-                  "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all shrink-0",
-                  !selectedType ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                All Types
-              </button>
-              {types.map((type) => {
-                const Icon = typeIcons[type];
-                const count = trackableEntities?.filter(e => e.type === type).length || 0;
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedType(type)}
-                    className={cn(
-                      "flex items-center justify-between gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all w-full",
-                      selectedType === type ? "bg-white/10 text-white font-medium" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" /> {typeLabels[type]}
-                    </span>
-                    <span className="text-xs font-semibold bg-white/10 px-2 py-0.5 rounded">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         <div className="flex-1 space-y-3">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -117,12 +81,12 @@ export function TimeTrackingList() {
           ) : !filteredEntities || filteredEntities.length === 0 ? (
             <Card className="p-12 text-center">
               <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-white mb-2">No {selectedType ? typeLabels[selectedType].toLowerCase() + 's' : 'entities'} yet</h3>
+              <h3 className="text-lg font-medium text-white mb-2">No {filterType ? typeLabels[filterType]?.toLowerCase() + 's' : 'entities'} yet</h3>
               <p className="text-sm text-zinc-500 mb-4">
-                Create a {selectedType ? typeLabels[selectedType].toLowerCase() : 'project or activity'} to start tracking time
+                Create a {filterType ? typeLabels[filterType]?.toLowerCase() : 'project or activity'} to start tracking.
               </p>
               <Button onClick={() => navigate('/entities/new')}>
-                Create {selectedType ? typeLabels[selectedType] : 'Entity'}
+                Create {filterType ? typeLabels[filterType] : 'Entity'}
               </Button>
             </Card>
           ) : (
@@ -151,7 +115,12 @@ export function TimeTrackingList() {
                             {entity.title}
                           </h3>
                           <p className="text-xs text-zinc-500">
-                            {entity.type === 'PROJECT' ? '📁 Project' : '🔥 Activity'}
+                            {entity.type === 'PROJECT'
+                              ? '📁 Project'
+                              : entity.type === 'ACCURRENCY'
+                              ? '⚡ Accurrency'
+                              : '🔥 Activity'
+                            }
                           </p>
                         </div>
                         <button className="text-zinc-400 hover:text-white p-1" onClick={(e) => e.stopPropagation()}>
