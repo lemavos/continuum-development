@@ -87,7 +87,7 @@ export default function VaultDownload() {
                 <ArrowLeft className="w-4 h-4 mr-2" /> Go back
               </Button>
               {status === "success" && fileId && (
-                <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
+                <Button variant="default" size="sm" onClick={() => window.location.reload()}>
                   Retry download
                 </Button>
               )}
