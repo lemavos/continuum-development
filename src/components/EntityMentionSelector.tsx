@@ -12,6 +12,7 @@ const ENTITY_TYPE_CONFIG: Record<EntityType, { label: string; icon: string; hove
   PERSON: { label: 'Person', icon: '🟡', hoverBg: 'rgba(245,158,11,0.08)', hoverBorder: 'rgba(245,158,11,0.3)' },
   TOPIC: { label: 'Topic', icon: '🟣', hoverBg: 'rgba(139,92,246,0.08)', hoverBorder: 'rgba(139,92,246,0.3)' },
   ORGANIZATION: { label: 'Organization', icon: '🟠', hoverBg: 'rgba(249,115,22,0.08)', hoverBorder: 'rgba(249,115,22,0.3)' },
+  ACCURRENCY: { label: 'Accurrency', icon: '🌸', hoverBg: 'rgba(236,72,153,0.08)', hoverBorder: 'rgba(236,72,153,0.3)' },
 };
 
 const BADGE_COLORS: Record<EntityType, string> = {
@@ -20,6 +21,7 @@ const BADGE_COLORS: Record<EntityType, string> = {
   PERSON: '#f59e0b',
   TOPIC: '#8b5cf6',
   ORGANIZATION: '#f97316',
+  ACCURRENCY: '#ec4899',
 };
 
 interface EntityMentionSelectorProps {
