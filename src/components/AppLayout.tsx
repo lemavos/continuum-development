@@ -49,7 +49,7 @@ const mainItems = [
 
 const trackingChildren = [
   { to: "/projects", icon: Timer, label: "Projects", color: "bg-violet-400", filter: "PROJECT" },
-  { to: "/tracking", icon: Activity, label: "Activity", color: "bg-pink-400", filter: "ACTIVITY" },
+  { to: "/activities", icon: Activity, label: "Accurrency", color: "bg-pink-400", filter: "ACCURRENCY" },
 ];
 
 function NavItem({
@@ -321,7 +321,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const collapsed = false; // Always expanded
+  const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -366,7 +366,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div
       className={cn(
         "flex items-center gap-3 px-4 py-4",
-        collapsed && !mobile && "justify-center px-2",
+        collapsed && !mobile && "justify-between px-2",
       )}
     >
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-white">
@@ -377,7 +377,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           Continuum
         </span>
       )}
-      {!mobile && null}
+      {!mobile && (
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
+      )}
     </div>
   );
 
@@ -459,8 +472,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const desktopSidebar = (
     <aside
       className={cn(
-        "hidden h-screen shrink-0 flex-col border-r border-white/5 bg-[#0a0a0d] lg:flex",
-        "w-64", // Always expanded
+        "hidden h-screen shrink-0 flex-col border-r border-white/5 bg-[#0a0a0d] lg:flex overflow-hidden transition-all duration-200 ease-out",
+        collapsed ? "w-20" : "w-64",
       )}
     >
       {sidebarHeader(false)}
