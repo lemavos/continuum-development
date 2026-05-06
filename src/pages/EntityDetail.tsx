@@ -311,10 +311,6 @@ export default function EntityDetail() {
             />
           </>
         )}
-        {false && (
-            />
-          </>
-        )}
 
         <div className="bento-card p-4">
               <h3 className="text-sm font-medium text-foreground mb-3">Entity Metadata</h3>
