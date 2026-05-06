@@ -1,5 +1,6 @@
 package tech.lemnova.continuum.controller;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -7,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tech.lemnova.continuum.application.exception.NotFoundException;
+import java.util.List;
 import java.util.Set;
 import tech.lemnova.continuum.application.service.EntityIndexService;
 import tech.lemnova.continuum.controller.dto.vault.VaultFileDTO;
@@ -51,6 +53,28 @@ public class VaultController {
                 .orElseThrow(() -> new NotFoundException("User not found"));
         List<VaultStorageService.VaultFileDescriptor> files = vaultStorageService.listFiles(user.getVaultId());
         return ResponseEntity.ok(files.stream().map(this::toDto).toList());
+    }
+
+    @GetMapping(value = "/files/{fileId}")
+    public ResponseEntity<byte[]> downloadFile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable String fileId) {
+        User user = userRepo.findById(userDetails.getUserId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        List<VaultStorageService.VaultFileDescriptor> files = vaultStorageService.listFiles(user.getVaultId());
+        VaultStorageService.VaultFileDescriptor descriptor = files.stream()
+                .filter(f -> f.fileId().equals(fileId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("File not found"));
+
+        byte[] fileData = vaultStorageService.loadFile(user.getVaultId(), fileId)
+                .orElseThrow(() -> new NotFoundException("File not found"));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(descriptor.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + descriptor.fileName() + "\"")
+                .body(fileData);
     }
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(

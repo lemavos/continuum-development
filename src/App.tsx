@@ -18,6 +18,7 @@ import Entities from "./pages/Entities";
 import EntityDetail from "./pages/EntityDetail";
 import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Vault from "./pages/Vault";
+import VaultDownload from "./pages/VaultDownload";
 import TimeTracking from "./pages/TimeTracking";
 // import Subscription from "./pages/Subscription";
 import Profile from "./pages/Profile";
@@ -106,6 +107,7 @@ const AppRoutes = () => (
     <Route path="/projects/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
+    <Route path="/vault/download/:fileId" element={<ProtectedRoute><VaultDownload /></ProtectedRoute>} />
     {/* <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} /> */}
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />

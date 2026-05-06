@@ -17,14 +17,16 @@ import Dropcursor from "@tiptap/extension-dropcursor";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
 import {
-  Bold, Italic, Strikethrough, Code, Link as LinkIcon,
+  Bold, Italic, Strikethrough, Code, Link as LinkIcon, Upload,
   Heading1, Heading2, Quote, List, ListOrdered,
 } from "lucide-react";
-import { entitiesApi, notesApi } from "@/lib/api";
+import { entitiesApi, notesApi, vaultApi } from "@/lib/api";
 import type { Entity } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 import { MentionList, type MentionListRef, type MentionItem } from "./MentionList";
 import { SlashCommands } from "./SlashCommands";
 
@@ -277,6 +279,51 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       },
     });
 
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const { toast } = useToast();
+
+    const handleUploadClick = () => {
+      fileInputRef.current?.click();
+    };
+
+    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      event.target.value = "";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      setIsUploading(true);
+      try {
+        const response = await vaultApi.upload(formData);
+        const vaultFile = response.data;
+        const vaultUrl = `/vault/download/${encodeURIComponent(vaultFile.id)}`;
+
+        editor.chain().focus().insertContent([
+          {
+            type: "text",
+            text: vaultFile.fileName,
+            marks: [{ type: "link", attrs: { href: vaultUrl } }],
+          },
+          { type: "text", text: " " },
+        ]).run();
+
+        toast({ title: "File uploaded", description: `${vaultFile.fileName} inserted into your note.` });
+      } catch (error: any) {
+        if (error?.response?.status === 415) {
+          toast({ title: "Unsupported file type", variant: "destructive" });
+        } else if (error?.response?.status === 400) {
+          toast({ title: "Upload failed", description: "File may exceed your plan vault limit.", variant: "destructive" });
+        } else {
+          toast({ title: "Upload failed", variant: "destructive" });
+        }
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       getJSON: () => editor?.getJSON(),
       getHTML: () => editor?.getHTML() || "",
@@ -302,6 +349,13 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
 
     return (
       <>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,application/pdf,audio/*"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
         {editor && (
           <BubbleMenu
             editor={editor}
@@ -328,6 +382,14 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
                 e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
               }}
               active={editor.isActive("link")} icon={LinkIcon} label="Link" />
+            <ToolbarBtn
+              editor={editor}
+              action={() => handleUploadClick()}
+              active={false}
+              icon={Upload}
+              label={isUploading ? "Uploading…" : "Upload file"}
+              disabled={isUploading}
+            />
           </BubbleMenu>
         )}
         <EditorContent editor={editor} />
@@ -338,15 +400,16 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
 TiptapEditor.displayName = "TiptapEditor";
 
 function ToolbarBtn({
-  editor, action, active, icon: Icon, label,
-}: { editor: Editor; action: (e: Editor) => void; active: boolean; icon: typeof Bold; label: string }) {
+  editor, action, active, icon: Icon, label, disabled,
+}: { editor: Editor; action: (e: Editor) => void; active: boolean; icon: typeof Bold; label: string; disabled?: boolean }) {
   return (
     <button
       type="button"
       title={label}
-      onMouseDown={(e) => { e.preventDefault(); action(editor); }}
+      onMouseDown={(e) => { e.preventDefault(); if (!disabled) action(editor); }}
+      disabled={disabled}
       className={`p-1.5 rounded-md transition-colors ${
-        active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+        disabled ? "cursor-not-allowed opacity-50" : active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
       }`}
     >
       <Icon className="w-3.5 h-3.5" />
